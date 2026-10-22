@@ -54,6 +54,24 @@ class Provider:
             endpoint = "/api/chat"
             payload.pop("max_tokens")
             payload.update(stream=False, options={"num_predict": c.max_tokens})
+            history = []
+            for original in messages:
+                message = dict(original)
+                if message["role"] == "tool":
+                    message["tool_name"] = message.pop("name", "")
+                    message.pop("tool_call_id", None)
+                if message.get("tool_calls"):
+                    message["tool_calls"] = [
+                        {
+                            "function": {
+                                "name": call["function"]["name"],
+                                "arguments": json.loads(call["function"]["arguments"]),
+                            }
+                        }
+                        for call in message["tool_calls"]
+                    ]
+                history.append(message)
+            payload["messages"] = history
         async with httpx.AsyncClient(timeout=180, transport=self.transport, follow_redirects=False) as client:
             async with client.stream(
                 "POST", c.base_url.rstrip("/") + endpoint, json=payload, headers=headers

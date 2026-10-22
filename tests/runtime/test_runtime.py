@@ -151,6 +151,35 @@ async def test_provider_error_does_not_leak_response():
     assert "private" not in str(exc.value)
 
 
+@pytest.mark.parametrize("kind", ["openai", "anthropic", "ollama"])
+async def test_tool_receipts_replay_in_the_provider_wire_format(kind):
+    messages = [
+        {"role": "system", "content": "system"},
+        {"role": "user", "content": "Find a meeting"},
+        tool_reply(("calendar", {"query": "meeting"})).message,
+        {"role": "tool", "name": "calendar", "tool_call_id": "0", "content": '{"event":"Meeting"}'},
+    ]
+
+    def request(req):
+        body = json.loads(req.content)
+        if kind == "ollama":
+            assert body["messages"][2]["tool_calls"][0]["function"]["arguments"] == {"query": "meeting"}
+            assert body["messages"][3]["tool_name"] == "calendar"
+            return httpx.Response(200, json={"message": {"role": "assistant", "content": "Found it"}})
+        if kind == "anthropic":
+            assert body["messages"][1]["content"][0]["type"] == "tool_use"
+            assert body["messages"][2]["content"][0]["tool_use_id"] == "0"
+            return httpx.Response(200, json={"content": [{"type": "text", "text": "Found it"}]})
+        assert body["messages"][3]["tool_call_id"] == "0"
+        return httpx.Response(
+            200, json={"choices": [{"message": {"role": "assistant", "content": "Found it"}}]}
+        )
+
+    result = await Provider(ProviderConfig(kind=kind), httpx.MockTransport(request)).complete(messages, [])
+    assert result.message["content"] == "Found it"
+    assert isinstance(messages[2]["tool_calls"][0]["function"]["arguments"], str)
+
+
 async def test_review_then_execute_exactly_once_and_user_completes(cfg):
     app = create_app(
         cfg,
