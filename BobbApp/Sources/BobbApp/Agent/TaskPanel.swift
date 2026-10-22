@@ -326,6 +326,9 @@ final class TaskController {
     /// it cannot start, in the user's words, or nil.
     @discardableResult
     func start(goal: String, browserURL: URL? = nil, preferredApp: String? = nil) -> String? {
+        guard !ScreenLease.remoteRequested else {
+            return BobbCopy.t("Remote desktop is in use. Disconnect it before starting an agent task.", "Il desktop remoto è in uso. Disconnettilo prima di avviare un’attività dell’agente.")
+        }
         let trimmed = goal.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         guard state.settings.actingEnabled else { return L10n.t(.taskDisabled) }

@@ -142,6 +142,7 @@ final class BobbWorkspace {
 
     private func poll() async {
         guard state.connection.isReady, !busy else { return }; busy = true; defer { busy = false }
+        if ScreenLease.remoteRequested { await refresh(); return }
         for execution in executions where !execution.finished {
             _ = await command("heartbeat", .object(["id": .string(execution.id), "owner": .string(owner)]))
         }
@@ -174,7 +175,7 @@ final class BobbWorkspace {
         DesktopActivity.shared.isIdle
     }
     private func claim(runId: String? = nil, foreground: Bool) async {
-        guard state.settings.actingEnabled, state.settings.bobb.boundaries.canWork() else { return }
+        guard !ScreenLease.remoteRequested, state.settings.actingEnabled, state.settings.bobb.boundaries.canWork() else { return }
         var payload: [String: JSONValue] = ["owner": .string(owner), "desktop_available": .bool(!ScreenLease.remoteRequested && ScreenLease.shared.owner == nil && (foreground || Self.desktopIdle))]
         if let runId { payload["run_id"] = .string(runId) }
         guard let response = await command("claim", .object(payload)), let raw = response.result, raw != .null,
@@ -250,7 +251,7 @@ final class BobbWorkspace {
         (execution.driver as? MCPComputer)?.shutdown()
     }
     func yieldDesktopToRemoteUser() {
-        for execution in executions where !execution.finished && ["desktop", "browser"].contains(execution.run.surface) {
+        for execution in executions where !execution.finished {
             stop(execution)
         }
     }
