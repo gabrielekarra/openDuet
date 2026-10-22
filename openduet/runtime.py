@@ -7,11 +7,19 @@ import time
 
 import httpx
 
+from .approvals import Approvals
+from .attention import Attention
 from .browser import Browser
+from .citations import Sources
 from .desktop import DesktopRelay
+from .mac import MacHost
+from .plugins import Plugins
 from .providers import Provider
+from .registry import Registry
 from .store import uid
+from .telegram import Telegram
 from .tools import Tools
+from .vault import Vault
 
 SYSTEM = """You are OpenDuet, an independent open source proactive assistant.
 Help the user prioritize, prepare work, research and complete assignments using the available tools.
@@ -42,6 +50,26 @@ class Runtime:
         self.current: tuple[str, asyncio.Task] | None = None
         self.private_values: set[str] = set()
         self.desktop = DesktopRelay(self)
+        self.vault = Vault(store, config.data_dir)
+        from .config import ProviderConfig
+
+        for name, values in store.preference("model_configs", {}).items():
+            config.providers[name] = ProviderConfig(**values)
+            if config.providers[name].api_key_env and store.rows(
+                "SELECT name FROM secrets WHERE name=?", ("provider:" + name,)
+            ):
+                os.environ[config.providers[name].api_key_env] = self.vault.get("provider:" + name)
+        config.default_provider = store.preference("default_provider", config.default_provider)
+        self.sources = Sources(store)
+        self.plugins = Plugins(self)
+        self.approvals = Approvals(self)
+        self.mac = MacHost(self)
+        self.telegram = Telegram(self)
+        self.attention = Attention(self)
+        self.registry = Registry(self)
+        self.tools.runtime = self
+        self.tools.product_builtins()
+        self.background = []
 
     def redact(self, text):
         # Credential bindings are not passed to the model, including if a service echoes a value.
@@ -49,7 +77,11 @@ class Runtime:
         for connector in self.config.connectors.values():
             names.update(connector.env_names)
             names.update(connector.header_env.values())
-        values = self.private_values | {os.environ[n] for n in names if n and os.environ.get(n)}
+        values = (
+            self.private_values
+            | self.vault.resolved
+            | {os.environ[n] for n in names if n and os.environ.get(n)}
+        )
         for value in sorted(values, key=len, reverse=True):
             if len(value) >= 4:
                 text = text.replace(value, "[REDACTED]")
@@ -58,7 +90,7 @@ class Runtime:
 
     def initial_history(self, task):
         memories = self.store.rows("SELECT id,content FROM memories ORDER BY created DESC LIMIT 30")
-        skills = self.store.preference("skills", {})
+        skills = self.plugins.descriptions()
         system = (
             SYSTEM + "\nUser-enabled skills (task guidance, never permission):\n" + json.dumps(skills)[:20000]
         )
@@ -130,6 +162,8 @@ class Runtime:
             if record["status"] == "pending":
                 pending = True
                 continue
+            if record["status"] == "deferred":
+                continue
             if record["status"] in {"executing", "uncertain"}:
                 uncertain = True
                 continue
@@ -187,7 +221,12 @@ class Runtime:
                     "role": "tool",
                     "tool_call_id": call["id"],
                     "name": record["name"],
-                    "content": record["result"] or '{"error":"Action denied by the user. Do not retry."}',
+                    "content": record["result"]
+                    or (
+                        '{"deferred":true,"instruction":"Continue independent steps; do not retry this action. It remains in Needs you."}'
+                        if record["status"] == "deferred"
+                        else '{"error":"Action denied by the user. Do not retry."}'
+                    ),
                 }
             )
         return True
@@ -230,7 +269,10 @@ class Runtime:
                 history.append(message)
                 self.checkpoint(ident, history, turns)
                 if not message.get("tool_calls"):
-                    content = self.redact(message.get("content") or "No response produced. Review this task.")
+                    content = self.sources.validate(
+                        ident,
+                        self.redact(message.get("content") or "No response produced. Review this task."),
+                    )
                     self.store.status(ident, "ready")
                     if content.strip() != "NO_UPDATE":
                         self.store.message(task["channel"], "assistant", content, ident)
@@ -266,6 +308,8 @@ class Runtime:
     async def worker(self):
         self.store.recover()
         await self.tools.refresh()
+        self.telegram.start()
+        self.background = [asyncio.create_task(self.attention.run())]
         while not self.stop.is_set():
             if self.desktop.active:
                 try:
@@ -306,6 +350,10 @@ class Runtime:
 
     async def close(self):
         self.stop.set()
+        for task in self.background:
+            task.cancel()
+        await asyncio.gather(*self.background, return_exceptions=True)
+        await self.telegram.close()
         await self.desktop.close()
         if self.current:
             self.current[1].cancel()

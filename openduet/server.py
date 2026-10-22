@@ -115,16 +115,19 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             origin = request.headers.get("origin")
             if origin and urlsplit(origin).netloc != request.headers.get("host"):
                 return JSONResponse({"detail": "Cross-origin access denied"}, status_code=403)
-            if request.url.path != "/api/login":
+            if request.url.path not in {
+                "/api/login",
+                "/api/telegram/session",
+                "/api/connectors/oauth/callback",
+            }:
                 bearer = request.headers.get("authorization", "").removeprefix("Bearer ")
                 if not hmac.compare_digest(bearer, token) and not valid_session(
                     request.cookies.get("openduet")
                 ):
                     return JSONResponse({"detail": "Sign in to OpenDuet"}, status_code=401)
-        if (
-            request.headers.get("content-length", "0").isdigit()
-            and int(request.headers.get("content-length", "0")) > 2_000_000
-        ):
+        if request.headers.get("content-length", "0").isdigit() and int(
+            request.headers.get("content-length", "0")
+        ) > (20_000_000 if request.url.path.startswith(("/api/attachments", "/api/plugins/")) else 2_000_000):
             return JSONResponse({"detail": "Request too large"}, status_code=413)
         response = await call_next(request)
         for key, value in {
@@ -490,5 +493,8 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
     async def import_memory(body: Import):
         return {"ids": [store.memory(m.content) for m in body.memories]}
 
+    from .product_api import install
+
+    install(app, runtime, signature)
     app.mount("/", StaticFiles(directory=Path(__file__).parent / "web", html=True), name="web")
     return app

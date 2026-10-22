@@ -34,6 +34,12 @@ class ConnectorConfig:
     header_env: dict[str, str] = field(default_factory=dict)
     safe_tools: list[str] = field(default_factory=list)
     excluded_tools: list[str] = field(default_factory=list)
+    credential_ref: str = ""
+    poll_tool: str = ""
+    poll_arguments: dict = field(default_factory=dict)
+    event_kind: str = "mail.received"
+    poll_seconds: int = 600
+    cursor_argument: str = ""
 
     def __post_init__(self):
         if bool(self.url) == bool(self.command):
@@ -89,6 +95,10 @@ class Config:
     daily_token_budget: int = 200000
     notify_url: str = ""
     notify_token_env: str = ""
+    public_url: str = ""
+    kev_url: str = ""
+    computer_url: str = ""
+    prototype_port: int = 8767
 
     @classmethod
     def load(cls, path: Path | None = None) -> Config:

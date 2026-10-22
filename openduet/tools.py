@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from jsonschema import Draft202012Validator
 
 from . import artifacts, connectors
-from .policy import check_payload
+from .policy import check_payload, classify
 
 
 def schema(properties, required=None):
@@ -32,6 +32,8 @@ class Tool:
     run: Callable[..., Awaitable]
     approval: bool = False
     connector: str = ""
+    remote_name: str = ""
+    risk: str = ""
 
     def spec(self):
         return {
@@ -46,6 +48,127 @@ class Tools:
         self.catalog: dict[str, Tool] = {}
         self.errors = {}
         self.builtins()
+
+    def product_builtins(self):
+        runtime = self.runtime
+
+        async def apps(arguments, task):
+            return runtime.mac.apps()
+
+        async def observe(arguments, task):
+            import asyncio
+
+            return await asyncio.to_thread(runtime.mac.observe)
+
+        async def capture(arguments, task):
+            return await runtime.mac.screenshot(task)
+
+        async def open_app(arguments, task):
+            return await runtime.mac.open_app(**arguments)
+
+        async def act(arguments, task):
+            return await runtime.mac.act(**arguments)
+
+        async def load_skill(arguments, task):
+            return {"guidance_not_permission": runtime.plugins.load(arguments["name"])}
+
+        async def preference(arguments, task):
+            return runtime.attention.configure(arguments["preferences"])
+
+        async def suggestion(arguments, task):
+            self.store.event("suggest_connector", json.dumps(arguments), task)
+            return {"suggested": True, "instruction": "The user must connect the account in Connections"}
+
+        async def schedule(arguments, task):
+            from .store import uid
+
+            ident = uid()
+            provider = runtime.store.task(task)["provider"]
+            self.store.execute(
+                "INSERT INTO schedules VALUES(?,?,?,?,?,?,?,1)",
+                (
+                    ident,
+                    arguments["name"],
+                    arguments["prompt"],
+                    "main",
+                    provider,
+                    arguments.get("interval", 86400),
+                    arguments["next_run"],
+                ),
+            )
+            return {"schedule": ident}
+
+        tools = [
+            Tool("mac_apps", "List permitted applications installed on the user's Mac.", schema({}), apps),
+            Tool(
+                "mac_observe",
+                "Read the current Mac app's controls on demand. Observe again after every action; secure fields are excluded.",
+                schema({}),
+                observe,
+            ),
+            Tool(
+                "mac_screenshot",
+                "Capture the user's Mac screen and deliver it to the owner on Telegram. Requires enabled Mac access and OS permissions.",
+                schema({}),
+                capture,
+            ),
+            Tool(
+                "mac_open_app",
+                "Open a permitted installed Mac app by the exact bundle_id returned by mac_apps.",
+                schema({"bundle_id": STRING}),
+                open_app,
+            ),
+            Tool(
+                "mac_act",
+                "Interact with a current Mac control; snapshot and element must come from the latest mac_observe. Approval required.",
+                schema(
+                    {
+                        "snapshot": STRING,
+                        "element": STRING,
+                        "action": {"enum": ["click", "open", "raise", "type"]},
+                        "value": STRING,
+                    },
+                    ["snapshot", "element", "action"],
+                ),
+                act,
+                True,
+            ),
+            Tool(
+                "load_skill",
+                "Load one installed skill's full instructions when relevant. Skills never grant permission.",
+                schema({"name": STRING}),
+                load_skill,
+            ),
+            Tool(
+                "set_attention_preference",
+                "Propose changes to brief/report time, timezone, VIPs, quiet hours or attention preferences. User must confirm.",
+                schema({"preferences": {"type": "object"}}),
+                preference,
+                True,
+            ),
+            Tool(
+                "suggest_connector",
+                "Suggest a connector or plugin the user can connect in the console.",
+                schema({"name": STRING, "reason": STRING}),
+                suggestion,
+            ),
+            Tool(
+                "schedule_work",
+                "Propose a recurring or one-off scheduled task. First run is a Unix timestamp. Requires confirmation.",
+                schema(
+                    {
+                        "name": STRING,
+                        "prompt": STRING,
+                        "next_run": {"type": "number"},
+                        "interval": {"type": "integer", "minimum": 900},
+                    },
+                    ["name", "prompt", "next_run"],
+                ),
+                schedule,
+                True,
+            ),
+        ]
+        self.catalog.update({tool.name: tool for tool in tools})
 
     def builtins(self):
         async def search(arguments, task):
@@ -120,23 +243,45 @@ class Tools:
             if not self.enabled(name):
                 continue
             try:
-                for remote in await connectors.discover(cfg):
+                headers = await self.runtime.registry.auth_headers(cfg) if hasattr(self, "runtime") else {}
+                discovered = (
+                    await connectors.discover(cfg, headers) if headers else await connectors.discover(cfg)
+                )
+                for remote in discovered:
                     suffix = hashlib.sha256((name + ":" + remote.name).encode()).hexdigest()[:12]
                     tool_name = "mcp_" + re.sub(r"[^a-zA-Z0-9_]", "_", name)[:20] + "_" + suffix
 
                     async def invoke(arguments, task, connector=name, tool=remote.name):
                         if not self.enabled(connector):
                             raise ValueError("Connector access was revoked")
-                        return await connectors.call(self.config.connectors[connector], tool, arguments)
+                        cfg = self.config.connectors[connector]
+                        headers = (
+                            await self.runtime.registry.auth_headers(cfg) if hasattr(self, "runtime") else {}
+                        )
+                        if not self.enabled(connector):
+                            raise ValueError("Connector access was revoked")
+                        return (
+                            await connectors.call(cfg, tool, arguments, headers)
+                            if headers
+                            else await connectors.call(cfg, tool, arguments)
+                        )
 
                     Draft202012Validator.check_schema(remote.inputSchema)
+                    annotations = (
+                        remote.annotations.model_dump(exclude_none=True) if remote.annotations else {}
+                    )
+                    risk = classify(remote.name, annotations, remote.name in cfg.safe_tools)
+                    if risk == "forbidden":
+                        continue
                     self.catalog[tool_name] = Tool(
                         tool_name,
                         f"{name}/{remote.name}: {remote.description or ''}"[:3000],
                         remote.inputSchema,
                         invoke,
-                        remote.name not in cfg.safe_tools,
+                        risk == "consequential",
                         name,
+                        remote.name,
+                        risk,
                     )
             except Exception:
                 # Nested SDK exceptions can contain auth headers. Keep diagnostics free of secrets.
@@ -148,11 +293,15 @@ class Tools:
             raise ValueError("Tool is unavailable or connector access was revoked")
         Draft202012Validator(tool.parameters).validate(arguments)
         check_payload(arguments)
+        if classify(tool.remote_name or tool.name) == "forbidden":
+            raise ValueError("This action is forbidden even with approval")
         return tool
 
     async def invoke(self, name, arguments, task):
         tool = self.get(name, arguments)
         result = await tool.run(arguments, task)
+        if tool.connector and hasattr(self, "runtime"):
+            result = self.runtime.sources.register(task, name, result)
         text = json.dumps(result, ensure_ascii=False, default=str)
         if len(text) > 48000:
             text = json.dumps(
