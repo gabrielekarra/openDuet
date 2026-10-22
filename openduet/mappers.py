@@ -33,6 +33,7 @@ def normalize(raw, kind, connector):
             message_id=headers.get("message-id", raw.get("id", "")),
             in_reply_to=headers.get("in-reply-to", ""),
             thread_id=raw.get("threadId", ""),
+            to=headers.get("to", ""),
         )
         item.setdefault("body", raw.get("snippet", ""))
         body = raw["payload"].get("body", {}).get("data", "")
@@ -46,6 +47,7 @@ def normalize(raw, kind, connector):
         labels = raw.get("labelIds", [])
         item["kind"] = "mail.sent" if "SENT" in labels else kind
         payload["unread"] = "UNREAD" in labels
+        payload["labels"] = labels
     if "threadId" in raw:
         payload.setdefault("thread_id", raw["threadId"])
     if kind.startswith("calendar."):

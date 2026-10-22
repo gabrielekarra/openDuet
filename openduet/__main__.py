@@ -1,6 +1,5 @@
 import argparse
 import asyncio
-import os
 from pathlib import Path
 
 import uvicorn
@@ -12,7 +11,6 @@ from .server import create_app
 def main():
     parser = argparse.ArgumentParser(description="OpenDuet self-hosted assistant")
     parser.add_argument("--config", type=Path, help="Path to openduet.toml")
-    parser.add_argument("--parent-pid", type=int, help="Exit when the owning native app exits")
     args = parser.parse_args()
     config = Config.load(args.config)
     # One worker owns the browser and task queue; multiple workers are intentionally unsupported.
@@ -27,23 +25,7 @@ def main():
         )
     )
 
-    async def serve():
-        async def watch_parent():
-            while True:
-                if os.getppid() != args.parent_pid:
-                    server.should_exit = True
-                    return
-                await asyncio.sleep(0.5)
-
-        monitor = asyncio.create_task(watch_parent()) if args.parent_pid else None
-        try:
-            await server.serve()
-        finally:
-            if monitor:
-                monitor.cancel()
-                await asyncio.gather(monitor, return_exceptions=True)
-
-    asyncio.run(serve())
+    asyncio.run(server.serve())
 
 
 if __name__ == "__main__":

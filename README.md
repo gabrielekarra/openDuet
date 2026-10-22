@@ -1,155 +1,105 @@
+<p align="center"><img src="openduet/web/brand/social-preview.png" alt="OpenDuet glasses" width="640"></p>
+
 # OpenDuet
 
-**Your work, moving forward. Your models, your server, your call.**
+Your own proactive assistant, on Telegram. Open source, self-hosted, and usable
+with local models as well as hosted APIs.
 
-OpenDuet (formerly Bobb) is an independent, MIT-licensed proactive assistant.
-Message it, give it a task, or schedule a morning brief. It prepares work,
-uses the tools you connect, and asks you to review external actions. Choose a
-local model or a remote provider for each task.
+Give it work in a message or a voice note. It reads connected sources, prepares
+reply drafts and meeting notes, creates documents, spreadsheets, slide decks and
+dashboards, and asks you to review external actions. Kev makes typed attention
+decisions independently of the model you choose for writing and tool use.
 
-This is a **developer preview**, inspired by the publicly documented Claude
-Duet workflows. It is not affiliated with Anthropic and is not a complete
-replacement for its proprietary services. The [research and capability matrix](docs/CLAUDE-DUET-RESEARCH.md)
-records the sources, implemented paths and remaining gaps without claiming
-unverified parity.
+On a Mac, enable on-demand application access: ask the agent to open an installed
+app, inspect its controls, interact with it after approval, or send a screenshot
+on Telegram. The Mac must be awake and OpenDuet running. No screen-sharing server
+is needed. A separate isolated browser handles websites without a connector.
 
-## Two ways to use OpenDuet
+## Run locally
 
-| | Self-hosted workspace | Native Mac app |
-| --- | --- | --- |
-| Interface | Responsive web app; add to your phone's home screen | macOS menu bar, hotkeys and native panels |
-| Models | OpenAI-compatible servers, Ollama native API, Anthropic API; optional text tool protocol | On-device MLX generation and Kev decisions |
-| Tools | Your stdio / Streamable HTTP MCP servers; optional dedicated Chromium | Apple Mail, Calendar, Reminders, Contacts, Messages, files, Shortcuts, browser and MCP |
-| Background work | Runs while the server is on, independently of the client | Mac must remain awake and signed in |
-| Data | SQLite and browser profile on your server; selected remote providers receive task context | Local memory and inference; engine network isolation retained |
-
-The two runtimes currently have separate data stores. The Swift modules
-`BobbApp` / `BobbCore`, the `bobbd` daemon, bundle id and existing Mac data paths
-retain their names to preserve compatibility. The shipped app is **OpenDuet.app**.
-
-## Start the workspace
-
-Python 3.12+ and [uv](https://docs.astral.sh/uv/) are required. Start your model
-server separately. The default configuration points at Ollama on this machine;
-pull a model you want to use before sending a task.
+Python 3.12+ and [uv](https://docs.astral.sh/uv/) are required.
 
 ```sh
-git clone https://github.com/gabrielekarra/openDuet.git openduet
-cd openduet
+git clone https://github.com/gabrielekarra/openDuet.git
+cd openDuet
 uv sync --locked
 cp openduet.toml.example openduet.toml
-# Generate and keep a private access token, then set OPENDUET_TOKEN in your shell:
-python -c 'import secrets; print(secrets.token_urlsafe(32))'
-export OPENDUET_TOKEN='replace-with-your-generated-token'
-uv run --locked openduet --config openduet.toml
+export OPENDUET_TOKEN="$(openssl rand -hex 32)"
+uv run openduet --config openduet.toml
 ```
 
-Open **http://127.0.0.1:8765** and sign in with that token. Configure a model in
-`openduet.toml` before sending a message. No paid AI account is needed for a
-local model. The token protects the workspace even on localhost.
+Open <http://127.0.0.1:8765>, sign in with your workspace token, and follow the
+Telegram setup page. Create your own bot with @BotFather, paste its token, then
+open the single-use, ten-minute pairing link in your private Telegram account.
+Only the paired owner can issue commands. Bot tokens are encrypted at rest.
 
-| Model server | `kind` | `base_url` |
-| --- | --- | --- |
-| Ollama compatibility API | `openai` | `http://127.0.0.1:11434/v1` |
-| Ollama native API | `ollama` | `http://127.0.0.1:11434` |
-| LM Studio | `openai` | `http://127.0.0.1:1234/v1` |
-| llama.cpp | `openai` | `http://127.0.0.1:8080/v1` |
-| vLLM, MLX server, hosted compatible APIs | `openai` | Your server's compatible base URL |
-| Anthropic | `anthropic` | `https://api.anthropic.com/v1` |
+Configure your model in Settings. Ollama, LM Studio, llama.cpp, vLLM and other
+OpenAI-compatible servers work without a hosted API key. Native Ollama and
+Anthropic adapters are also included. Models without native tool calls can use
+the validated text protocol. Model reasoning, context length and tool/vision
+capabilities still determine what an assignment can accomplish.
 
-Use the exact model id advertised by your server. Set `api_key_env` only for
-services that require a credential. `tools = false` uses a validated JSON text
-protocol for models without native function calling. Protocol compatibility
-does not establish a model's ability to perform a task: small models, context
-windows and provider-specific restrictions still matter.
-
-## What is implemented
-
-- **Home & channels:** durable conversations, named channels, per-task model
-  selection, chat search, shared reviewed memory, memory import/export and deletion.
-- **Tasks & approvals:** persistent queue, checked tool arguments, exact action
-  review, one-use approvals, cancellation, explicit recovery and user-only completion.
-  Read/preparation calls in a batch continue while another call awaits approval.
-- **Routines:** scheduled briefs, connected-account check-ins, meeting preparation
-  and follow-ups; no overlapping copies of the same pending assignment. Accounts
-  must be connected, and the service must remain running.
-- **Make:** real DOCX documents, XLSX data workbooks and PPTX decks, plus Markdown,
-  CSV, text and downloadable HTML dashboards. Text artifacts can be edited as new
-  versions. Generated HTML is downloaded rather than run in the signed-in app.
-- **Connections:** MCP discovery and tools over stdio and Streamable HTTP. Configure
-  Gmail, Calendar, Drive, Slack, Stripe or any other compatible server you authorize.
-  Disconnect takes effect before the next call. No accounts are preconnected.
-- **Skills:** reusable instructions in Settings. Instructions do not grant powers.
-  The [small business skill](skills/small-business/SKILL.md) covers invoice reminders,
-  payroll preparation, contract drafts and meeting briefs using your connected data.
-- **Browser:** optional dedicated Chromium profile, exact HTTPS host allowlist,
-  reviewed interactions and a separate private login form. Deploy on your own VM
-  for a separate computer; OpenDuet does not provision cloud VMs for you.
-- **Voice & notifications:** optional local Whisper transcription, local browser
-  speech voices where available, in-app/browser notifications and an optional
-  notification relay for alerts after the client closes.
-- **Usage:** turn and daily token limits, provider token counts or documented
-  estimates, and a ledger that includes background tasks.
-
-See [setup, deployment and boundaries](docs/SELF-HOSTING.md).
-
-## Access your computer remotely
-
-Open **Computers** in the workspace to view and control a configured desktop
-from another computer or phone. The native Mac app can start the authenticated
-remote service automatically while it is open: enable **Remote desktop access**
-in its General settings, enable macOS Screen Sharing, and connect over your
-private network or HTTPS. OpenDuet yields the screen before passing control.
-
-See [remote access setup](docs/REMOTE-ACCESS.md) for Mac, Windows/Linux VNC servers,
-agent VMs, private connectivity and the required local permissions. The computer
-must be awake; this does not wake a powered-off machine or bypass its login.
-
-## Run on a server
+On macOS, install the bridge and enable it in Settings:
 
 ```sh
-# First set a private OPENDUET_TOKEN in your environment.
-# Edit openduet.docker.toml for your model endpoint.
-docker compose up --build -d
+uv sync --locked --extra mac
+uv run --no-sync openduet --config openduet.toml
 ```
 
-Docker publishes only on the host's loopback interface. For phone/remote access,
-use your own authenticated private network or an HTTPS reverse proxy. Keep one
-service instance per data directory. Back up the named volume, which contains
-private conversations, memory and browser sessions. A local model on a laptop
-cannot respond while that laptop is off; run the model on the server as well if
-you need continuous local inference.
+Grant Accessibility and Screen Recording to the Python/terminal running
+OpenDuet. Send `/apps`, `/screen`, or a natural-language request through Telegram.
+See [Mac access](docs/REMOTE-ACCESS.md).
 
-## Native Mac app
-
-The existing Apple silicon app remains available with its original automation,
-local memory, proactive screen context and offline voice features. See the
-[native Mac guide](docs/NATIVE-MAC.md) for requirements, model downloads, permissions,
-workflow evidence and packaging.
+## Always-on server
 
 ```sh
-scripts/run.sh
-# Self-contained macOS app/DMG:
-scripts/package.sh
+cp .env.example .env
+# Replace both placeholder tokens with independently generated random secrets.
+docker compose up -d --build
 ```
 
-## Development
+Compose starts the workspace, isolated Chromium computer, enforcing egress proxy,
+a separate prototype origin and the Kev CPU service. SQLite and connector/provider credentials stay
+outside the computer container. LibreOffice recalculates generated financial
+models and renders slide previews in the workspace image.
 
-```sh
-uv sync --locked --extra dev
-uv run pytest tests/runtime -q
-uv run ruff check --select E4,E7,E9,F,I,UP openduet tests/runtime
-# Existing native components:
-(cd BobbApp && swift test -j 1)
-(cd bobbd && uv sync --frozen && uv run pytest -q -m 'not slow')
-```
+[Self-hosting](docs/SELF-HOSTING.md) covers local models, HTTPS, Kev model setup,
+voice input, persistent volumes, backup and the VPS cloud-init template. You can
+use Telegram with an outbound connection only. A public HTTPS origin is needed
+only for OAuth callbacks, payment authorization webhooks or the optional Mini App.
 
-[Contributions](CONTRIBUTING.md) are welcome. Native execution still requires
-macOS acceptance tests; protocol fixtures do not prove real delivery or task
-quality. No paid provider, real inbox or payment was used to validate this preview.
+## Included workflows
 
-## License
+- Daily morning brief, optional evening report, quiet hours, VIP/never rules,
+  confidence floors, interruption caps and reversible learning.
+- Durable tasks, shared channels/memory, exact-payload approvals, editing,
+  deferral, expiry, receipts and uncertain-outcome review.
+- Telegram messages, bounded photos/documents/audio, local transcription,
+  optional vision models, file delivery, revision replies and quick choices.
+- Versioned DOCX/PDF/PPTX/XLSX deliverables, live spreadsheet formulas,
+  declarative dashboards and sandboxed web prototypes.
+- Curated connector directory, MCP discovery, OAuth with PKCE, declarative
+  Agent Skills/plugins and business workflow recipes.
+- Encrypted secret storage, optional dedicated password managers and optional
+  purchase-scoped Stripe Issuing cards for eligible issuer accounts.
 
-[MIT](LICENSE), copyright Gabriele Karra and contributors. Third-party code,
-models and speech components retain their [own licenses](THIRD_PARTY_NOTICES.md).
-Historical versions remain under the terms distributed with those versions.
+Details: [architecture](docs/ARCHITECTURE.md), [proactivity](docs/PROACTIVITY.md),
+[connectors](docs/CONNECTORS.md), [plugins](docs/PLUGINS.md),
+[Make](docs/MAKE.md), [security boundaries](docs/SECURITY.md).
+
+## Validation and scope
+
+This is a developer preview. Automated tests use disposable bot/provider/issuer
+transports; real Chromium and LibreOffice checks exercise their actual runtimes.
+See the [issue acceptance tracker](docs/IMPLEMENTATION-TRACKER.md) for evidence
+and outstanding live-account/hardware/model checks. The fixture Kev benchmark
+checks adapters and policy; it does not measure model accuracy. A separate
+scheduled/manual workflow runs the pinned real model.
+
+OpenDuet is independent of Anthropic. The [Claude Duet research](docs/CLAUDE-DUET-RESEARCH.md)
+links public sources and records capability differences, including proprietary
+Link/Shop Pay services that require separate provider agreements. The native
+predecessor is preserved under `bobb-mac-final`; current setup and
+[migration](docs/MIGRATION.md) use the portable runtime.
+
+MIT licensed. [Third-party notices](THIRD_PARTY_NOTICES.md).

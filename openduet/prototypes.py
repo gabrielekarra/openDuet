@@ -40,4 +40,6 @@ def create_app(directory=None):
 def main():
     import uvicorn
 
-    uvicorn.run(create_app(), host="0.0.0.0", port=8767, access_log=False)
+    uvicorn.run(
+        create_app(), host=os.environ.get("OPENDUET_PROTOTYPE_HOST", "127.0.0.1"), port=8767, access_log=False
+    )

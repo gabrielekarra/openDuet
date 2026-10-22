@@ -4,12 +4,13 @@ import asyncio
 import hashlib
 import hmac
 import json
+import shutil
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, HTTPException, Request, WebSocket
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -90,7 +91,18 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
     def valid_session(value):
         try:
             expiry, sig = value.split(".", 1)
-            return int(expiry) > time.time() and hmac.compare_digest(sig, signature(expiry))
+            parts = expiry.split(":")
+            if len(parts) > 1:
+                owner = runtime.telegram.settings()
+                if (
+                    len(parts) != 4
+                    or parts[1] != "tg"
+                    or not owner.get("paired")
+                    or parts[2] != str(owner.get("owner_id"))
+                    or parts[3] != owner.get("session_nonce", "")
+                ):
+                    return False
+            return int(parts[0]) > time.time() and hmac.compare_digest(sig, signature(expiry))
         except (ValueError, AttributeError):
             return False
 
@@ -130,6 +142,26 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
                     request.cookies.get("openduet")
                 ):
                     return JSONResponse({"detail": "Sign in to OpenDuet"}, status_code=401)
+                if (
+                    not hmac.compare_digest(bearer, token)
+                    and ":tg:" in request.cookies.get("openduet", "")
+                    and request.method != "GET"
+                ):
+                    allowed = (
+                        request.url.path.startswith(("/api/tasks/", "/api/reviews/", "/api/calls/"))
+                        or (
+                            request.url.path.startswith("/api/artifacts/")
+                            and request.url.path.endswith(("/revise", "/versions"))
+                        )
+                        or request.url.path == "/api/logout"
+                    )
+                    if not allowed:
+                        return JSONResponse(
+                            {
+                                "detail": "Open the signed-in console to change connections, credentials or settings"
+                            },
+                            status_code=403,
+                        )
         if request.headers.get("content-length", "0").isdigit() and int(
             request.headers.get("content-length", "0")
         ) > (20_000_000 if request.url.path.startswith(("/api/attachments", "/api/plugins/")) else 2_000_000):
@@ -189,7 +221,6 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
 
     @app.post("/api/logout")
     async def logout():
-        await runtime.desktop.close()
         result = JSONResponse({"ok": True})
         result.delete_cookie("openduet")
         return result
@@ -206,6 +237,7 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
                 "SELECT * FROM calls WHERE status IN ('pending','uncertain') ORDER BY created"
             ),
             "artifacts": store.rows("SELECT * FROM artifacts ORDER BY created DESC LIMIT 100"),
+            "task_progress": store.rows("SELECT * FROM task_progress ORDER BY updated DESC LIMIT 100"),
             "schedules": store.rows("SELECT * FROM schedules ORDER BY next_run"),
             "memories": store.rows("SELECT * FROM memories ORDER BY created DESC"),
             "providers": {
@@ -221,11 +253,14 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             "default_provider": config.default_provider,
             "voice": bool(config.voice_model),
             "voice_model": config.voice_model,
-            "computers": {key: {"name": c.name, "enabled": c.enabled} for key, c in config.computers.items()},
-            "remote_desktop_active": runtime.desktop.active,
             "connectors": {
-                n: {"enabled": runtime.tools.enabled(n), "error": runtime.tools.errors.get(n)}
-                for n in config.connectors
+                n: {
+                    "enabled": runtime.tools.enabled(n),
+                    "error": runtime.tools.errors.get(n),
+                    "poll_tool": value.poll_tool,
+                    "poll_seconds": value.poll_seconds,
+                }
+                for n, value in config.connectors.items()
             },
             "browser": {
                 "enabled": config.browser,
@@ -238,31 +273,12 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
                 "skills": store.preference("skills", {}),
             },
             "usage": store.usage(),
+            "usage_by_kind": store.rows(
+                "SELECT kind,input,output FROM usage_workstream WHERE day=?",
+                (time.strftime("%Y-%m-%d", time.gmtime()),),
+            ),
             "daily_token_budget": config.daily_token_budget,
         }
-
-    @app.post("/api/computers/disconnect")
-    async def disconnect_desktop():
-        await runtime.desktop.close()
-        return {"ok": True}
-
-    @app.websocket("/api/computers/{key}/desktop")
-    async def remote_desktop(socket: WebSocket, key: str):
-        origin = urlsplit(socket.headers.get("origin", ""))
-        expected_scheme = "https" if socket.url.scheme == "wss" else "http"
-        cookie = socket.cookies.get("openduet")
-        if (
-            origin.scheme != expected_scheme
-            or origin.netloc != socket.headers.get("host")
-            or not valid_session(cookie)
-        ):
-            await socket.close(code=1008, reason="Sign in from this workspace to open a desktop")
-            return
-        computer = config.computers.get(key)
-        if not computer or not computer.enabled:
-            await socket.close(code=1008, reason="Computer is not configured or is disabled")
-            return
-        await runtime.desktop.connect(socket, key, computer, lambda: valid_session(cookie))
 
     @app.get("/api/messages")
     async def messages(channel: str = "main", before: float = 1e20):
@@ -278,7 +294,13 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
     @app.post("/api/messages", status_code=202)
     async def send(body: Message):
         channel_exists(body.channel)
-        return {"task": store.new_task(body.channel, body.content, provider_name(body.provider))}
+        task = store.new_task(body.channel, body.content, provider_name(body.provider))
+        owner = runtime.telegram.settings()
+        if owner.get("paired"):
+            store.execute(
+                "INSERT INTO task_surfaces VALUES(?,'telegram',?,NULL,NULL,NULL)", (task, owner["owner_chat"])
+            )
+        return {"task": task}
 
     @app.get("/api/search")
     async def search(q: str):
@@ -296,9 +318,23 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
         files = store.rows(
             "SELECT filename FROM artifacts WHERE task IN (SELECT id FROM tasks WHERE channel=?)", (ident,)
         )
+        attachments = store.rows(
+            "SELECT filename FROM attachments WHERE task IN (SELECT id FROM tasks WHERE channel=?)", (ident,)
+        )
+        prototypes = store.rows(
+            "SELECT id FROM artifacts WHERE format='webapp' AND task IN (SELECT id FROM tasks WHERE channel=?)",
+            (ident,),
+        )
         store.delete_channel(ident)
         for file in files:
             (config.data_dir / "artifacts" / file["filename"]).unlink(missing_ok=True)
+            shutil.rmtree(
+                config.data_dir / "artifacts" / "previews" / Path(file["filename"]).stem, ignore_errors=True
+            )
+        for file in attachments:
+            (config.data_dir / "attachments" / file["filename"]).unlink(missing_ok=True)
+        for item in prototypes:
+            shutil.rmtree(config.data_dir / "prototypes" / item["id"], ignore_errors=True)
         return {"ok": True}
 
     @app.post("/api/tasks/{ident}/{action}")

@@ -1,28 +1,29 @@
-# Contributing to OpenDuet
+# Contributing
 
-OpenDuet welcomes fixes, evaluations, accessibility improvements, translations
-and real workflow reports under the [MIT License](LICENSE). Contributions use
-the same license. Submit only work you are authorized to license; identify
-third-party material and preserve its notices.
+OpenDuet's original code uses the MIT license. Preserve licenses and provenance
+for third-party materials. Use synthetic or explicitly consented test data;
+never commit accounts, keys, model weights, private documents or runtime state.
 
-The portable service lives in `openduet/`. Run `uv sync --extra dev` and
-`uv run pytest tests/runtime`. The Mac app and isolated local daemon retain
-their existing directories and internal identifiers for compatibility.
+Read the [architecture](docs/ARCHITECTURE.md), [security boundaries](docs/SECURITY.md)
+and [issue acceptance tracker](docs/IMPLEMENTATION-TRACKER.md). The portable
+runtime is in `openduet/`; the personal-specialist research package is separate.
+Native predecessor history is under `bobb-mac-final`.
 
-Read [README](README.md), [the capability guide](docs/BOBB.md) and
-[the product review](docs/PRODUCT-REVIEW-2026-10-01.md). Use a branch and pull
-request with the problem, resulting behavior and relevant validation. Keep app
-exclusions and action boundaries ahead of side effects. Keep daemon network
-isolation tests. Add meaningful regression tests for behavior changes.
+```sh
+uv sync --locked --extra dev --extra browser
+uv run --no-sync pytest tests/runtime -q
+uv run --no-sync ruff check --select E4,E7,E9,F,I,UP openduet tests/runtime scripts
+uv run --no-sync openduet-kev-eval
+```
 
-For proactive suggestions, test both useful interventions and deliberate
-silence. Include completed work, ambiguous requests, adversarial screen text,
-pausing observation, revoked access, deleted sources and restart recovery.
-Model confidence is not evidence of correctness; record actual outputs and
-limits. Use synthetic or explicitly consented examples, never client data.
+Run the disposable browser fixture and `tests/runtime/browser_smoke.py` for UI
+changes. It exercises bot pairing, tasks, Make and approvals and captures 28
+light/dark, desktop/mobile screenshots. `scripts/check_office.py` requires real
+LibreOffice and Poppler. Model changes need real benchmark and backend parity
+reports, not the synthetic fixture score.
 
-Do not commit accounts, API keys, SSH identities, model weights, macOS images,
-personal data or runtime databases. Run relevant checks from
-[CI](.github/workflows/ci.yml). New UI uses shared Liquid Glass components and
-respects reduced transparency. Report app/version, expected outcome and the
-observed failure when reporting an automation problem.
+Keep approvals exact and one-use, silence deliberate and explainable, and
+credentials outside prompts/logs. Verify revoked access, hostile retrieved text,
+restarts, expired reviews and uncertain outcomes when changing execution paths.
+UI changes should retain the existing glasses mark, keyboard focus, 44px targets,
+responsive layouts, reduced-motion support and clear English/Italian copy.

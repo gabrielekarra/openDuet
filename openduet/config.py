@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import ipaddress
 import os
 import tomllib
 from dataclasses import dataclass, field
@@ -59,27 +58,6 @@ class ConnectorConfig:
 
 
 @dataclass
-class ComputerConfig:
-    name: str = "My computer"
-    host: str = "127.0.0.1"
-    port: int = 5900
-    tls: bool = False
-    ca_file: str = ""
-    screen_lock: str = ""
-    enabled: bool = True
-
-    def __post_init__(self):
-        if not self.host or "/" in self.host or "@" in self.host or not 1 <= self.port <= 65535:
-            raise ValueError("Computer requires a host and a valid TCP port")
-        try:
-            loopback = ipaddress.ip_address(self.host).is_loopback
-        except ValueError:
-            loopback = self.host == "localhost"
-        if not loopback and not self.tls:
-            raise ValueError("Non-loopback VNC requires TLS; use a local SSH tunnel for plain VNC")
-
-
-@dataclass
 class Config:
     data_dir: Path = field(default_factory=lambda: Path(".runtime/openduet"))
     host: str = "127.0.0.1"
@@ -87,8 +65,7 @@ class Config:
     default_provider: str = "local"
     providers: dict[str, ProviderConfig] = field(default_factory=lambda: {"local": ProviderConfig()})
     connectors: dict[str, ConnectorConfig] = field(default_factory=dict)
-    computers: dict[str, ComputerConfig] = field(default_factory=dict)
-    remote_session_seconds: int = 3600
+    skills_dir: str = "skills"
     browser: bool = False
     browser_hosts: list[str] = field(default_factory=list)
     voice_model: str = ""
@@ -125,20 +102,20 @@ class Config:
         raw = tomllib.loads(path.read_text()) if path else {}
         providers = {n: ProviderConfig(**v) for n, v in raw.pop("providers", {}).items()}
         connectors = {n: ConnectorConfig(**v) for n, v in raw.pop("connectors", {}).items()}
-        computers = {n: ComputerConfig(**v) for n, v in raw.pop("computers", {}).items()}
+        if raw.pop("computers", None) or raw.pop("remote_session_seconds", None):
+            raise ValueError(
+                "VNC was retired. Enable on-demand Mac access in Settings instead; see docs/REMOTE-ACCESS.md"
+            )
         cfg = cls(
             **raw,
             **({"providers": providers} if providers else {}),
             connectors=connectors,
-            computers=computers,
         )
         cfg.data_dir = Path(cfg.data_dir).expanduser().resolve()
         if cfg.default_provider not in cfg.providers:
             raise ValueError("default_provider does not name a configured provider")
         if cfg.max_turns < 1 or cfg.daily_token_budget < 1:
             raise ValueError("Turn and token budgets must be positive")
-        if not 60 <= cfg.remote_session_seconds <= 28800:
-            raise ValueError("Remote session duration must be between 60 seconds and eight hours")
         return cfg
 
     def token(self) -> str:

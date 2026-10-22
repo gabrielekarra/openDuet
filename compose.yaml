@@ -17,6 +17,7 @@ services:
     depends_on:
       computer: {condition: service_healthy}
       prototypes: {condition: service_healthy}
+      kev: {condition: service_healthy}
     healthcheck:
       test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"]
       interval: 30s
@@ -34,6 +35,7 @@ services:
     environment:
       OPENDUET_COMPUTER_TOKEN: ${OPENDUET_COMPUTER_TOKEN:?Set a separate computer token}
       OPENDUET_EGRESS_PROXY: http://egress:8890
+      OPENDUET_COMPUTER_HOST: 0.0.0.0
     volumes: ["computer-data:/computer"]
     networks: [computer]
     depends_on: [egress]
@@ -49,6 +51,7 @@ services:
   egress:
     build: .
     command: ["/app/.venv/bin/openduet-egress"]
+    environment: {OPENDUET_PROXY_HOST: 0.0.0.0}
     restart: unless-stopped
     networks: [computer, outbound]
     cap_drop: [ALL]
@@ -57,6 +60,7 @@ services:
   prototypes:
     build: .
     command: ["/app/.venv/bin/openduet-prototypes"]
+    environment: {OPENDUET_PROTOTYPE_HOST: 0.0.0.0}
     restart: unless-stopped
     volumes: ["prototype-data:/prototypes:ro"]
     ports: ["127.0.0.1:8767:8767"]
@@ -70,16 +74,21 @@ services:
       retries: 5
     init: true
   kev:
-    profiles: [kev]
     build:
       context: .
       args: {OPENDUET_KEV: "true"}
     command: ["/app/.venv/bin/openduet-kev"]
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8768/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
     environment:
       OPENDUET_KEV_MODELS: /models
       OPENDUET_KEV_BACKEND: torch
       OPENDUET_KEV_DEVICE: cpu
+      OPENDUET_KEV_HOST: 0.0.0.0
     volumes: ["kev-models:/models"]
     networks: [outbound]
     cap_drop: [ALL]

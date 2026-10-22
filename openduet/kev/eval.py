@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import platform
 import resource
 import statistics
@@ -105,6 +106,9 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
             readings.append(
                 {
                     "question": answer.name,
+                    "kind": case["kind"],
+                    "profession": case["profession"],
+                    "language": case["language"],
                     "correct": answer.value == expected,
                     "confidence": answer.confidence,
                     "brier": brier,
@@ -128,12 +132,20 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
         "backend": backend,
         "synthetic_adapter_fixture": backend == "fixture",
         "device": device,
+        "dtype": os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
         "platform": platform.platform(),
         "cases": results,
         "overall": metrics(readings),
         "per_question": {
             name: metrics([r for r in readings if r["question"] == name])
             for name in sorted({r["question"] for r in readings})
+        },
+        **{
+            "per_" + group: {
+                key: metrics([r for r in readings if r[group] == key])
+                for key in sorted({r[group] for r in readings})
+            }
+            for group in ["kind", "profession", "language"]
         },
         "interrupt_precision": tp / len(predicted) if predicted else 1.0,
         "interrupt_recall": tp / len(actual) if actual else 1.0,

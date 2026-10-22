@@ -2,7 +2,7 @@
 
 No server, client SDK, API key or generation is involved. The encoder, hybrid
 backbone and pointer head are Kev's upstream inference code (vendored with its
-license). Qwen's chat model is used only by generation.py. Bobb's confidence
+license). The work model runs separately. OpenDuet's confidence
 contract remains the selected answer's probability, rather than TypeSafe's
 separate relative-to-uniform confidence metric.
 """
@@ -43,7 +43,7 @@ def _value(question, label):
 def record_for(context, questions, *, system=""):
     records, owners = [], []
     for index, question in enumerate(questions):
-        # Kev Noul uses no/yes in this order. Score labels are kept at Bobb's
+        # Kev Noul uses no/yes in this order. Score labels are kept at OpenDuet's
         # actual lo..hi values; the head points to options, not label tokens.
         options = ["no", "yes"] if isinstance(question, Bool) else list(question.labels)
         if not 1 <= len(options) <= 255:
@@ -122,7 +122,7 @@ class KevDecisionBackend:
         metadata = torch.load(head_path, map_location="cpu", weights_only=True)
         config = json.loads((path / "config.json").read_text())
         if config.get("quantization", {}).get("bits") != 8:
-            raise ValueError("Bobb's default Kev checkpoint must be the merged 8-bit model")
+            raise ValueError("OpenDuet's default Kev checkpoint must be the merged 8-bit model")
         self.tokenizer = AutoTokenizer.from_pretrained(path, local_files_only=True)
         lm = load_model(path)[0]
         # Consumer memory budget: bounded prefill and one question branch at

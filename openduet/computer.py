@@ -25,6 +25,13 @@ def public_url(value, *, resolve_names=True):
         or parsed.port not in {None, 80, 443}
     ):
         raise ValueError("Only public HTTP(S) websites on standard ports are supported")
+    blocked = {
+        host.strip().lower()
+        for host in os.environ.get("OPENDUET_COMPUTER_DENY_HOSTS", "").split(",")
+        if host.strip()
+    }
+    if any(parsed.hostname == host or parsed.hostname.endswith("." + host) for host in blocked):
+        raise ValueError("This site is denied by the operator")
     # In the internal Docker network only the proxy has external DNS/egress.
     # It validates every answer and pins the connection IP, preventing rebinding.
     if not resolve_names:
@@ -251,12 +258,32 @@ class ComputerClient:
             return response.json()
 
     async def run(self, **arguments):
+        if arguments.get("action") == "upload":
+            import re
+
+            ident = arguments.pop("file_id", "")
+            if not re.fullmatch(r"[0-9a-f]{32}", ident):
+                raise ValueError("Choose an existing artifact or attachment id")
+            rows = self.runtime.store.rows("SELECT filename FROM artifacts WHERE id=?", (ident,))
+            folder = "artifacts"
+            if not rows:
+                rows = self.runtime.store.rows("SELECT filename FROM attachments WHERE id=?", (ident,))
+                folder = "attachments"
+            if not rows:
+                raise ValueError("Bridge file not found")
+            path = self.runtime.config.data_dir / folder / rows[0]["filename"]
+            if path.stat().st_size > 20_000_000:
+                raise ValueError("Upload exceeds the 20 MB bridge limit")
+            arguments.update(filename=path.name, content=base64.b64encode(path.read_bytes()).decode())
         result = await self.request("/tools", arguments)
         if result.get("content"):
             from .attachments import ingest
 
             return await ingest(
-                self.runtime, base64.b64decode(result["content"], validate=True), result["name"]
+                self.runtime,
+                base64.b64decode(result["content"], validate=True),
+                result["name"],
+                inbound=False,
             )
         if result.get("url"):
             from types import SimpleNamespace
@@ -276,4 +303,9 @@ class ComputerClient:
 def main():
     import uvicorn
 
-    uvicorn.run(create_service(), host="0.0.0.0", port=8769, access_log=False)
+    uvicorn.run(
+        create_service(),
+        host=os.environ.get("OPENDUET_COMPUTER_HOST", "127.0.0.1"),
+        port=8769,
+        access_log=False,
+    )

@@ -19,9 +19,9 @@ document.querySelector('#brand-mark').innerHTML=mark();
 document.querySelector('#mobile-mark').innerHTML=mark();
 window.addEventListener('unhandledrejection',event=>{event.preventDefault();toast(event.reason?.message||t('Something needs attention.','Qualcosa richiede attenzione.'));});
 function navigation(){
-  const primary=['telegram','tasks','make','proactivity'];
+  const primary=miniapp?['tasks','make']:['telegram','tasks','make','proactivity'];
   const button=([key,label])=>`<button type="button" data-view="${key}" class="${primary.includes(key)?'primary-view':'extra-view'}" aria-current="${key===state.view?'page':'false'}"><span class="nav-dot" aria-hidden="true"></span>${escape(label)}</button>`;
-  document.querySelector('#navigation').innerHTML=Object.entries(labels()).map(button).join('')+`<button id="more-button" type="button" aria-label="${t('More views','Altre viste')}" aria-haspopup="dialog">•••<span>${t('More','Altro')}</span></button>`;
+  document.querySelector('#navigation').innerHTML=Object.entries(labels()).filter(([key])=>!miniapp||primary.includes(key)).map(button).join('')+`<button id="more-button" type="button" aria-label="${t('More views','Altre viste')}" aria-haspopup="dialog">•••<span>${t('More','Altro')}</span></button>`;
   document.querySelector('#more-links').innerHTML=Object.entries(labels()).filter(([key])=>!primary.includes(key)).map(button).join('');
 }
 
@@ -30,7 +30,9 @@ export async function refresh(force=true){
   try {
     const [data,product,messages]=await Promise.all([api('/api/state'),api('/api/product'),api('/api/messages?channel='+encodeURIComponent(state.channel))]);
     state.data=data;state.product=product;state.messages=messages;
-    if(!product.proactivity.configured){await api('/api/proactivity',{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,language:navigator.language.startsWith('it')?'it':'en'});}
+    document.documentElement.dataset.onboarding=String(!product.telegram.paired&&!miniapp);
+    if(!product.telegram.paired&&!miniapp)state.view='telegram';
+    if(!miniapp&&!product.proactivity.configured){await api('/api/proactivity',{timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,language:navigator.language.startsWith('it')?'it':'en'});}
     document.documentElement.lang=localStorage.getItem('language')||(navigator.language.startsWith('it')?'it':'en');
     document.querySelectorAll('.brand .glasses,.mobile-brand .glasses').forEach(mark=>mark.classList.toggle('working',data.tasks.some(task=>task.status==='running')));
     document.querySelector('#login').hidden=true;document.querySelector('#workspace').hidden=false;
@@ -61,6 +63,10 @@ document.addEventListener('click',async event=>{
   } catch(error){toast(error.message);}
 });
 document.querySelector('#review-form').onsubmit=async event=>{event.preventDefault();await api('/api/reviews/'+editingCall,{action:'edit',edited:JSON.parse(document.querySelector('#review-payload').value)});document.querySelector('#review-editor').close();await refresh();};
-const miniapp=new URLSearchParams(location.hash.slice(1)).get('tgWebAppData');
+const telegramHash=new URLSearchParams(location.hash.slice(1));
+const miniapp=telegramHash.get('tgWebAppData');
+document.documentElement.dataset.miniapp=String(Boolean(miniapp));
+if(miniapp){try{const colors=JSON.parse(telegramHash.get('tgWebAppThemeParams')||'{}');for(const [field,variable] of Object.entries({bg_color:'--bg',secondary_bg_color:'--surface',text_color:'--ink',hint_color:'--muted',button_color:'--accent',button_text_color:'--accent-text'})){if(/^#[0-9a-f]{6}$/i.test(colors[field]||''))document.documentElement.style.setProperty(variable,colors[field]);}}catch{}}
+
 if(miniapp){try{await api('/api/telegram/session',{init_data:miniapp});state.view=new URLSearchParams(location.search).get('view')==='make'?'make':'tasks';}catch(error){toast(error.message);}}
 await refresh();

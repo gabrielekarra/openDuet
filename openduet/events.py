@@ -61,6 +61,16 @@ class EventStore:
                 ).fetchone()
                 if previous and previous["hash"] == digest:
                     continue
+                if previous and kind == "mail.received":
+                    old = db.execute(
+                        "SELECT data FROM connector_events WHERE connector=? AND record=? AND hash=?",
+                        (connector, record, previous["hash"]),
+                    ).fetchone()
+                    old_payload = json.loads(old["data"])["payload"] if old else {}
+                    if "INBOX" in old_payload.get("labels", []) and "INBOX" not in payload.get("labels", []):
+                        kind = "mail.archived"
+                    elif old_payload.get("unread") is True and payload.get("unread") is False:
+                        kind = "mail.read"
                 if previous and kind.startswith("calendar."):
                     kind = "calendar.event_changed"
                 ident = hashlib.sha256((connector + ":" + record + ":" + digest).encode()).hexdigest()[:32]

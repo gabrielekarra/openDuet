@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import time
 
 import numpy as np
@@ -22,7 +23,14 @@ class TorchBackend:
         checkpoint, base = verify(entries["decision"]), verify(entries["base"])
         metadata = torch.load(checkpoint / "head.pt", map_location="cpu", weights_only=True)
         self.tokenizer = AutoTokenizer.from_pretrained(checkpoint, local_files_only=True)
-        self.model = DecisionModel(str(base), self.tokenizer, device, head_dim=metadata["head_dim"])
+        dtype_name = os.environ.get("OPENDUET_KEV_DTYPE", "float32")
+        if dtype_name not in {"float32", "bfloat16", "float16"} or (
+            dtype_name == "float16" and device == "cpu"
+        ):
+            raise ValueError("Use float32/bfloat16, or float16 on CUDA")
+        self.model = DecisionModel(
+            str(base), self.tokenizer, device, head_dim=metadata["head_dim"], dtype=getattr(torch, dtype_name)
+        )
         self.model.lm = PeftModel.from_pretrained(self.model.lm, checkpoint, local_files_only=True)
         self.model.head.load_state_dict(metadata["head"], strict=True)
         self.model.head.temperature = float(metadata.get("temperature", 1))

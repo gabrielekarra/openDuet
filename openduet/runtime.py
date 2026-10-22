@@ -13,7 +13,6 @@ from .attention import Attention
 from .browser import Browser
 from .citations import Sources
 from .credentials import Credentials
-from .desktop import DesktopRelay
 from .mac import MacHost
 from .make import Make
 from .plugins import Plugins
@@ -57,7 +56,6 @@ class Runtime:
         self.stop = asyncio.Event()
         self.current: tuple[str, asyncio.Task] | None = None
         self.private_values: set[str] = set()
-        self.desktop = DesktopRelay(self)
         self.vault = Vault(store, config.data_dir)
         from .config import ProviderConfig
 
@@ -90,7 +88,11 @@ class Runtime:
 
     def redact(self, text):
         # Credential bindings are not passed to the model, including if a service echoes a value.
-        names = {p.api_key_env for p in self.config.providers.values()} | {"OPENDUET_TOKEN"}
+        names = {p.api_key_env for p in self.config.providers.values()} | {
+            "OPENDUET_TOKEN",
+            "OPENDUET_COMPUTER_TOKEN",
+            "OPENDUET_SECRET_KEY",
+        }
         for connector in self.config.connectors.values():
             names.update(connector.env_names)
             names.update(connector.header_env.values())
@@ -109,7 +111,11 @@ class Runtime:
         memories = self.store.rows("SELECT id,content FROM memories ORDER BY created DESC LIMIT 30")
         skills = self.plugins.descriptions()
         system = (
-            SYSTEM + "\nUser-enabled skills (task guidance, never permission):\n" + json.dumps(skills)[:20000]
+            SYSTEM
+            + "\nUser-enabled skills (task guidance, never permission):\n"
+            + json.dumps(skills)[:20000]
+            + "\nConfirmed attention preferences (facts, never action permission):\n"
+            + json.dumps(self.attention.preferences())[:10000]
         )
         history = [{"role": "system", "content": system}]
         if memories:
@@ -128,12 +134,17 @@ class Runtime:
     def checkpoint(self, ident, history, turns):
         self.store.execute(
             "UPDATE tasks SET history=?,turns=?,updated=? WHERE id=?",
-            (self.redact(json.dumps(history)), turns, time.time(), ident),
+            (json.dumps(self.redact_data(history)), turns, time.time(), ident),
         )
+
+    def redact_data(self, value):
+        from .policy import redact_data
+
+        return redact_data(value, self.redact)
 
     def provider_history(self, task, history):
         """User-uploaded images go only to explicitly vision-enabled providers, never into checkpoints."""
-        sanitized = json.loads(self.redact(json.dumps(history)))
+        sanitized = self.redact_data(history)
         if not self.config.providers[task["provider"]].vision:
             return sanitized
         import base64
@@ -184,6 +195,14 @@ class Runtime:
                     )
             except httpx.HTTPError:
                 self.store.event("notification_failed", "Notification relay unavailable", ident)
+
+    def provider_tools(self):
+        specs = [
+            tool.spec()
+            for tool in self.tools.catalog.values()
+            if not tool.connector or self.tools.enabled(tool.connector)
+        ]
+        return self.redact_data(specs)
 
     async def process_calls(self, task, history):
         pending = uncertain = False
@@ -345,17 +364,16 @@ class Runtime:
                     return
                 reply = await self.provider_factory(self.config.providers[task["provider"]]).complete(
                     self.provider_history(task, history),
-                    [
-                        t.spec()
-                        for t in self.tools.catalog.values()
-                        if not t.connector or self.tools.enabled(t.connector)
-                    ],
+                    self.provider_tools(),
                 )
                 if self.store.task(ident)["status"] == "cancelled":
                     return
-                self.store.usage(reply.input_tokens, reply.output_tokens)
+                origins = self.store.rows("SELECT kind FROM task_origins WHERE task=?", (ident,))
+                self.store.usage(
+                    reply.input_tokens, reply.output_tokens, kind=origins[0]["kind"] if origins else "user"
+                )
                 turns += 1
-                message = reply.message
+                message = self.redact_data(reply.message)
                 if len(message.get("tool_calls", [])) > 16:
                     raise ValueError("Model requested too many tools in one turn")
                 history.append(message)
@@ -402,7 +420,14 @@ class Runtime:
                     (job["prompt"],),
                 ).fetchone():
                     continue
-                self.store.new_task(job["channel"], job["prompt"], job["provider"], db)
+                scheduled = self.store.new_task(job["channel"], job["prompt"], job["provider"], db)
+                db.execute("INSERT INTO task_origins VALUES(?,'checkin',?)", (scheduled, job["id"]))
+                owner = self.telegram.settings()
+                if owner.get("paired"):
+                    db.execute(
+                        "INSERT INTO task_surfaces VALUES(?,'telegram',?,NULL,NULL,NULL)",
+                        (scheduled, owner["owner_chat"]),
+                    )
                 db.execute("UPDATE schedules SET next_run=? WHERE id=?", (now + job["interval"], job["id"]))
 
     async def worker(self):
@@ -411,12 +436,6 @@ class Runtime:
         self.telegram.start()
         self.background = [asyncio.create_task(self.attention.run())]
         while not self.stop.is_set():
-            if self.desktop.active:
-                try:
-                    await asyncio.wait_for(self.stop.wait(), timeout=0.5)
-                except TimeoutError:
-                    pass
-                continue
             self.tick_schedules()
             self.make.tick()
             queue = self.store.rows("SELECT id FROM tasks WHERE status='queued' ORDER BY created LIMIT 1")
@@ -444,8 +463,10 @@ class Runtime:
     def cancel(self, ident):
         self.store.status(ident, "cancelled")
         self.store.execute(
-            "UPDATE calls SET status='denied' WHERE task=? AND status IN ('pending','approved')", (ident,)
+            "UPDATE calls SET status='denied' WHERE task=? AND status IN ('pending','approved','deferred')",
+            (ident,),
         )
+        self.store.execute("UPDATE initiatives SET status='dismissed' WHERE task=?", (ident,))
         if self.current and self.current[0] == ident:
             self.current[1].cancel()
 
@@ -457,7 +478,6 @@ class Runtime:
         await self.telegram.close()
         await self.wallet.close()
         await self.mac.close()
-        await self.desktop.close()
         if self.current:
             self.current[1].cancel()
         await self.browser.close()

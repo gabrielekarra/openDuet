@@ -42,67 +42,42 @@ The payment integrations depend on service-specific authorization. Link and
 Shop Pay provide purchase-scoped credentials after approval. A generic Stripe
 MCP connector does not supply those wallet capabilities. [4, 5]
 
-## Capability-by-capability implementation
+## Current capability matrix
 
-**Implemented** means there is an executable path, not a claim that every model
-or third-party service has passed real-world acceptance tests. **Configured**
-means it needs the user's own model, MCP service, accounts or infrastructure.
+This matrix describes executable code paths. Live account, hardware and model
+acceptance are recorded separately in [the tracker](IMPLEMENTATION-TRACKER.md).
 
-| Capability | OpenDuet path | Status / practical boundary |
+| Public workflow | OpenDuet implementation | Boundary |
 | --- | --- | --- |
-| Main conversation | Home, persisted messages and task history | Implemented |
-| Topic channels | Named channels with shared reviewed memory | Implemented |
-| Choose any model | Per-task provider selection; local/hosted compatibility adapters | Implemented; model capability varies |
-| Models without tool calling | JSON text tool protocol, validated before execution | Implemented; requires a model able to follow the format |
-| Morning brief | Scheduled inbox/calendar assignment | Configured MCP data required |
-| Periodic proactive check-ins | Durable routines; NO_UPDATE suppresses quiet notifications | Implemented; judgment depends on selected model |
-| Follow-ups and meeting preparation | Recurring instructions + connected sources | Configured; not hardcoded email-provider access |
-| Long-running delegated work | Server-side bounded agent loop | Implemented; server/model must remain online |
-| Separate computer | Deploy service/browser on a user-owned VM | Configured; no automatic VM provisioning |
-| Remote access to your computer | Computers tab, authenticated noVNC relay, native Mac service lifecycle and screen handoff | Implemented extension; user configures screen sharing and private connectivity |
-| Task progress and user decisions | Task states, errors, pending calls and review events | Implemented |
-| User-only completion | Ready-for-review vs completed | Implemented |
-| Generated documents | Markdown/text/DOCX | Implemented |
-| Spreadsheets/financial work | CSV/XLSX data workbooks | Implemented; formula execution/modeling is not verified |
-| Slides | PPTX title/body deck generation | Implemented; basic layouts |
-| Dashboards/prototypes | Downloadable HTML artifacts | Implemented; no arbitrary code execution or hosted publishing |
-| Make gallery | Downloads and versioned text editing | Implemented |
-| Search prior chats | SQLite FTS, opt-out, channel deletion removes index | Implemented; last 100 messages per page |
-| Shared memories | Review/edit-by-replacement, forget, JSON export, text import | Implemented within workspace; separate from native Mac memory |
-| Reusable skills | Reviewed instructions in Settings, small business example | Implemented; no automatic installation of third-party code |
-| Connector/plugin discovery | MCP tool discovery and named configuration | Implemented; no promise of 6,000 bundled/tested connectors |
-| Gmail/Calendar/Drive/Slack | User-configured compatible MCP servers | Configured; service authorization required |
-| QuickBooks/HubSpot/DocuSign/Calendly | Same MCP extension interface | Configured; no bundled bespoke adapters |
-| Stripe unpaid invoices | MCP + small business skill + reviewed drafts | Configured; no real account used in tests |
-| Payroll and contracts | Draft artifacts from configured source data | Configured; no automatic payroll submission/legal validation |
-| Link wallet | Proprietary partner connection/card issuance | **Not implemented**; no equivalent service agreement/credentials |
-| Shop Pay wallet | Proprietary partner connection/card issuance | **Not implemented**; no equivalent service agreement/credentials |
-| Browser without connector | Optional Playwright persistent Chromium profile | Implemented; allowlisted sites and approvals required |
-| Private browser login | Separate authenticated form, no model/chat credential entry | Implemented; no visual browser takeover |
-| Sensitive action review | Exact stored call payload, one-use review, expiry | Implemented; every connector call asks unless operator marks tool safe |
-| Restart/retry safety | Checkpoints, uncertain-effect stop, explicit verified resolution | Implemented; external services cannot guarantee exactly-once delivery |
-| Credential separation | Environment bindings; private login values; receipt redaction | Implemented; operator is trusted and owns the server |
-| Prompt injection defenses | Untrusted-content prompt, schemas, tool boundaries, host approvals | Implemented layers; no claim of Anthropic classifier parity |
-| Sensitive information filtering | Card checksum/US identification checks + bound-secret redaction | Basic deterministic checks; **not** a comprehensive DLP classifier |
-| Financial restrictions | Exclude forbidden tools; review all other calls | Operator policy; no securities/transfer workflows supplied |
-| Voice messages | Optional local Whisper; existing on-device Mac dictation | Implemented; download local model separately |
-| Spoken responses | Local system voices on Mac / supported browsers | Implemented where available |
-| iOS / Android | Responsive installable web app | Implemented web access; **not native App Store apps** |
-| Notifications | Event feed, browser notifications and optional relay | Relay required when web app is closed |
-| Usage limits | Per-day token ledger and per-task turn limits | Implemented; omitted provider counts are estimated |
-| Claude account memory/apps | No access to Anthropic private account internals | **Not implemented**; manual memory import and independent connections |
+| Main conversation and channels | Telegram plus shared web Chat, memory/search and tasks | One paired owner; native mobile apps are replaced by Telegram |
+| Tasks, approvals and prepared work | Exact payload previews, edit/defer/expiry, progress and receipts | Owner completes tasks; uncertain effects require verification |
+| Morning brief and evening report | Local timezone/DST scheduler and selected cited work | Requires connected sources; no duplicate new urgent items |
+| Proactive attention | Separate Kev Bool/Score/Choice readouts, deterministic host policy, reversible personal learning | Missing Kev means brief-only; real parity/performance needs evaluation |
+| Follow-ups and preparation | Sent-message commitments, waiting-thread drafts, calendar/travel facts and prep tasks | External sends/moves remain approval-gated |
+| Connections | Curated 17-service directory, dynamic MCP registry, OAuth PKCE/DCR and encrypted refresh tokens | Account/provider scopes and server capabilities apply; listings are not all official endpoints |
+| Plugins and skills | On-demand Agent Skills, static Claude-layout bundles, approved pinned Git/local sources | Executable hooks rejected; accounts/schedules are not auto-authorized |
+| Make and financial work | Versioned DOCX/PDF/XLSX/PPTX, live formulas, native Office checks and notes/previews | Results require review; no accounting/legal certification |
+| Dashboards and prototypes | Declarative local-time refreshed dashboards with PNG delivery; separate opaque sandbox origin for webapps | Static prototypes cannot access workspace APIs/credentials or the network |
+| Background computer | Separate Chromium container and enforcing egress proxy | Public reads; consequential interactions reviewed; no live takeover required |
+| Secret management | Encrypted vault, private password-manager injection, key rotation and use audit | Operator owns deployment and scoped accounts |
+| Scoped purchases | Optional eligible Stripe Issuing adapter, caps, exact merchant/amount authorization and private checkout | This is independent issuing integration, not Anthropic's private Link/Shop Pay partner API |
+| User Mac access | On-demand installed-app opening, fresh accessible controls, approved actions and Telegram screenshots | Mac must run OpenDuet, be awake/signed in and have OS permissions |
+| Voice and photos | Local Whisper input and opt-in images to compatible vision models | No spoken output; model capability varies |
+| Model choice | OpenAI-compatible, native Ollama and Anthropic protocols, plus text tool protocol | Supports local and hosted models; cannot make every model equally capable |
+| Always-on hosting | Compose with health/restart policies and an Ubuntu VPS cloud-init recipe | Requires the user's server, model and account configuration |
 
-## Validation and remaining work
+## Validation
 
-Automated runtime tests cover three provider wire formats, no-key local access,
-text tool calls, real MCP stdio discovery/calls, schema denial, approval replay,
-revocation, cancellation, uncertain effects, budgets, schedules, deletion,
-authentication and real Office file parsing. Model calls use fixtures; these
-tests establish runtime behavior, not the selected LLM's reasoning quality.
+Tests use disposable model, Telegram, OAuth and issuer transports for repeatable
+boundary checks. Real Chromium verifies the console and isolated browser's
+request restrictions; real LibreOffice verifies recalculated financial totals
+and rendered slides. The console is tested in light/dark at 375 and 1280 pixels.
+Lighthouse accessibility audits and exact validation commands are linked in the
+acceptance tracker.
 
-Production acceptance still needs actual accounts and each intended model:
-inbox selection, calendar time zones, real OAuth servers, live delivery receipts,
-browser sign-ins, prompt-injection evaluation, data-leak evaluation, long-running
-reliability, accessibility and native/mobile distribution. Wallet parity needs
-an independently available payment provider integration. Full Claude Duet parity
-is therefore **not claimed** by this preview.
+Synthetic Kev fixtures prove adapter/policy contracts, not semantic accuracy.
+Real Torch evaluation has a separate scheduled/manual workflow; MLX/Torch
+parity, hardware RAM/latency, actual Mac app controls/permissions, live Telegram
+and real issuer/provider accounts must have their own acceptance evidence.
+OpenDuet does not claim access to Anthropic's private implementation or accounts,
+its proprietary payment partner APIs, or unverified full behavioral equivalence.

@@ -115,4 +115,4 @@ class Proxy(BaseHTTPRequestHandler):
 
 
 def main():
-    ThreadingHTTPServer(("0.0.0.0", 8890), Proxy).serve_forever()
+    ThreadingHTTPServer((os.environ.get("OPENDUET_PROXY_HOST", "127.0.0.1"), 8890), Proxy).serve_forever()

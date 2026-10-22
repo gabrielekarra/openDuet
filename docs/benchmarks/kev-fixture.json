@@ -3,6 +3,7 @@
   "backend": "fixture",
   "synthetic_adapter_fixture": true,
   "device": "cpu",
+  "dtype": "float32",
   "platform": "Linux-6.18.55-x86_64-with-glibc2.41",
   "cases": [
     {
@@ -1264,6 +1265,90 @@
       "brier": 2.2446754149982426e-06
     }
   },
+  "per_kind": {
+    "calendar.event_changed": {
+      "count": 3,
+      "accuracy": 1,
+      "ece": 0.0006702508741985858,
+      "brier": 8.981714183378786e-07
+    },
+    "calendar.event_created": {
+      "count": 3,
+      "accuracy": 1,
+      "ece": 0.0006702508741985858,
+      "brier": 8.981714183378786e-07
+    },
+    "chat.message": {
+      "count": 5,
+      "accuracy": 1,
+      "ece": 0.0012056435801336418,
+      "brier": 2.421906031396228e-06
+    },
+    "invoice.overdue": {
+      "count": 3,
+      "accuracy": 1,
+      "ece": 0.0010051516179307995,
+      "brier": 1.5714234166680605e-06
+    },
+    "mail.received": {
+      "count": 30,
+      "accuracy": 1,
+      "ece": 0.0012056435801336418,
+      "brier": 2.421906031396228e-06
+    },
+    "mail.sent": {
+      "count": 5,
+      "accuracy": 1,
+      "ece": 0.0012056435801335308,
+      "brier": 2.4219060313960498e-06
+    },
+    "payment.received": {
+      "count": 3,
+      "accuracy": 1,
+      "ece": 0.0010051516179307995,
+      "brier": 1.5714234166680605e-06
+    }
+  },
+  "per_profession": {
+    "broker": {
+      "count": 5,
+      "accuracy": 1,
+      "ece": 0.0012056435801336418,
+      "brier": 2.421906031396228e-06
+    },
+    "consultant": {
+      "count": 16,
+      "accuracy": 1,
+      "ece": 0.0010048713154079403,
+      "brier": 1.8505055514992914e-06
+    },
+    "restaurant manager": {
+      "count": 18,
+      "accuracy": 1,
+      "ece": 0.0011722282530998163,
+      "brier": 2.280158928941484e-06
+    },
+    "small business owner": {
+      "count": 13,
+      "accuracy": 1,
+      "ece": 0.0011593762042406697,
+      "brier": 2.2256408126128734e-06
+    }
+  },
+  "per_language": {
+    "en": {
+      "count": 34,
+      "accuracy": 1,
+      "ece": 0.0011230221127506157,
+      "brier": 2.1373736923508147e-06
+    },
+    "it": {
+      "count": 18,
+      "accuracy": 1,
+      "ece": 0.0011164114624777621,
+      "brier": 2.1679502625531206e-06
+    }
+  },
   "interrupt_precision": 1.0,
   "interrupt_recall": 1.0,
   "hostile_interrupts": 0,
@@ -1310,9 +1395,9 @@
     }
   ],
   "latency_ms": {
-    "median": 0.163270500706858,
-    "max": 0.48493899885215797
+    "median": 0.17788250261219218,
+    "max": 0.5166959963389672
   },
-  "peak_rss_platform_units": 60704,
+  "peak_rss_platform_units": 59920,
   "passed": true
 }

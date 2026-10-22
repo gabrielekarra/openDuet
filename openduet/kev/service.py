@@ -31,6 +31,7 @@ def create_service(backend_name=None):
         "ready": False,
         "backend": name,
         "device": device,
+        "dtype": os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
         "latency_ms": None,
         "model": next(
             (
@@ -128,4 +129,6 @@ def create_service(backend_name=None):
 def main():
     import uvicorn
 
-    uvicorn.run(create_service(), host="0.0.0.0", port=8768, access_log=False)
+    uvicorn.run(
+        create_service(), host=os.environ.get("OPENDUET_KEV_HOST", "127.0.0.1"), port=8768, access_log=False
+    )

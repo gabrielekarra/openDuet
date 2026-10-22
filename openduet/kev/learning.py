@@ -100,7 +100,7 @@ class Personalizer:
                    SUM(response = 'dismiss' AND COALESCE(response_reason, 'user') = 'user'),
                    SUM(response = 'dismiss' AND response_reason = 'timeout')
             FROM decisions
-            WHERE response IS NOT NULL AND ts >= ?
+            WHERE response IS NOT NULL AND ts >= ? AND learning_enabled=1
             GROUP BY kind
             """,
             (since,),
@@ -121,6 +121,7 @@ class Personalizer:
             SELECT sender, response, response_reason, ts
             FROM decisions
             WHERE response IS NOT NULL
+              AND learning_enabled=1
               AND sender IS NOT NULL AND ts >= ?
             ORDER BY ts
             """,

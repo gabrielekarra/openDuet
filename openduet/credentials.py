@@ -21,6 +21,7 @@ class Credentials:
         page = self.runtime.browser.page
         if not page or urlsplit(page.url).hostname != site or urlsplit(page.url).scheme != "https":
             raise ValueError("Open the exact HTTPS sign-in site before requesting its credentials")
+        expected_url = page.url
         base = endpoint(settings["url"]).rstrip("/")
         vault = settings["vault"]
         item_id = quote(mapping["item"], safe="")
@@ -51,8 +52,8 @@ class Credentials:
             raise ValueError("The selected item does not contain a password")
         self.runtime.private_values.update((username, password))
         # The tool result deliberately contains neither values nor page text.
-        await self.runtime.browser.login(mapping["username_selector"], username, page.url)
-        await self.runtime.browser.login(mapping["password_selector"], password, page.url)
+        await self.runtime.browser.login(mapping["username_selector"], username, expected_url)
+        await self.runtime.browser.login(mapping["password_selector"], password, expected_url)
         return {
             "private_fields_filled": True,
             "site": site,

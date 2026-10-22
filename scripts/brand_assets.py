@@ -1,4 +1,5 @@
 """Trace the existing transparent glasses mark and generate application icon assets."""
+
 from collections import defaultdict
 from pathlib import Path
 
@@ -44,14 +45,24 @@ def main():
         if len(reduced) < 3:
             continue
         paths.append("M" + " L".join(f"{x} {y}" for x, y in reduced) + " Z")
-    markup = f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" fill="currentColor"><g id="mark"><path fill-rule="evenodd" d="' + " ".join(paths) + '"/></g></svg>'
+    markup = (
+        f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" fill="currentColor"><g id="mark"><path fill-rule="evenodd" d="'
+        + " ".join(paths)
+        + '"/></g></svg>'
+    )
     (ROOT / "mark.svg").write_text(markup + "\n")
     (ROOT / "mark.js").write_text("export const glasses = " + repr(markup) + ";\n")
-    for name, size in (("favicon.png", 32), ("apple-touch-icon.png", 180), ("icon-192.png", 192),
-                       ("icon-512.png", 512), ("maskable-512.png", 512), ("telegram-avatar.png", 512)):
+    for name, size in (
+        ("favicon.png", 32),
+        ("apple-touch-icon.png", 180),
+        ("icon-192.png", 192),
+        ("icon-512.png", 512),
+        ("maskable-512.png", 512),
+        ("telegram-avatar.png", 512),
+    ):
         canvas = Image.new("RGBA", (size, size), "#f5f3ed")
         mark = source.copy()
-        mark.thumbnail((int(size * .8), int(size * .55)), Image.Resampling.LANCZOS)
+        mark.thumbnail((int(size * 0.8), int(size * 0.55)), Image.Resampling.LANCZOS)
         canvas.alpha_composite(mark, ((size - mark.width) // 2, (size - mark.height) // 2))
         canvas.convert("RGB").save(ROOT / name)
     canvas = Image.new("RGB", (1200, 630), "#f5f3ed")
@@ -64,7 +75,13 @@ def main():
     except OSError:
         font = ImageFont.load_default(size=68)
     draw.text((600, 390), "OpenDuet", font=font, fill="#292e27", anchor="mm")
-    draw.text((600, 485), "Your work. Your models.", font=ImageFont.load_default(size=28), fill="#56623f", anchor="mm")
+    draw.text(
+        (600, 485),
+        "Your work. Your models.",
+        font=ImageFont.load_default(size=28),
+        fill="#56623f",
+        anchor="mm",
+    )
     canvas.save(ROOT / "social-preview.png")
 
 

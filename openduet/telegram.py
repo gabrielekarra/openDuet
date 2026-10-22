@@ -99,8 +99,10 @@ class Telegram:
                     retry_at REAL DEFAULT 0, created REAL);
                 CREATE TABLE IF NOT EXISTS telegram_cards(
                     id TEXT PRIMARY KEY, chat INTEGER, message INTEGER, payload TEXT);
+                CREATE TABLE IF NOT EXISTS telegram_batch_members(decision TEXT PRIMARY KEY,outbox TEXT);
                 CREATE TABLE IF NOT EXISTS attachments(
                     id TEXT PRIMARY KEY, task TEXT, name TEXT, mime TEXT, filename TEXT, size INTEGER);
+                CREATE TABLE IF NOT EXISTS attachment_inputs(id TEXT PRIMARY KEY);
             """)
         # A lost HTTP receipt is never evidence that a message was not sent.
         self.store.execute("UPDATE telegram_outbox SET status='uncertain' WHERE status='sending'")
@@ -113,7 +115,13 @@ class Telegram:
         return {
             key: config.get(key)
             for key in ("connected", "username", "bot_name", "owner_name", "owner_id", "rejected", "paired")
-        } | {"status": self.status}
+        } | {
+            "status": self.status,
+            "pair_pending": bool(config.get("pair_hash") and config.get("pair_expires", 0) > time.time()),
+            "uncertain": self.store.rows(
+                "SELECT id,method,created FROM telegram_outbox WHERE status='uncertain' ORDER BY created DESC LIMIT 20"
+            ),
+        }
 
     def save(self, **values):
         self.store.set_preference("telegram", self.settings() | values)
@@ -230,7 +238,9 @@ class Telegram:
                 for update in updates:
                     try:
                         await self.receive(update)
-                    except (ValueError, KeyError, TypeError, OSError, httpx.HTTPError):
+                    except TelegramError:
+                        raise
+                    except Exception:
                         self.store.event(
                             "telegram_update_rejected", "An invalid or unsupported update was ignored"
                         )
@@ -238,6 +248,16 @@ class Telegram:
                             "INSERT OR IGNORE INTO telegram_inbox VALUES(?,?)",
                             (update["update_id"], time.time()),
                         )
+                        message = update.get("message", {})
+                        owner = self.settings()
+                        if (
+                            isinstance(message, dict)
+                            and isinstance(message.get("from"), dict)
+                            and message["from"].get("id") == owner.get("owner_id")
+                        ):
+                            self.owner_message(
+                                "This message/file could not be processed. Check its format and the local voice model in Settings. / Non riesco a elaborare il messaggio o file. Controlla il formato e il modello vocale locale nelle Impostazioni."
+                            )
                     self.store.set_preference("telegram_offset", update["update_id"] + 1)
                 if not updates:
                     await asyncio.sleep(0.1)
@@ -253,6 +273,13 @@ class Telegram:
         if db is None:
             with self.store.db() as connection:
                 return self.enqueue(method, payload, key, connection)
+        if db.execute("SELECT 1 FROM telegram_outbox WHERE id=?", (key,)).fetchone():
+            return key
+        if method == "editMessageText":
+            db.execute(
+                "UPDATE telegram_outbox SET status='cancelled' WHERE status='pending' AND method='editMessageText' AND json_extract(payload,'$.chat_id')=? AND json_extract(payload,'$.message_id')=?",
+                (payload.get("chat_id"), payload.get("message_id")),
+            )
         db.execute(
             "INSERT OR IGNORE INTO telegram_outbox(id,method,payload,status,created) VALUES(?,?,?,'pending',?)",
             (key, method, json.dumps(payload), time.time()),
@@ -277,8 +304,64 @@ class Telegram:
     def owner_message(self, text, **kwargs):
         config = self.settings()
         if config.get("paired"):
+            if kwargs.get("silent") and str(kwargs.get("key", "")).startswith("decision:"):
+                return self.batch_notification(
+                    config["owner_chat"], text, kwargs["key"], kwargs.get("keyboard", [])
+                )
             return self.say(config["owner_chat"], text, **kwargs)
         return []
+
+    def batch_notification(self, chat, text, key, keyboard):
+        try:
+            escaped = list(safe_chunks(check_outgoing(self.runtime.redact(str(text)), owner_delivery=True)))
+        except ValueError:
+            return self.say(
+                chat,
+                "A sensitive value was withheld. Review the decision in the console.",
+                silent=True,
+                key=key,
+            )
+        if len(escaped) != 1 or len(escaped[0]) > 3000:
+            return self.say(chat, text, silent=True, key=key, keyboard=keyboard)
+        ident = key.split(":", 1)[1]
+        with self.store.db() as db:
+            db.execute("BEGIN IMMEDIATE")
+            existing = db.execute(
+                "SELECT outbox FROM telegram_batch_members WHERE decision=?", (key,)
+            ).fetchone()
+            if existing:
+                return [existing["outbox"]]
+            row = db.execute(
+                "SELECT id,payload FROM telegram_outbox WHERE status='pending' AND id LIKE 'batch:%' AND created>? AND json_extract(payload,'$.chat_id')=? ORDER BY created DESC LIMIT 1",
+                (time.time() - 5, chat),
+            ).fetchone()
+            payload = json.loads(row["payload"]) if row else None
+            if payload and (len(payload["_decisions"]) >= 4 or len(payload["text"]) + len(escaped[0]) > 3800):
+                payload = None
+            number = len(payload["_decisions"]) + 1 if payload else 1
+            buttons = [
+                [button | {"text": str(number) + " " + button["text"]} for button in line]
+                for line in keyboard
+            ]
+            if payload:
+                payload["text"] += "\n\n" + str(number) + ". " + escaped[0]
+                payload["_decisions"].append(ident)
+                payload.setdefault("reply_markup", {}).setdefault("inline_keyboard", []).extend(buttons)
+                outbox = row["id"]
+                db.execute("UPDATE telegram_outbox SET payload=? WHERE id=?", (json.dumps(payload), outbox))
+            else:
+                payload = {
+                    "chat_id": chat,
+                    "text": "1. " + escaped[0],
+                    "parse_mode": "HTML",
+                    "disable_notification": True,
+                    "_decisions": [ident],
+                    "reply_markup": {"inline_keyboard": buttons},
+                }
+                outbox = self.enqueue("sendMessage", payload, "batch:" + uid(), db)
+                db.execute("UPDATE telegram_outbox SET retry_at=? WHERE id=?", (time.time() + 5, outbox))
+            db.execute("INSERT INTO telegram_batch_members VALUES(?,?)", (key, outbox))
+            return [outbox]
 
     async def receive(self, update):
         identifier = update.get("update_id")
@@ -310,6 +393,7 @@ class Telegram:
                     owner_name=str(sender.get("first_name", "Owner")),
                     pair_hash="",
                     pair_expires=0,
+                    session_nonce=secrets.token_hex(8),
                 )
                 self.say(
                     chat["id"],
@@ -360,10 +444,28 @@ class Telegram:
         elif text.startswith("/"):
             if text.split(" ", 1)[0] == "/why" and message.get("reply_to_message"):
                 found = self.store.rows(
-                    "SELECT id FROM telegram_outbox WHERE json_extract(result,'$.message_id')=? AND json_extract(result,'$.chat.id')=? AND id LIKE 'decision:%'",
+                    "SELECT id,payload FROM telegram_outbox WHERE json_extract(result,'$.message_id')=? AND json_extract(result,'$.chat.id')=? AND (id LIKE 'decision:%' OR id LIKE 'batch:%' OR id LIKE 'ready:%')",
                     (message["reply_to_message"]["message_id"], chat["id"]),
                 )
                 if found:
+                    if found[0]["id"].startswith("ready:"):
+                        self.say(
+                            chat["id"], self.runtime.attention.explain_task(found[0]["id"].split(":")[1])
+                        )
+                        self.store.execute(
+                            "INSERT OR IGNORE INTO telegram_inbox VALUES(?,?)", (identifier, time.time())
+                        )
+                        return
+                    decisions = json.loads(found[0]["payload"]).get("_decisions", [])
+                    if decisions:
+                        self.say(
+                            chat["id"],
+                            "\n\n".join(self.runtime.attention.explain(ident) for ident in decisions),
+                        )
+                        self.store.execute(
+                            "INSERT OR IGNORE INTO telegram_inbox VALUES(?,?)", (identifier, time.time())
+                        )
+                        return
                     text = "/why " + found[0]["id"].split(":")[1]
             await self.command(chat["id"], text, message.get("message_thread_id"))
         else:
@@ -454,7 +556,7 @@ class Telegram:
                 "\n\n".join(f"{row['status']}: {row['request'][:200]}" for row in tasks)
                 or "No tasks / Nessuna attività",
                 topic=topic,
-                keyboard=self.miniapp_button("tasks"),
+                keyboard=self.review_buttons() + (self.miniapp_button("tasks") or []),
             )
         elif command == "/make":
             for row in self.store.rows("SELECT * FROM artifacts ORDER BY created DESC LIMIT 8"):
@@ -464,23 +566,29 @@ class Telegram:
         else:
             self.say(chat, "Unknown command. /help")
 
-    def send_attachment(self, chat, ident, topic=None, key=None):
+    def send_attachment(self, chat, ident, topic=None, key=None, *, silent=False):
         rows = self.store.rows("SELECT * FROM attachments WHERE id=?", (ident,))
         if rows:
             method = "sendPhoto" if rows[0]["mime"] == "image/png" else "sendDocument"
             self.enqueue(
                 method,
-                {"chat_id": chat, "_attachment": ident, **({"message_thread_id": topic} if topic else {})},
+                {
+                    "chat_id": chat,
+                    "_attachment": ident,
+                    "disable_notification": silent,
+                    **({"message_thread_id": topic} if topic else {}),
+                },
                 key,
             )
 
-    def send_artifact(self, chat, item, topic=None):
+    def send_artifact(self, chat, item, topic=None, *, silent=False):
         self.enqueue(
             "sendDocument",
             {
                 "chat_id": chat,
                 "_artifact": item["id"],
                 "caption": item["title"][:900],
+                "disable_notification": silent,
                 "reply_markup": {
                     "inline_keyboard": [
                         [{"text": "Revise / Modifica", "callback_data": "revise:" + item["id"]}]
@@ -497,6 +605,54 @@ class Telegram:
             [[{"text": "Open " + view.title(), "web_app": {"url": origin.rstrip("/") + "/?view=" + view}}]]
             if origin
             else None
+        )
+
+    def review_buttons(self, task=None):
+        query = "SELECT c.* FROM calls c "
+        if task:
+            query += "JOIN task_reviews r ON r.call=c.id WHERE r.task=? AND "
+        else:
+            query += "WHERE "
+        query += "c.status IN ('pending','deferred') ORDER BY c.created LIMIT 8"
+        return [
+            [
+                {
+                    "text": "Review / Rivedi · "
+                    + preview(call, self.runtime.tools.catalog.get(call["name"]))["display_name"][:35],
+                    "callback_data": "show:" + call["id"],
+                }
+            ]
+            for call in self.store.rows(query, (task,) if task else ())
+        ]
+
+    def approval_card(self, call, chat, topic=None, *, key=None, silent=False):
+        card = preview(call, self.runtime.tools.catalog.get(call["name"]))
+        keyboard = [
+            [
+                {"text": label, "callback_data": f"{action}:{call['id']}"}
+                for label, action in (
+                    ("✓ Approve", "approve"),
+                    ("✎ Edit", "edit"),
+                    ("Later", "defer"),
+                    ("Reject", "reject"),
+                )
+            ]
+        ]
+        text = (
+            card["summary"]
+            + "\nExpires / Scade: "
+            + time.strftime("%Y-%m-%d %H:%M", time.localtime(card["expires"]))
+        )
+        if len(html.escape(text)) > 3600:
+            text = (
+                "This exact action is too long for a Telegram preview. Review the full payload in Tasks in your console. / L’azione è troppo lunga: controlla tutti i dati in Attività nella console.\n"
+                + card["display_name"]
+            )
+            keyboard = [
+                [button for button in keyboard[0] if not button["callback_data"].startswith("approve:")]
+            ]
+        self.say(
+            chat, text, topic=topic, key=key or "approval:" + call["id"], keyboard=keyboard, silent=silent
         )
 
     def offer_replies(self, task, question, options):
@@ -559,6 +715,18 @@ class Telegram:
             action, ident = data.split(":", 1)
             if action in {"approve", "defer", "reject"}:
                 self.runtime.approvals.decide(ident, action)
+            elif action == "show":
+                call = self.store.rows(
+                    "SELECT * FROM calls WHERE id=? AND status IN ('pending','deferred')", (ident,)
+                )[0]
+                if call["created"] < time.time() - 86400:
+                    raise ValueError("Approval expired")
+                self.approval_card(
+                    call,
+                    callback["message"]["chat"]["id"],
+                    callback["message"].get("message_thread_id"),
+                    key="approval:" + ident + ":view:" + uid(),
+                )
             elif action == "edit":
                 call = self.store.rows("SELECT * FROM calls WHERE id=?", (ident,))[0]
                 arguments = json.loads(call["arguments"])
@@ -582,6 +750,8 @@ class Telegram:
                 self.runtime.attention.feedback(ident, action)
             elif action == "why":
                 self.say(callback["message"]["chat"]["id"], self.runtime.attention.explain(ident))
+            elif action == "why_task":
+                self.say(callback["message"]["chat"]["id"], self.runtime.attention.explain_task(ident))
             elif action == "reply":
                 with self.store.db() as db:
                     row = db.execute(
@@ -626,63 +796,108 @@ class Telegram:
             )
 
     async def sync_tasks(self):
+        with self.store.db() as db:
+            expired = db.execute(
+                "SELECT id,task FROM calls WHERE status IN ('pending','deferred') AND created<?",
+                (time.time() - 86400,),
+            ).fetchall()
+            for call in expired:
+                db.execute(
+                    "UPDATE calls SET status='expired',result=? WHERE id=?",
+                    (
+                        '{"error":"Approval expired. Prepare a fresh action for review if still needed."}',
+                        call["id"],
+                    ),
+                )
+                db.execute(
+                    "UPDATE tasks SET status='queued' WHERE id=? AND status='awaiting_approval'",
+                    (call["task"],),
+                )
+                db.execute(
+                    "UPDATE decisions SET response='dismiss',response_reason='timeout',response_ts=? WHERE response IS NULL AND event_id IN (SELECT event FROM initiatives WHERE task=?)",
+                    (time.time(), call["task"]),
+                )
         for route in self.store.rows(
-            "SELECT s.*,t.status,t.request FROM task_surfaces s JOIN tasks t ON t.id=s.task"
+            "SELECT s.*,t.status,t.request,t.updated AS task_updated FROM task_surfaces s JOIN tasks t ON t.id=s.task WHERE s.chat=?",
+            (self.settings().get("owner_chat"),),
         ):
             task, chat, topic = route["task"], route["chat"], route["topic"]
+            origin = self.store.rows("SELECT kind FROM task_origins WHERE task=?", (task,))
             if route["status"] in {"queued", "running"}:
+                if origin:
+                    continue
                 if time.monotonic() - self.last_typing.get(chat, 0) > 5:
-                    await self.api(
-                        "sendChatAction",
-                        {
-                            "chat_id": chat,
-                            "action": "typing",
-                            **({"message_thread_id": topic} if topic else {}),
-                        },
-                    )
                     self.last_typing[chat] = time.monotonic()
+                    try:
+                        await self.api(
+                            "sendChatAction",
+                            {
+                                "chat_id": chat,
+                                "action": "typing",
+                                **({"message_thread_id": topic} if topic else {}),
+                            },
+                        )
+                    except TelegramError as error:
+                        self.last_typing[chat] += getattr(error, "retry_after", 5)
                 if not route["progress"]:
                     self.say(chat, "Working… / Al lavoro…", topic=topic, key="progress:" + task)
+                else:
+                    report = self.store.rows("SELECT * FROM task_progress WHERE task=?", (task,))
+                    if report:
+                        item = report[0]
+                        self.enqueue(
+                            "editMessageText",
+                            {
+                                "chat_id": chat,
+                                "message_id": route["progress"],
+                                "text": item["title"]
+                                + f" · {item['completed']}/{item['total']} · "
+                                + time.strftime("%H:%M", time.localtime(item["updated"])),
+                            },
+                            "progress-update:" + task + ":" + str(item["updated"]),
+                        )
                 continue
             for call in self.store.rows(
                 "SELECT * FROM calls WHERE task=? AND status IN ('pending','deferred')", (task,)
             ):
-                card = preview(call)
-                keyboard = [
-                    [
-                        {"text": label, "callback_data": f"{action}:{call['id']}"}
-                        for label, action in (
-                            ("✓ Approve", "approve"),
-                            ("✎ Edit", "edit"),
-                            ("Later", "defer"),
-                            ("Reject", "reject"),
-                        )
-                    ]
-                ]
-                self.say(
-                    chat,
-                    card["kind"].upper()
-                    + " · "
-                    + call["name"]
-                    + "\n"
-                    + json.dumps(card["payload"], ensure_ascii=False, indent=2)
-                    + "\nExpires / Scade: "
-                    + time.strftime("%Y-%m-%d %H:%M", time.localtime(card["expires"])),
-                    topic=topic,
-                    key="approval:" + call["id"],
-                    keyboard=keyboard,
-                )
+                self.approval_card(call, chat, topic, silent=bool(origin))
+            silent = bool(origin and origin[0]["kind"] in {"prepare", "dashboard", "checkin"})
+            if origin:
+                context = self.runtime.attention.context({"kind": "task.ready", "payload": {}})
+                silent |= any(context[key] for key in ("quiet", "busy", "paused", "capped"))
             if route["status"] == "ready":
                 messages = self.store.rows(
-                    "SELECT content FROM messages WHERE task=? AND role='assistant' ORDER BY created DESC LIMIT 1",
+                    "SELECT id,content FROM messages WHERE task=? AND role='assistant' ORDER BY created DESC LIMIT 1",
                     (task,),
                 )
-                if messages:
-                    self.say(chat, messages[0]["content"], topic=topic, key="ready:" + task)
+                delivery_key = "ready:" + task + ":" + messages[0]["id"] if messages else ""
+                if messages and not self.store.rows(
+                    "SELECT id FROM telegram_outbox WHERE id=?", (delivery_key + ":0",)
+                ):
+                    keyboard = (
+                        self.review_buttons(task)
+                        + [[{"text": "Why / Perché", "callback_data": "why_task:" + task}]]
+                        if origin
+                        else None
+                    )
+                    self.say(
+                        chat,
+                        messages[0]["content"],
+                        topic=topic,
+                        key=delivery_key,
+                        silent=silent,
+                        keyboard=keyboard,
+                    )
+            if route["status"] in {"ready", "awaiting_approval"}:
                 for artifact in self.store.rows("SELECT * FROM artifacts WHERE task=?", (task,)):
-                    self.send_artifact(chat, artifact, topic)
-                for attachment in self.store.rows("SELECT id FROM attachments WHERE task=?", (task,)):
-                    self.send_attachment(chat, attachment["id"], topic, "attachment:" + attachment["id"])
+                    self.send_artifact(chat, artifact, topic, silent=silent)
+                for attachment in self.store.rows(
+                    "SELECT id FROM attachments WHERE task=? AND id NOT IN (SELECT id FROM attachment_inputs)",
+                    (task,),
+                ):
+                    self.send_attachment(
+                        chat, attachment["id"], topic, "attachment:" + attachment["id"], silent=silent
+                    )
             if route["progress"]:
                 self.enqueue(
                     "editMessageText",
@@ -691,12 +906,19 @@ class Telegram:
                         "message_id": route["progress"],
                         "text": "OpenDuet · " + route["status"],
                     },
-                    "status:" + task + ":" + route["status"],
+                    "status:" + task + ":" + route["status"] + ":" + str(route["task_updated"]),
+                )
+            elif route["status"] in {"failed", "blocked", "interrupted"}:
+                self.say(
+                    chat,
+                    "OpenDuet · " + route["status"] + ". Review /tasks / Rivedi le attività.",
+                    silent=bool(origin),
+                    key="attention:" + task + ":" + route["status"],
                 )
         for row in self.store.rows(
-            "SELECT o.result,c.status,c.id FROM telegram_outbox o JOIN calls c "
-            "ON o.id='approval:'||c.id||':0' WHERE o.status='sent' "
-            "AND c.status IN ('succeeded','denied','superseded','uncertain')"
+            "SELECT o.id AS outbox_id,o.result,c.status,c.id,c.name,c.result AS execution_receipt FROM telegram_outbox o JOIN calls c "
+            "ON o.id LIKE 'approval:'||c.id||':%' WHERE o.status='sent' "
+            "AND c.status IN ('succeeded','denied','superseded','uncertain','expired')"
         ):
             receipt = json.loads(row["result"] or "{}")
             if receipt.get("message_id"):
@@ -705,10 +927,17 @@ class Telegram:
                     {
                         "chat_id": receipt["chat"]["id"],
                         "message_id": receipt["message_id"],
-                        "text": "OpenDuet · " + row["status"],
+                        "text": "OpenDuet · "
+                        + row["status"]
+                        + " · "
+                        + time.strftime("%H:%M")
+                        + "\n"
+                        + row["name"]
+                        + "\n"
+                        + (row["execution_receipt"] or "")[:1500],
                         "reply_markup": {"inline_keyboard": []},
                     },
-                    "receipt:" + row["id"] + ":" + row["status"],
+                    "receipt:" + row["outbox_id"] + ":" + row["status"],
                 )
 
     async def flush_one(self):
@@ -721,7 +950,17 @@ class Telegram:
                 return
             row = rows[0]
             payload = json.loads(row["payload"])
+            payload.pop("_decisions", None)
             chat = payload.get("chat_id")
+            if chat != self.settings().get("owner_chat"):
+                self.store.execute("UPDATE telegram_outbox SET status='cancelled' WHERE id=?", (row["id"],))
+                return
+            held = self.store.rows(
+                "SELECT MAX(retry_at) AS until FROM telegram_outbox WHERE status IN ('pending','cancelled') AND json_extract(payload,'$.chat_id')=?",
+                (chat,),
+            )[0]["until"]
+            if held and held > time.time():
+                return
             if self.last_send.get(chat, 0) > time.monotonic() - 1:
                 return
             self.last_send[chat] = time.monotonic()

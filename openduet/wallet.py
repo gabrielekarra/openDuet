@@ -40,6 +40,8 @@ class StripeIssuing:
             "spending_controls[spending_limits][1][amount]": scope["amount"],
             "spending_controls[spending_limits][1][interval]": "per_authorization",
         }
+        for index, category in enumerate(scope.get("categories", [])):
+            values[f"spending_controls[allowed_categories][{index}]"] = category
         card = await self.request("POST", "/v1/issuing/cards", values)
         return {"id": card["id"], "last4": card.get("last4", "")}
 
@@ -68,6 +70,7 @@ class Wallet:
             "monthly_cap": 0,
             "currency": "EUR",
             "merchants": [],
+            "categories": [],
         } | self.store.preference("wallet", {})
 
     async def purchase(self, arguments, task):
@@ -83,13 +86,21 @@ class Wallet:
         ):
             raise ValueError("Merchant, currency or purchase amount is outside the configured scope")
         now = time.time()
+        local = self.runtime.attention.local(now)
+        periods = (
+            (local.replace(hour=0, minute=0, second=0, microsecond=0).timestamp(), settings["daily_cap"]),
+            (
+                local.replace(day=1, hour=0, minute=0, second=0, microsecond=0).timestamp(),
+                settings["monthly_cap"],
+            ),
+        )
         ident = uid()
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
-            for days, cap in ((1, settings["daily_cap"]), (30, settings["monthly_cap"])):
+            for start, cap in periods:
                 spent = db.execute(
-                    "SELECT COALESCE(SUM(amount),0) FROM purchases WHERE created>? AND status!='cancelled'",
-                    (now - days * 86400,),
+                    "SELECT COALESCE(SUM(amount),0) FROM purchases WHERE created>=? AND status!='cancelled'",
+                    (start,),
                 ).fetchone()[0]
                 if amount + spent > cap:
                     raise ValueError("Purchase exceeds the configured spending cap")
@@ -103,6 +114,7 @@ class Wallet:
             "amount": amount,
             "currency": currency,
             "expires": now + 900,
+            "categories": settings["categories"],
         }
         try:
             card = await self.provider.create_purchase_card(scope)
@@ -125,6 +137,11 @@ class Wallet:
         card = data.get("card")
         card = card.get("id") if isinstance(card, dict) else card
         merchant = str(data.get("merchant_data", {}).get("network_id", ""))
+        if (
+            self.settings()["categories"]
+            and data.get("merchant_data", {}).get("category") not in self.settings()["categories"]
+        ):
+            return False
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             row = db.execute("SELECT * FROM purchases WHERE card=?", (card,)).fetchone()
@@ -164,14 +181,15 @@ class Wallet:
             raise ValueError("Purchase card not found")
         await self.provider.cancel_card(rows[0]["card"])
         self.store.execute(
-            "UPDATE purchases SET status=? WHERE id=?",
-            ("spent" if rows[0]["status"] == "authorized" else "cancelled", ident),
+            "UPDATE purchases SET status=CASE WHEN status IN ('authorized','spent') THEN 'spent' ELSE 'cancelled' END WHERE id=?",
+            (ident,),
         )
         return {"cancelled": ident}
 
     async def tick(self):
         for row in self.store.rows(
-            "SELECT id FROM purchases WHERE card IS NOT NULL AND ((status='active' AND expires<?) OR status='authorized')",
+            "SELECT p.id FROM purchases p LEFT JOIN tasks t ON t.id=p.task WHERE p.card IS NOT NULL "
+            "AND ((p.status='active' AND (p.expires<? OR t.status IN ('cancelled','failed'))) OR p.status='authorized')",
             (time.time(),),
         ):
             try:
@@ -195,7 +213,7 @@ class Wallet:
             raise ValueError("Checkout requires exact card field selectors")
         card = await self.provider.private_card(row[0]["card"])
         fields = {selectors[field]: str(card[field]) for field in selectors}
-        self.runtime.private_values.update(fields.values())
+        self.runtime.private_values.update((str(card["number"]), str(card["cvc"])))
         for selector, value in fields.items():
             await self.runtime.browser.login(selector, value, expected_url)
         return {

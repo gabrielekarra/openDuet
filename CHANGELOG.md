@@ -1,93 +1,15 @@
-# OpenDuet remote desktop — 2026-10-22
+# 0.3.0 — 2026-10-22
 
-- Add Computers with authenticated desktop viewing and mouse/touch/keyboard control.
-- Pause agent work during human access, coordinate the native screen lock and stop automatic Mail insertion.
-- Add opt-in Mac service startup/shutdown, Keychain access token and an app-lifetime idle-sleep assertion.
-- Bundle noVNC source and portable service dependencies; validate RFB traffic in browser CI.
-- Document screen-sharing permissions and private/HTTPS connectivity for real computers and agent VMs.
-
-# OpenDuet — 2026-10-22
-
-- Rename the product to OpenDuet and license original project code under MIT.
-- Add the portable self-hosted workspace with configurable local and API LLM providers.
-- Add conversations/channels, reviewed shared memory, chat search and memory import/export.
-- Add durable tasks, one-use approvals, cancellation, restart recovery and uncertain-action review.
-- Add scheduled routines, MCP tools, optional dedicated browser and private login.
-- Add document, spreadsheet, slide and HTML artifact generation with a Make gallery.
-- Add local voice transcription, event notifications and optional notification relay.
-- Add container deployment, runtime regressions and desktop/mobile browser smoke CI.
-- Document primary-source Claude Duet research and remaining capability gaps.
-- Preserve Mac bundle, storage and IPC identifiers; add a configurable workspace link in the Mac app.
-
-# Unreleased — Bobb
-
-- For you home brings together grounded context initiatives, commitments, learned routines and blocked work. Context initiatives persist, support snooze/dismiss/prepare, and learn when to stop suggesting.
-- Local source excerpts and a separate decision check gate initiatives; deleting a source, excluding an app or pausing during inference prevents stale publication. Preparing an initiative cannot route into computer actions.
-- New synthetic cross-profession model evaluation and product review document measured limits.
-- Intro video included in README and repository; original code now uses the Bobb Source Available License 1.0, with contribution rights and restrictions on redistribution. Third-party and prior MIT rights remain separate.
-
-- One command field automatically chooses text handling or an action; websites share a general task loop with completion checked against observations.
-- Spotify green and native Liquid Glass containing the content of floating panels, with glass controls and grouped surfaces.
-- First launch shows only the menu bar icon; missing models prepare in the background and macOS permissions are requested on first use.
-- Speech is limited to microphone conversations. Typed answers, suggestions, iMessage and assignment reports stay silent; closing, cancelling or typing stops playback.
-- Qwen3.5 4B 4-bit generates text; Kev 4B 8-bit answers typed decisions with its trained pointer head. Both run locally, with pinned and checksum-verified downloads.
-
-- Named assistants, automatic Mac app access with exclusions, action boundaries, persistent projects, assignments and routine suggestions.
-- Local-only AI, the user's normal browser and running apps, iMessage self chat, voice and local model selection. Browser and desktop background tasks share one screen lease; no production test profiles or separate sign-in.
-- Consumer Mac defaults: shared Qwen and Kev models, targeting 16 GB RAM and one background assignment at a time; cloud inference removed.
-- MCP and experimental virtual Mac control.
-- Liquid Glass UI, black glasses mark looking up-left, Bobb app/DMG.
-
-# Changelog
-
-## 1.0.0 — 2026-09-28
-
-The first release of Bobb: the assistant that knows when to stay quiet,
-and does the work when you ask. Everything runs on your Mac.
-
-**Knows what needs you.** Bobb reads the message you open in Apple Mail
-and the conversation you open in Slack, WhatsApp, Messages, Teams, Telegram,
-Discord or Signal, and decides with a calibrated confidence whether someone
-is asking you for something. When they are, a small card appears once;
-newsletters, receipts and FYIs never get a word. Things worth doing but not
-worth an interruption wait under "For you".
-
-**Writes like you.** Replies in the message's language and register, grounded
-in what you have seen on screen, with sources; one click turns a draft into
-a yes, a polite no, a request for time or for details. Figures and dates that
-appear nowhere else are flagged. Drafts go into Mail's reply window or the
-chat's message box. Bobb never sends.
-
-**Does it for you (⌥Space).** Ask for something to be done — "put on my Focus
-playlist", "make a sheet with these totals", "tell Giulia on Slack I'll be
-late" — and Bobb plans it and works your apps from outside, one checked
-step at a time: pressing, typing, scrolling, opening apps. It asks before
-anything that sends, pays, deletes or runs a command; ⎋ stops it; Undo takes
-the last step back. In Ask mode Bobb itself tells a question from a job.
-
-**Talk to it (⌥⇧Space).** Speech is recognized on the Mac, never on a server.
-
-**Remembers.** The text of the windows you work in — and, if you allow it,
-the words in images — searchable and cited. The promises you make in the
-mail you send ("I'll send it by Friday"), with their dates, until you mark
-them done. Your calendar, for a brief ten minutes before meetings with other
-people: what you saw, what you promised them, one question worth asking.
-
-**Learns you, on your Mac.** Your answers set a personal threshold per kind
-of message and mute senders you always ignore. They also train a personal
-specialist that, once it has proved it agrees with you, decides the
-confident "this can wait" cases alone in under a millisecond. Tasks that
-worked, and the ones you show it with "Show me how", become the way it does
-them next time.
-
-**Shows its work.** Mind lists every decision and every silence, every task
-and every step, what Bobb learned and how well its specialist agrees with
-you.
-
-**Private by architecture.** The engine that reads your screen cannot open a
-network connection. The only download is the model, which you start and
-which is verified by checksum. No account, no telemetry, offline license
-keys. Password managers, Keychain, System Settings and private windows are
-never read or operated; secure fields never.
-
-**Bilingual.** English and Italian throughout.
+- Make Telegram the primary owner-paired interface, sharing durable tasks,
+  messages, approvals, media and deliverables with the portable console.
+- Add on-demand Mac app control and screenshot delivery without screen sharing.
+- Port Kev decisions, connector events, deterministic attention policy, learning,
+  local-time briefs, commitments and evaluation into the portable runtime.
+- Add encrypted credentials, OAuth/PKCE, dynamic MCP connections, declarative
+  plugins, password-manager injection and optional scoped issuer purchases.
+- Add live financial formulas, native Office validation, versioned dashboards,
+  isolated web prototypes and a separate browser computer with egress controls.
+- Replace the native app, continuous sensors, generation daemon, TTS, licensing,
+  VNC and native release pipeline. Preserve native history at `bobb-mac-final`.
+- Add responsive/dark console modules, original glasses assets, runtime/browser
+  regression fixtures and real Chromium/LibreOffice acceptance checks.

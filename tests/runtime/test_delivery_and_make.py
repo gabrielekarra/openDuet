@@ -67,7 +67,7 @@ async def test_mac_action_is_snapshot_bound_and_one_use(runtime, monkeypatch):
 
 async def test_owner_screen_command_delivers_photo_without_chat_pixels(runtime):
     runtime.mac.check = lambda: None
-    runtime.mac.observe = lambda: {"app": "Fixture", "elements": []}
+    runtime.mac.foreground = lambda: types.SimpleNamespace()
 
     async def command(*args):
         Path(args[-1]).write_bytes(b"fixture-png-bytes")
@@ -323,4 +323,32 @@ async def test_unknown_citation_is_flagged_for_text_tool_models(runtime):
     output = runtime.sources.validate(task, f"12 [^{registered['source_id']}] and 99 [^invented]")
     assert "[^invented]" not in output and "Unverified source" in output
     assert registered["source_id"] in output
+    await runtime.close()
+
+
+async def test_deferred_review_resurfaces_in_tasks_and_brief_without_executing(runtime):
+    async def send(arguments, task):
+        raise AssertionError("Reviewing must not execute")
+
+    runtime.tools.catalog["send_email"] = Tool("send_email", "Send email", schema({}), send, True)
+    task = runtime.store.new_task("main", "Prepare reviewed email", "local")
+    history = [
+        {
+            "role": "assistant",
+            "tool_calls": [{"id": "call", "function": {"name": "send_email", "arguments": "{}"}}],
+        }
+    ]
+    runtime.checkpoint(task, history, 0)
+    assert not await runtime.process_calls(runtime.store.task(task), history)
+    call = runtime.store.rows("SELECT * FROM calls")[0]
+    runtime.approvals.decide(call["id"], "defer")
+    buttons = runtime.telegram.review_buttons()
+    assert buttons[0][0]["callback_data"] == "show:" + call["id"]
+    brief = await runtime.attention.brief(force=True)
+    assert runtime.telegram.review_buttons(brief) == buttons
+    runtime.telegram.approval_card(call, 12, key="approval:" + call["id"] + ":view:fixture")
+    payload = json.loads(runtime.store.rows("SELECT payload FROM telegram_outbox")[0]["payload"])
+    assert "send_email" in payload["text"]
+    assert payload["reply_markup"]["inline_keyboard"][0][0]["callback_data"] == "approve:" + call["id"]
+    assert runtime.store.rows("SELECT status FROM calls")[0]["status"] == "deferred"
     await runtime.close()

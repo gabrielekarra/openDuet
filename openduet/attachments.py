@@ -16,6 +16,7 @@ TYPES = {
     ".pdf": "application/pdf",
     ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -26,7 +27,7 @@ TYPES = {
 }
 
 
-async def ingest(runtime, data, name, task=None):
+async def ingest(runtime, data, name, task=None, *, inbound=True):
     suffix = Path(name).suffix.lower()
     if suffix not in TYPES or len(data) > 20_000_000:
         raise ValueError("Unsupported attachment type or size (maximum 20 MB)")
@@ -37,7 +38,7 @@ async def ingest(runtime, data, name, task=None):
     text, transcript = "", ""
     if suffix in {".txt", ".md", ".csv"}:
         text = data[:100000].decode("utf-8", errors="replace")
-    elif suffix in {".docx", ".xlsx"}:
+    elif suffix in {".docx", ".xlsx", ".pptx"}:
         with zipfile.ZipFile(io.BytesIO(data)) as archive:
             if sum(item.file_size for item in archive.infolist()) > 40_000_000:
                 raise ValueError("Expanded attachment too large")
@@ -45,6 +46,16 @@ async def ingest(runtime, data, name, task=None):
             from docx import Document
 
             text = "\n".join(p.text for p in Document(io.BytesIO(data)).paragraphs)
+        elif suffix == ".pptx":
+            from pptx import Presentation
+
+            deck = Presentation(io.BytesIO(data))
+            text = "\n".join(
+                shape.text
+                for slide in list(deck.slides)[:50]
+                for shape in slide.shapes
+                if shape.has_text_frame
+            )[:32000]
         else:
             from openpyxl import load_workbook
 
@@ -93,6 +104,8 @@ async def ingest(runtime, data, name, task=None):
         "INSERT INTO attachments VALUES(?,?,?,?,?,?)",
         (ident, task, Path(name).name[:200], TYPES[suffix], path.name, len(data)),
     )
+    if inbound:
+        runtime.store.execute("INSERT INTO attachment_inputs VALUES(?)", (ident,))
     return {
         "attachment": ident,
         "name": Path(name).name[:200],

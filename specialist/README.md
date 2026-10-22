@@ -1,9 +1,15 @@
+> Historical research package retained from the native predecessor. This byte-level
+> transformer is not the production proactive runtime. Current connector events,
+> the lower-data NumPy specialist and evaluation commands are documented in
+> [the portable Kev guide](../docs/kev/README.md). Native paths below describe the
+> original experiments and are preserved for research reproducibility.
+
 # specialist
 
 Mints Bobb's personal, on-device specialist: a byte-level tiny
 transformer that scores `ignore` / `wait` / `prepare` / `suggest` from one
 user's own `audit.db`, distilled from the resident model and then fit on
-real labels. See `/Users/gabrielekarra/dev/bobb/docs/SPECIALIST.md` for
+real labels. See `../docs/kev/SPECIALIST.md` for
 the design this implements and `docs/CUA-INVESTIGATION.md` sections 2.1-2.6
 for the architecture it is adapted from.
 

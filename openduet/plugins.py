@@ -21,7 +21,7 @@ def skill(path):
     else:
         body = text
     return {
-        "name": str(metadata.get("name", path.parent.name))[:100],
+        "name": str(metadata.get("name", path.parent.name if path.name == "SKILL.md" else path.stem))[:100],
         "description": str(metadata.get("description", body.splitlines()[0] if body else ""))[:1000],
         "body": body.strip(),
     }
@@ -36,8 +36,8 @@ class Plugins:
 
     def skills(self):
         items = {}
-        for directory in (self.bundled, self.directory):
-            for path in directory.glob("**/SKILL.md"):
+        for directory in (self.bundled, self.directory, Path(self.runtime.config.skills_dir)):
+            for path in [*directory.glob("**/SKILL.md"), *directory.glob("**/commands/*.md")]:
                 if path.is_symlink():
                     continue
                 item = skill(path)
@@ -69,7 +69,11 @@ class Plugins:
                     or (item.external_attr >> 16) & 0o170000 == 0o120000
                 ):
                     raise ValueError("Invalid plugin path")
-                if not item.is_dir() and path.suffix.lower() not in allowed:
+                if (
+                    not item.is_dir()
+                    and path.suffix.lower() not in allowed
+                    and path.name not in {"LICENSE", "NOTICE", ".gitignore"}
+                ):
                     raise ValueError("Plugin bundles cannot contain executable code")
             candidates = [
                 name for name in archive.namelist() if name in {"plugin.json", ".claude-plugin/plugin.json"}
@@ -79,8 +83,19 @@ class Plugins:
             metadata = json.loads(archive.read(candidates[0]))
             if not re.fullmatch(r"[a-zA-Z0-9_-]{1,80}", metadata.get("name", "")):
                 raise ValueError("Invalid plugin name")
-            if metadata.get("hooks") or metadata.get("commands"):
-                raise ValueError("Executable plugin hooks and commands are not supported")
+            if metadata.get("hooks"):
+                raise ValueError("Executable plugin hooks are not supported")
+            declared = metadata.get("commands", [])
+            if isinstance(declared, str):
+                declared = [declared]
+            if not isinstance(declared, list) or any(
+                not isinstance(item, str)
+                or Path(item).is_absolute()
+                or ".." in Path(item).parts
+                or Path(item).suffix not in {"", ".md"}
+                for item in declared
+            ):
+                raise ValueError("Plugin commands must be declarative Markdown")
             connectors = metadata.get("connectors", [])
             if ".mcp.json" in archive.namelist():
                 connectors += list(json.loads(archive.read(".mcp.json")).get("mcpServers", {}).values())
@@ -164,6 +179,22 @@ def local_archive(directory):
                 raise ValueError("Plugin source exceeds limits")
             archive.writestr(str(relative), path.read_bytes())
     return output.getvalue()
+
+
+def select_plugin(root, name):
+    if not name:
+        return root
+    manifest = root / ".claude-plugin" / "marketplace.json"
+    entries = json.loads(manifest.read_text()).get("plugins", [])
+    selected = next((item.get("source") for item in entries if item.get("name") == name), None)
+    if not isinstance(selected, str) or not selected.startswith("./"):
+        raise ValueError(
+            "Select a local declarative entry; remote repositories need separate source approval"
+        )
+    destination = (root / selected).resolve()
+    if not destination.is_relative_to(root.resolve()) or not destination.is_dir():
+        raise ValueError("Marketplace plugin path must stay in its reviewed repository")
+    return destination
 
 
 def main():
@@ -273,10 +304,10 @@ def main():
                 capture_output=True,
                 timeout=30,
             )
-            data = local_archive(destination)
+            data = local_archive(select_plugin(destination, args.plugin))
     else:
         path = Path(source)
-        data = local_archive(path) if path.is_dir() else path.read_bytes()
+        data = local_archive(select_plugin(path, args.plugin)) if path.is_dir() else path.read_bytes()
     metadata = runtime.plugins.inspect(data)
     print(json.dumps(metadata, ensure_ascii=False, indent=2))
     if args.install:

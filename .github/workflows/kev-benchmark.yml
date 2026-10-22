@@ -1,0 +1,37 @@
+name: Real Kev benchmark
+on:
+  schedule:
+    - cron: '17 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      dtype:
+        description: Torch inference dtype (results are recorded separately)
+        type: choice
+        options: [bfloat16, float32]
+        default: bfloat16
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      OPENDUET_KEV_BACKEND: torch
+      OPENDUET_KEV_DEVICE: cpu
+      OPENDUET_KEV_DTYPE: ${{ inputs.dtype || 'bfloat16' }}
+      OPENDUET_KEV_MODELS: ${{ github.workspace }}/.runtime/kev-models
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --extra kev
+      - uses: actions/cache@v4
+        with:
+          path: .runtime/kev-models
+          key: kev-pinned-${{ hashFiles('openduet/kev/manifest.json') }}
+      - name: Explicit verified download and CPU evaluation
+        run: uv run --no-sync openduet-kev-eval --backend torch --download --output docs/benchmarks/kev-torch
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kev-torch-${{ github.run_id }}
+          path: docs/benchmarks/kev-torch.*

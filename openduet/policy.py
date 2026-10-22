@@ -5,6 +5,9 @@ import re
 
 
 def check_payload(arguments):
+    for field in ("action", "operation"):
+        if isinstance(arguments.get(field), str) and FORBIDDEN.search(arguments[field]):
+            raise ValueError("This operation is forbidden even with approval")
     text = json.dumps(arguments)
     if re.search(r"\b\d{3}-\d{2}-\d{4}\b", text):
         raise ValueError("Government identification must not be passed to tools")
@@ -91,3 +94,39 @@ def check_outgoing(text, user_request="", *, owner_delivery=False):
     if sensitive and not explicit:
         raise ValueError("Sharing personal health or financial information needs an explicit user request")
     return text
+
+
+def redact_identifiers(text):
+    """Remove validated identifiers before retrieval results reach prompts or source caches."""
+    patterns = [
+        r"\b\d{3}-\d{2}-\d{4}\b",
+        r"\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b",
+        r"\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b",
+        r"(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)",
+    ]
+
+    def replace(match):
+        try:
+            check_payload({"content": match[0]})
+        except ValueError:
+            return "[sensitive identifier withheld]"
+        return match[0]
+
+    for pattern in patterns:
+        text = re.sub(pattern, replace, text, flags=re.I)
+    return text
+
+
+def redact_data(value, private=lambda text: text, depth=0):
+    if depth > 40:
+        return "[deeply nested content withheld]"
+    if isinstance(value, dict):
+        return {key: redact_data(item, private, depth + 1) for key, item in value.items()}
+    if isinstance(value, list):
+        return [redact_data(item, private, depth + 1) for item in value]
+    if isinstance(value, str):
+        return redact_identifiers(private(value))
+    if type(value) in {int, float}:
+        masked = redact_identifiers(private(str(value)))
+        return value if masked == str(value) else masked
+    return value

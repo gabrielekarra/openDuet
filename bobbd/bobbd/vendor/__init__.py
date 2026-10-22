@@ -1,1 +1,0 @@
-"""Vendored offline inference components."""

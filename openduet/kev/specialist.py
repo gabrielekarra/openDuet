@@ -1,4 +1,4 @@
-"""Tier 0: the personal specialist, minted on the user's own Mac.
+"""Tier 0: the personal specialist, trained on the user's own server.
 
 VISION rules 3 and 5: Bobb learns by watching, and the decision that
 runs on every event should be tiny and fast. This module fits, from one
@@ -10,9 +10,7 @@ else still goes to the resident model (tier 1), exactly as before.
 Why this shape, and not the byte-level transformer in `specialist/`: that
 research model needs PyTorch and thousands of labels. A person produces
 tens of answers a week. A logistic model over hashed words, senders and
-circumstances is what fits well from tens to hundreds of examples, trains in
-well under a second in NumPy (already in the bundle), answers in a fraction
-of a millisecond, and is calibrated by construction. The transformer stays
+circumstances is what fits well from tens to hundreds of examples, uses NumPy for bounded local training and decision scoring. The transformer stays
 the path for when there is enough data to feed it.
 
 Labels, in order of trust (docs/SPECIALIST.md):
@@ -239,7 +237,7 @@ def examples(conn: sqlite3.Connection, *, now: float | None = None) -> list[Exam
         SELECT d.decision_id, d.ts, d.kind, d.app, d.event_payload, d.action, d.abstained, d.confidence,
                d.response, d.response_reason, d.tier, l.label, l.weight, l.source
         FROM decisions d LEFT JOIN labels l ON l.decision_id = d.decision_id
-        WHERE d.kind IN ({placeholders}) AND d.ts >= ?
+        WHERE d.kind IN ({placeholders}) AND d.ts >= ? AND d.learning_enabled=1
         ORDER BY d.ts
         """,
         (*COVERED_KINDS, now - LOOKBACK_DAYS * 86400),
@@ -275,7 +273,7 @@ def examples(conn: sqlite3.Connection, *, now: float | None = None) -> list[Exam
             y, w, src = float(label), float(weight), str(source)
         elif response == "dismiss":
             y, w, src = 0.0, 0.3, "timeout"
-        elif tier == "specialist":
+        elif tier in {"specialist", "fallback"}:
             # Its own verdicts are not evidence; training on them would only
             # teach it to agree with itself.
             continue

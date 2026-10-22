@@ -39,6 +39,11 @@ def install(app, runtime):
             body.get("checkout_hosts", {}), dict
         ):
             raise ValueError("Invalid merchant scope")
+        if not isinstance(body.get("categories", []), list) or any(
+            not isinstance(item, str) or not item.replace("_", "").isalnum()
+            for item in body.get("categories", [])
+        ):
+            raise ValueError("Merchant categories must use the issuer's category names")
         if body.get("enabled"):
             required = {"wallet.stripe.key", "wallet.stripe.cardholder", "wallet.stripe.webhook"}
             present = {row["name"] for row in store.rows("SELECT name FROM secrets")}
@@ -58,6 +63,10 @@ def install(app, runtime):
         if event.get("type") == "issuing_authorization.request":
             return {"approved": runtime.wallet.authorize(event)}
         return {"received": True}
+
+    @app.post("/api/purchases/{ident}/cancel")
+    async def cancel_purchase(ident: str):
+        return await runtime.wallet.cancel(ident)
 
     @app.get("/api/make/{ident}")
     async def artifact_preview(ident: str):
@@ -90,6 +99,8 @@ def install(app, runtime):
         import re
 
         if not re.fullmatch(r"[0-9a-f]{32}", ident) or not re.fullmatch(r"slide-[0-9]+\.png", name):
+            raise HTTPException(404)
+        if not store.rows("SELECT id FROM artifacts WHERE id=?", (ident,)):
             raise HTTPException(404)
         path = runtime.config.data_dir / "artifacts" / "previews" / ident / name
         if not path.is_file():

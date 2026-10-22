@@ -9,5 +9,5 @@ uses the architecture's actual hidden dimension for quantized embeddings, caps
 state inputs at 4,096 tokens (refusing overflow), prefills in 512-token chunks,
 and evaluates independent question branches one at a time. The pointer head,
 delimiters, encoder, hidden-state readout and checkpoint temperature are Kev's.
-The runtime adapter is in `bobbd/kev.py`. No serving or training dependencies
+The runtime adapter is in `openduet/kev/adapter.py`. No serving or training dependencies
 are vendored. A different upstream revision requires parity and workload tests.

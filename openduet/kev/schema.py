@@ -28,7 +28,7 @@ class Choice:
     options: tuple[str, ...]
     # Ask a second time with the options in reverse order and average the two
     # distributions. Costs one extra row in the same batched forward pass.
-    # See `decide.py` and `bobbd/README.md`, "Letter-order bias".
+    # See docs/kev/README.md for typed pointer readout and option-order checks.
     debias: bool = False
 
     def __post_init__(self) -> None:

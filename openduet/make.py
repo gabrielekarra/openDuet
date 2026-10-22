@@ -150,6 +150,12 @@ def presentation(path, spec, directory, store):
         else:
             raise ValueError("Unsupported slide layout")
         slide.notes_slide.notes_text_frame.text = str(item.get("notes", ""))[:5000]
+        slide.shapes.add_picture(
+            str(Path(__file__).parent / "web" / "brand" / "source-mark.png"),
+            Inches(12.1),
+            Inches(6.9),
+            width=Inches(0.65),
+        )
         previews.append(
             {
                 "slide": index + 1,
@@ -166,6 +172,7 @@ def presentation(path, spec, directory, store):
 
 def document(path, title, spec):
     from docx import Document
+    from docx.shared import Inches
 
     doc = Document()
     doc.add_heading(title, 0)
@@ -186,6 +193,9 @@ def document(path, title, spec):
     for source in spec.get("sources", []):
         doc.add_paragraph(str(source))
     doc.sections[0].footer.paragraphs[0].text = "OpenDuet"
+    doc.sections[0].footer.paragraphs[0].add_run().add_picture(
+        str(Path(__file__).parent / "web" / "brand" / "source-mark.png"), width=Inches(0.55)
+    )
     doc.save(path)
 
 
@@ -198,7 +208,22 @@ def pdf(path, title, content):
     elements = [Paragraph(html.escape(title), styles["Title"])]
     for line in content.splitlines()[:3000]:
         elements.extend([Paragraph(html.escape(line), styles["BodyText"]), Spacer(1, 5)])
-    SimpleDocTemplate(str(path), pagesize=A4, title=title).build(elements)
+
+    def footer(canvas, document):
+        canvas.drawImage(
+            str(Path(__file__).parent / "web" / "brand" / "source-mark.png"),
+            42,
+            24,
+            width=45,
+            height=22.5,
+            mask="auto",
+        )
+        canvas.setFont("Helvetica", 8)
+        canvas.drawString(94, 30, "OpenDuet")
+
+    SimpleDocTemplate(str(path), pagesize=A4, title=title).build(
+        elements, onFirstPage=footer, onLaterPages=footer
+    )
 
 
 def dashboard(spec):
@@ -257,6 +282,9 @@ def dashboard_image(path, title, spec):
         fill="#62695f",
         font=small_font,
     )
+    brand = Image.open(Path(__file__).parent / "web" / "brand" / "source-mark.png").convert("RGBA")
+    brand.thumbnail((70, 35))
+    image.paste(brand, (1080, 750), brand)
     image.save(path, format="PNG")
 
 
@@ -374,7 +402,7 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
     from .citations import Sources
 
     sources = Sources(store).listing(task)
-    source_lines = [f"[{s['id']}] {s['tool']} {s['url']}" for s in sources]
+    source_lines = [f"[^{s['id']}]: {s['tool']} {s['url']}" for s in sources]
     spec = (
         json.loads(content)
         if content.lstrip().startswith("{") and format in {"dashboard", "webapp", "xlsx", "pptx", "docx"}
@@ -552,3 +580,10 @@ class Make:
                     db,
                 )
                 db.execute("INSERT INTO dashboard_runs VALUES(?,?,?)", (job["root"], day, task))
+                db.execute("INSERT INTO task_origins VALUES(?,'dashboard',?)", (task, job["root"]))
+                owner = self.runtime.telegram.settings()
+                if owner.get("paired"):
+                    db.execute(
+                        "INSERT INTO task_surfaces VALUES(?,'telegram',?,NULL,NULL,NULL)",
+                        (task, owner["owner_chat"]),
+                    )

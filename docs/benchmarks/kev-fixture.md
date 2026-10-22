@@ -11,4 +11,4 @@ Synthetic logits: adapter/policy regression only. These results do not measure K
 
 Interrupt precision: 1.000; recall: 1.000. Hostile interrupts: 0.
 
-Latency ms: {'median': 0.163270500706858, 'max': 0.48493899885215797}. Gate: passed.
+Latency ms: {'median': 0.17788250261219218, 'max': 0.5166959963389672}. Gate: passed.

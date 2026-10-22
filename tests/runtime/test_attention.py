@@ -216,3 +216,107 @@ async def test_forgetting_connector_deletes_learning_and_events(runtime):
     assert runtime.store.rows("SELECT * FROM decisions") == []
     assert runtime.store.rows("SELECT * FROM connector_events") == []
     await runtime.close()
+
+
+async def test_sent_promise_due_friday_is_in_friday_brief_with_source(runtime, monkeypatch):
+    import json
+    from dataclasses import asdict
+
+    import httpx
+
+    runtime.config.kev_url = "https://fixture-kev.example"
+    runtime.attention.configure({"timezone": "UTC"})
+    sent = datetime(2026, 10, 21, 9, tzinfo=ZoneInfo("UTC")).timestamp()
+    ids = runtime.attention.events.ingest(
+        "gmail",
+        [
+            {
+                "id": "promise",
+                "kind": "mail.sent",
+                "occurred_at": sent,
+                "sender": "owner@example.test",
+                "text": "I'll send the signed contract by Friday",
+                "payload": {"to": "client@example.test", "thread_id": "contract-thread"},
+            }
+        ],
+        now=sent,
+    )
+    event = json.loads(
+        runtime.store.rows("SELECT data FROM connector_events WHERE id=?", (ids[0],))[0]["data"]
+    )
+
+    def handler(request):
+        assert {row["name"] for row in json.loads(request.content)["questions"]} == {
+            "promise",
+            "expects_reply",
+        }
+        return httpx.Response(
+            200, json=[asdict(answer("promise", True)), asdict(answer("expects_reply", False))]
+        )
+
+    original = httpx.AsyncClient
+    monkeypatch.setattr(
+        httpx, "AsyncClient", lambda **options: original(transport=httpx.MockTransport(handler))
+    )
+    await runtime.attention.commitment(event, [])
+    commitment = runtime.store.rows("SELECT * FROM commitments")[0]
+    assert datetime.fromtimestamp(commitment["due"], ZoneInfo("UTC")).date().isoformat() == "2026-10-23"
+    friday = datetime(2026, 10, 23, 8, tzinfo=ZoneInfo("UTC")).timestamp()
+    task = await runtime.attention.brief(now=friday)
+    assert "signed contract" in runtime.store.task(task)["request"]
+    assert runtime.sources.listing(task)
+    await runtime.close()
+
+
+async def test_call_before_flight_creates_preparation_without_moving_event(runtime):
+
+    day = datetime(2026, 10, 23, 14, tzinfo=ZoneInfo("UTC")).timestamp()
+    ids = runtime.attention.events.ingest(
+        "calendar",
+        [
+            {"id": "call", "subject": "Client call", "start": day, "end": day + 1800},
+            {"id": "flight", "subject": "Flight to Rome", "start": day + 3600, "end": day + 7200},
+        ],
+        "calendar.event_created",
+    )
+
+    async def readouts(event, context):
+        assert context["calendar_conflicts"][0]["subject"] == "Flight to Rome"
+        return [answer("urgency", 3), answer("conflict", True), answer("prepare", True)]
+
+    runtime.attention.readouts = readouts
+    row = runtime.store.rows("SELECT * FROM connector_events WHERE id=?", (ids[0],))[0]
+    await runtime.attention.triage(row)
+    initiative = runtime.store.rows("SELECT * FROM initiatives")[0]
+    assert "Flight to Rome" in runtime.store.task(initiative["task"])["request"]
+    assert runtime.store.rows("SELECT * FROM calls") == []
+    assert (
+        runtime.store.rows("SELECT data FROM connector_events WHERE id=?", (ids[0],))[0]["data"]
+        == row["data"]
+    )
+    await runtime.close()
+
+
+async def test_evening_report_includes_completed_work_when_no_new_events(runtime):
+    runtime.attention.configure({"timezone": "UTC", "working_days": list(range(7)), "report_enabled": True})
+    task = runtime.store.new_task("main", "Prepare client contract", "local")
+    runtime.store.status(task, "completed")
+    day = runtime.attention.local().replace(hour=20, minute=0, second=0)
+    report = await runtime.attention.brief(evening=True, now=day.timestamp())
+    assert report and "Prepare client contract" in runtime.store.task(report)["request"]
+    await runtime.close()
+
+
+async def test_forget_excludes_past_teacher_examples_from_future_learning(runtime):
+    import json
+
+    runtime.store.execute(
+        "INSERT INTO decisions(decision_id,event_id,ts,kind,app,action,confidence,readouts,event_payload,tier) VALUES('d','e',?,'mail.received','gmail','brief',0.9,'[]',?,'kev')",
+        (time.time(), json.dumps({"sender": "client@example.test", "body": "Fixture"})),
+    )
+    with runtime.store.db() as db:
+        assert specialist.examples(db)
+    runtime.attention.forget()
+    with runtime.store.db() as db:
+        assert specialist.examples(db) == []
+    await runtime.close()

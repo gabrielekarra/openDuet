@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import time
 import uuid
@@ -48,6 +49,9 @@ class Store:
                     id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, content TEXT NOT NULL,
                     task TEXT, created REAL NOT NULL);
                 CREATE TABLE IF NOT EXISTS usage(day TEXT PRIMARY KEY, input INTEGER, output INTEGER);
+                CREATE TABLE IF NOT EXISTS task_origins(task TEXT PRIMARY KEY,kind TEXT,source TEXT);
+                CREATE TABLE IF NOT EXISTS task_progress(task TEXT PRIMARY KEY,title TEXT,completed INTEGER,total INTEGER,updated REAL);
+                CREATE TABLE IF NOT EXISTS usage_workstream(day TEXT,kind TEXT,input INTEGER,output INTEGER,PRIMARY KEY(day,kind));
                 CREATE TABLE IF NOT EXISTS preferences(key TEXT PRIMARY KEY, value TEXT NOT NULL);
             """)
         self.path.chmod(0o600)
@@ -105,6 +109,9 @@ class Store:
             (ident, channel, request, provider, "queued", "[]", now, now),
         )
         self.message(channel, "user", request, ident, db)
+        if db.execute("SELECT 1 FROM sqlite_master WHERE name='attachments'").fetchone():
+            for attachment in re.findall(r'"attachment"\s*:\s*"([0-9a-f]{32})"', request):
+                db.execute("UPDATE attachments SET task=? WHERE id=? AND task IS NULL", (ident, attachment))
         return ident
 
     def task(self, ident):
@@ -157,6 +164,59 @@ class Store:
             raise ValueError("Stop active tasks before deleting this channel")
         # Delete generated context as well as the search index. Old checkpoints must not resurrect a chat.
         with self.db() as db:
+            tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+            task_query = "SELECT id FROM tasks WHERE channel=?"
+            if "telegram_outbox" in tables:
+                db.execute(
+                    "DELETE FROM telegram_outbox WHERE EXISTS(SELECT 1 FROM tasks t WHERE t.channel=? AND instr(telegram_outbox.id,t.id)>0) OR EXISTS(SELECT 1 FROM calls c JOIN tasks t ON t.id=c.task WHERE t.channel=? AND instr(telegram_outbox.id,c.id)>0) OR json_extract(payload,'$._artifact') IN (SELECT id FROM artifacts WHERE task IN ("
+                    + task_query
+                    + ")) OR json_extract(payload,'$._attachment') IN (SELECT id FROM attachments WHERE task IN ("
+                    + task_query
+                    + "))",
+                    (channel, channel, channel, channel),
+                )
+            if "telegram_cards" in tables:
+                db.execute(
+                    "DELETE FROM telegram_cards WHERE json_extract(CASE WHEN json_valid(payload) THEN payload ELSE '{}' END,'$.task') IN ("
+                    + task_query
+                    + ")",
+                    (channel,),
+                )
+            if "attachment_inputs" in tables:
+                db.execute(
+                    "DELETE FROM attachment_inputs WHERE id IN (SELECT id FROM attachments WHERE task IN ("
+                    + task_query
+                    + "))",
+                    (channel,),
+                )
+            for table, column in (
+                ("sources", "task"),
+                ("task_surfaces", "task"),
+                ("attachments", "task"),
+                ("dashboard_runs", "task"),
+                ("initiatives", "task"),
+                ("task_origins", "task"),
+                ("task_progress", "task"),
+                ("task_decisions", "task"),
+                ("task_reviews", "task"),
+            ):
+                if table in tables:
+                    db.execute(
+                        "DELETE FROM " + table + " WHERE " + column + " IN (" + task_query + ")", (channel,)
+                    )
+            if "artifact_versions" in tables:
+                db.execute(
+                    "DELETE FROM artifact_versions WHERE id IN (SELECT id FROM artifacts WHERE task IN ("
+                    + task_query
+                    + "))",
+                    (channel,),
+                )
+                db.execute(
+                    "DELETE FROM dashboard_refresh WHERE root IN (SELECT id FROM artifacts WHERE task IN ("
+                    + task_query
+                    + "))",
+                    (channel,),
+                )
             db.execute(
                 "DELETE FROM message_search WHERE id IN (SELECT id FROM messages WHERE channel=?)", (channel,)
             )
@@ -171,9 +231,13 @@ class Store:
             if channel != "main":
                 db.execute("DELETE FROM channels WHERE id=?", (channel,))
 
-    def usage(self, incoming=0, outgoing=0):
+    def usage(self, incoming=0, outgoing=0, *, kind="user"):
         day = time.strftime("%Y-%m-%d", time.gmtime())
         with self.db() as db:
+            db.execute(
+                "INSERT INTO usage_workstream VALUES(?,?,?,?) ON CONFLICT(day,kind) DO UPDATE SET input=input+excluded.input,output=output+excluded.output",
+                (day, kind, incoming, outgoing),
+            )
             db.execute(
                 "INSERT INTO usage VALUES(?,?,?) ON CONFLICT(day) DO UPDATE SET "
                 "input=input+excluded.input, output=output+excluded.output",

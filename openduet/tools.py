@@ -36,6 +36,8 @@ class Tool:
     risk: str = ""
 
     def needs_approval(self, arguments):
+        if self.name == "create_artifact" and arguments.get("refresh"):
+            return True
         if self.name == "browser" and arguments.get("action") in {"open", "read"}:
             return False
         return self.approval
@@ -66,7 +68,15 @@ class Tools:
             return await asyncio.to_thread(runtime.mac.observe)
 
         async def capture(arguments, task):
-            return await runtime.mac.screenshot(task)
+            result = await runtime.mac.screenshot(task)
+            owner = runtime.telegram.settings()
+            if owner.get("paired") and not self.store.rows(
+                "SELECT task FROM task_surfaces WHERE task=?", (task,)
+            ):
+                runtime.telegram.send_attachment(
+                    owner["owner_chat"], result["attachment"], key="attachment:" + result["attachment"]
+                )
+            return result
 
         async def open_app(arguments, task):
             return await runtime.mac.open_app(**arguments)
@@ -96,6 +106,23 @@ class Tools:
         async def replies(arguments, task):
             return runtime.telegram.offer_replies(task, **arguments)
 
+        async def progress(arguments, task):
+            import time
+
+            if arguments["completed"] > arguments["total"]:
+                raise ValueError("Completed count cannot exceed total")
+            self.store.execute(
+                "INSERT OR REPLACE INTO task_progress VALUES(?,?,?,?,?)",
+                (
+                    task,
+                    runtime.redact(arguments["title"]),
+                    arguments["completed"],
+                    arguments["total"],
+                    time.time(),
+                ),
+            )
+            return {"recorded": True}
+
         async def schedule(arguments, task):
             from .store import uid
 
@@ -116,6 +143,18 @@ class Tools:
             return {"schedule": ident}
 
         tools = [
+            Tool(
+                "report_progress",
+                "Report verified progress for the current task; counts describe actual processed items, not a prediction.",
+                schema(
+                    {
+                        "title": {"type": "string", "maxLength": 200},
+                        "completed": {"type": "integer", "minimum": 0},
+                        "total": {"type": "integer", "minimum": 0, "maximum": 100000},
+                    }
+                ),
+                progress,
+            ),
             Tool(
                 "offer_replies",
                 "Offer 2–4 short Telegram reply choices. A choice starts follow-up work; external effects still require approval.",
@@ -223,7 +262,57 @@ class Tools:
             Tool(
                 "set_attention_preference",
                 "Propose changes to brief/report time, timezone, VIPs, quiet hours or attention preferences. User must confirm.",
-                schema({"preferences": {"type": "object"}}),
+                schema(
+                    {
+                        "preferences": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "timezone": {"type": "string", "maxLength": 100},
+                                "language": {"type": "string", "maxLength": 20},
+                                **{
+                                    key: {"type": "string", "pattern": "^[0-2][0-9]:[0-5][0-9]$"}
+                                    for key in [
+                                        "brief_time",
+                                        "report_time",
+                                        "working_start",
+                                        "working_end",
+                                        "quiet_start",
+                                        "quiet_end",
+                                    ]
+                                },
+                                "report_enabled": {"type": "boolean"},
+                                "working_days": {
+                                    "type": "array",
+                                    "items": {"type": "integer", "minimum": 0, "maximum": 6},
+                                    "maxItems": 7,
+                                },
+                                **{
+                                    key: {
+                                        "type": "array",
+                                        "items": {"type": "string", "maxLength": 300},
+                                        "maxItems": 100,
+                                    }
+                                    for key in ["always", "never", "vip"]
+                                },
+                                "max_interrupts": {"type": "integer", "minimum": 0, "maximum": 100},
+                                "floor": {"type": "number", "minimum": 0.4, "maximum": 0.95},
+                                "retention_days": {"type": "integer", "minimum": 1, "maximum": 365},
+                                "travel_minutes": {"type": "integer", "minimum": 0, "maximum": 240},
+                                "financial_threshold": {"type": ["number", "null"], "minimum": 0},
+                                "poll_seconds": {"type": "integer", "minimum": 60, "maximum": 86400},
+                                "connector_cadence": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "integer",
+                                        "minimum": 60,
+                                        "maximum": 86400,
+                                    },
+                                },
+                            },
+                        }
+                    }
+                ),
                 preference,
                 True,
             ),
@@ -261,19 +350,17 @@ class Tools:
         async def artifact(arguments, task):
             import asyncio
 
-            sources = self.runtime.sources.listing(task) if hasattr(self, "runtime") else []
-            if sources and arguments["format"] in {"md", "txt"}:
-                arguments = arguments | {
-                    "content": arguments["content"]
-                    + "\n\nSources\n"
-                    + "\n".join(f"[^{source['id']}] {source['url'] or source['tool']}" for source in sources)
-                }
             return await asyncio.to_thread(
                 artifacts.create, self.store, self.config.data_dir / "artifacts", task, **arguments
             )
 
         async def browse(arguments, task):
-            return await self.browser.run(**arguments)
+            result = await self.browser.run(**arguments)
+            if result.get("attachment"):
+                self.store.execute(
+                    "UPDATE attachments SET task=? WHERE id=? AND task IS NULL", (task, result["attachment"])
+                )
+            return result
 
         tools = [
             Tool(
@@ -323,10 +410,13 @@ class Tools:
                     "Use CSS selectors for click/fill. Never enter secrets via this tool.",
                     schema(
                         {
-                            "action": {"enum": ["open", "read", "click", "fill", "screenshot", "download"]},
+                            "action": {
+                                "enum": ["open", "read", "click", "fill", "screenshot", "download", "upload"]
+                            },
                             "url": STRING,
                             "selector": STRING,
                             "text": STRING,
+                            "file_id": STRING,
                         },
                         ["action"],
                     ),
@@ -396,6 +486,8 @@ class Tools:
             raise ValueError("Tool is unavailable or connector access was revoked")
         Draft202012Validator(tool.parameters).validate(arguments)
         check_payload(arguments)
+        if hasattr(self, "runtime") and self.runtime.redact(json.dumps(arguments)) != json.dumps(arguments):
+            raise ValueError("Credentials must use private injection, never ordinary tool arguments")
         if classify(tool.remote_name or tool.name) == "forbidden":
             raise ValueError("This action is forbidden even with approval")
         return tool
@@ -405,9 +497,13 @@ class Tools:
         if tool.connector and tool.needs_approval(arguments):
             from .policy import check_outgoing
 
-            check_outgoing(json.dumps(arguments), self.store.task(task)["request"])
+            check_outgoing(json.dumps(arguments), self.store.task(task)["request"].split("UNTRUSTED", 1)[0])
         result = await tool.run(arguments, task)
-        if tool.connector and hasattr(self, "runtime"):
+        if tool.connector and isinstance(result, dict) and result.get("isError"):
+            raise ValueError("The connector reported an error; verify the external outcome")
+        if hasattr(self, "runtime"):
+            result = self.runtime.redact_data(json.loads(json.dumps(result, ensure_ascii=False, default=str)))
+        if hasattr(self, "runtime") and (tool.connector or name in {"browser", "search_context"}):
             result = self.runtime.sources.register(task, name, result)
         text = json.dumps(result, ensure_ascii=False, default=str)
         if len(text) > 48000:

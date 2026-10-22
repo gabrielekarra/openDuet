@@ -6,7 +6,7 @@ import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
-from playwright.async_api import async_playwright
+from playwright.async_api import async_playwright, expect
 
 
 async def main():
@@ -27,7 +27,7 @@ async def main():
         await page.locator("#bot-form button").click()
         pairing = page.get_by_role("link", name="Pair my Telegram account", exact=True)
         await pairing.wait_for()
-        update_base = int(time.time()*1000)
+        update_base = int(time.time() * 1000)
         code = parse_qs(urlsplit(await pairing.get_attribute("href")).query)["start"][0]
         response = await page.request.post(
             "http://127.0.0.1:8766/api/fixture/update",
@@ -48,7 +48,7 @@ async def main():
             response = await page.request.post(
                 "http://127.0.0.1:8766/api/fixture/update",
                 data={
-                    "update_id": update_base+identifier,
+                    "update_id": update_base + identifier,
                     "message": {
                         "message_id": identifier,
                         "from": {"id": 12},
@@ -87,7 +87,17 @@ async def main():
                         await page.locator("#more-links [data-view=" + view + "]").click()
                     else:
                         await page.locator("#navigation [data-view=" + view + "]").click()
-                    await page.locator("#content h1").wait_for()
+                    await expect(page.locator("#content h1")).to_have_text(
+                        {
+                            "telegram": "Telegram",
+                            "tasks": "Tasks",
+                            "make": "Make",
+                            "proactivity": "Proactivity",
+                            "connections": "Connections",
+                            "settings": "Settings",
+                            "chat": "Chat",
+                        }[view]
+                    )
                     assert await page.evaluate("document.documentElement.scrollWidth <= innerWidth"), (
                         width,
                         theme,

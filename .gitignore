@@ -10,10 +10,7 @@ build/
 *.db-shm
 .DS_Store
 *.o
-dist/*
-!dist/intro/
-dist/intro/*
-!dist/intro/bobb-intro.mp4
+dist/
 
 # SQLite session journals are runtime data, never source.
 *.ses

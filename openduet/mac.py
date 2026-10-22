@@ -9,7 +9,19 @@ from pathlib import Path
 
 from .store import uid
 
-PROTECTED = ("keychain", "1password", "bitwarden", "keepass", "passwords")
+PROTECTED = (
+    "keychain",
+    "1password",
+    "bitwarden",
+    "keepass",
+    "passwords",
+    "lastpass",
+    "dashlane",
+    "enpass",
+    "roboform",
+    "protonpass",
+    "proton.pass",
+)
 
 
 class MacHost:
@@ -33,15 +45,33 @@ class MacHost:
         self.check()
         found = []
         for directory in (Path("/Applications"), Path("/System/Applications"), Path.home() / "Applications"):
-            for app in sorted(directory.glob("*.app")):
+            apps = sorted([*directory.glob("*.app"), *directory.glob("*/*.app")])
+            if directory == Path("/System/Applications"):
+                apps.append(Path("/System/Library/CoreServices/Finder.app"))
+            for app in apps:
                 try:
                     info = plistlib.loads((app / "Contents/Info.plist").read_bytes())
                     name, bundle = app.stem, info["CFBundleIdentifier"]
+                    if not isinstance(bundle, str):
+                        continue
                     if not any(word in (name + bundle).lower() for word in PROTECTED):
                         found.append({"name": name, "bundle_id": bundle})
                 except (OSError, ValueError, KeyError):
                     continue
         return found
+
+    def foreground(self):
+        self.check()
+        try:
+            from AppKit import NSWorkspace
+        except ImportError:
+            raise ValueError("Install the mac extra from the repository: uv sync --extra mac") from None
+        front = NSWorkspace.sharedWorkspace().frontmostApplication()
+        if not front or any(word in str(front.bundleIdentifier()).lower() for word in PROTECTED):
+            raise ValueError("This application is protected")
+        if str(front.bundleIdentifier()) not in {item["bundle_id"] for item in self.apps()}:
+            raise ValueError("The foreground application is not permitted")
+        return front
 
     async def command(self, *arguments):
         child = await asyncio.create_subprocess_exec(
@@ -71,17 +101,11 @@ class MacHost:
         self.check()
         try:
             import ApplicationServices as AX
-            from AppKit import NSWorkspace
         except ImportError:
-            raise ValueError("Install OpenDuet with the mac extra: pip install 'openduet[mac]'") from None
+            raise ValueError("Install the mac extra from the repository: uv sync --extra mac") from None
         if not AX.AXIsProcessTrusted():
             raise ValueError("Grant Accessibility to the Python/terminal running OpenDuet in macOS Settings")
-        front = NSWorkspace.sharedWorkspace().frontmostApplication()
-        if not front or any(word in str(front.bundleIdentifier()).lower() for word in PROTECTED):
-            raise ValueError("This application is protected")
-        allowed = {a["bundle_id"] for a in self.apps()}
-        if str(front.bundleIdentifier()) not in allowed:
-            raise ValueError("The foreground application is not permitted")
+        front = self.foreground()
         self.pid = front.processIdentifier()
         self.elements.clear()
         self.snapshot_id = uid()
@@ -200,12 +224,12 @@ class MacHost:
     async def screenshot(self, task=None):
         self.check()
         # Refuse protected foreground apps before capturing any display pixels.
-        await asyncio.to_thread(self.observe)
+        await asyncio.to_thread(self.foreground)
         directory = self.runtime.config.data_dir / "attachments"
         directory.mkdir(exist_ok=True, mode=0o700)
         ident = uid()
         path = directory / (ident + ".png")
-        await self.command("/usr/sbin/screencapture", "-x", "-t", "png", str(path))
+        await self.command("/usr/sbin/screencapture", "-x", "-D", "1", "-t", "png", str(path))
         if not path.is_file() or path.stat().st_size > 20_000_000:
             path.unlink(missing_ok=True)
             raise ValueError("Screen capture unavailable or too large")
