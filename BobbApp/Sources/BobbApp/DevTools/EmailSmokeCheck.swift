@@ -53,7 +53,7 @@ func runEmailSmokeCheck() {
         if let directory = AppPaths.argument("--screenshots") {
             try? FileManager.default.createDirectory(atPath: directory, withIntermediateDirectories: true)
             try? await Task.sleep(for: .milliseconds(350))
-            if let window = NSApp.windows.first(where: { $0.title == "Bobb · Email" }) {
+            if let window = NSApp.windows.first(where: { $0.title == "OpenDuet · Email" }) {
                 captured = await captureMailSmokeWindow(window, to: directory + "/email-workspace-it.png")
                 workspace.tab = "reminders"
                 try? await Task.sleep(for: .milliseconds(200))

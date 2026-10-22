@@ -16,7 +16,7 @@ final class MessageAppTools {
         var database: OpaquePointer?
         guard sqlite3_open_v2(path, &database, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) == SQLITE_OK, let database else {
             if let database { sqlite3_close(database) }
-            throw NativeAppTools.Failure.unavailable("Allow Full Disk Access for Bobb to read Messages.")
+            throw NativeAppTools.Failure.unavailable("Allow Full Disk Access for OpenDuet to read Messages.")
         }
         sqlite3_busy_timeout(database, 100); return database
     }

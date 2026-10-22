@@ -25,7 +25,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 APP_SRC="$ROOT/BobbApp"
 DIST="$ROOT/dist"
 WORK="$DIST/work"
-APP="$DIST/Bobb.app"
+APP="$DIST/OpenDuet.app"
 PYTHON_SERIES="3.12"
 
 MODE="full"
@@ -175,13 +175,13 @@ codesign --verify --deep --strict --verbose=1 "$APP"
 
 # ---------------------------------------------------------------- DMG
 step "DMG"
-DMG="$DIST/Bobb-$VERSION.dmg"
+DMG="$DIST/OpenDuet-$VERSION.dmg"
 STAGE="$WORK/dmg"
 mkdir -p "$STAGE"
 cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
 rm -f "$DMG"
-hdiutil create -quiet -volname "Bobb $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
+hdiutil create -quiet -volname "OpenDuet $VERSION" -srcfolder "$STAGE" -ov -format UDZO "$DMG"
 [[ "$IDENTITY" != "-" ]] && codesign --force --timestamp --sign "$IDENTITY" "$DMG"
 
 # ---------------------------------------------------------------- notarization

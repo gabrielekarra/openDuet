@@ -69,7 +69,7 @@ public struct BoundaryConfiguration: Codable, Equatable, Sendable {
         return AppBoundary(id: id, name: name)
     }
 
-    public func webApp(host: String, browserBundleId: String = "bobb.browser", browserName: String = "Bobb Browser") -> AppBoundary? {
+    public func webApp(host: String, browserBundleId: String = "bobb.browser", browserName: String = "OpenDuet Browser") -> AppBoundary? {
         guard !isExcluded(bundleId: "web:\(host)", name: host),
               !isExcluded(bundleId: browserBundleId, name: browserName) else { return nil }
         return app(bundleId: "web:\(host)", name: host) ?? app(bundleId: browserBundleId, name: browserName)

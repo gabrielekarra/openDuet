@@ -72,7 +72,7 @@ final class EmailWorkspace {
             let hosting = NSHostingView(rootView: EmailWorkspaceView(workspace: self, state: state))
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1020, height: 720),
                                   styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
-            window.title = "Bobb · Email"
+            window.title = "OpenDuet · Email"
             window.contentView = hosting
             window.minSize = NSSize(width: 880, height: 600)
             window.isReleasedWhenClosed = false
@@ -344,7 +344,7 @@ final class EmailWorkspace {
     private func failed(_ error: Error) {
         if let failure = error as? AppleScriptRunner.Failure, failure.isPermissionDenied { onPermissionDenied?() }
         if let failure = error as? AppleScriptRunner.Failure, failure.isPermissionDenied {
-            notice = EmailCopy.t("Allow Mail Automation in Bobb’s settings, then try again.", "Consenti Automazione di Mail nelle impostazioni di Bobb, poi riprova.")
+            notice = EmailCopy.t("Allow Mail Automation in OpenDuet’s settings, then try again.", "Consenti Automazione di Mail nelle impostazioni di OpenDuet, poi riprova.")
         } else {
             notice = EmailCopy.t("Mail could not complete synchronization. Your imported messages are kept; try again.", "Mail non ha completato la sincronizzazione. I messaggi importati sono conservati; riprova.")
         }

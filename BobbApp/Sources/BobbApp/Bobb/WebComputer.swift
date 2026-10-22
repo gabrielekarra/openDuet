@@ -63,20 +63,20 @@ final class WebComputer: NSObject, TaskDriver, WKNavigationDelegate, WKUIDelegat
         lastError = error.localizedDescription
     }
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        window?.title = (webView.title ?? webView.url?.host ?? "Browser") + " · Bobb"
+        window?.title = (webView.title ?? webView.url?.host ?? "Browser") + " · OpenDuet"
     }
     func webView(_ webView: WKWebView, runJavaScriptAlertPanelWithMessage message: String,
                  initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping @MainActor @Sendable () -> Void) { completionHandler() }
     func webView(_ webView: WKWebView, runJavaScriptConfirmPanelWithMessage message: String,
                  initiatedByFrame frame: WKFrameInfo, completionHandler: @escaping @MainActor @Sendable (Bool) -> Void) {
         // A page cannot approve its own confirm dialog in the background.
-        lastError = "Open Bobb's browser to review the website confirmation."; completionHandler(false)
+        lastError = "Open OpenDuet's browser to review the website confirmation."; completionHandler(false)
     }
 
     func inspect() {
         if window == nil {
             let w = NSWindow(contentRect: webView.frame, styleMask: [.titled, .closable, .resizable, .miniaturizable], backing: .buffered, defer: false)
-            w.title = "Bobb Browser"; w.isReleasedWhenClosed = false; w.contentView = webView; window = w
+            w.title = "OpenDuet Browser"; w.isReleasedWhenClosed = false; w.contentView = webView; window = w
         }
         window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
     }
@@ -92,7 +92,7 @@ final class WebComputer: NSObject, TaskDriver, WKNavigationDelegate, WKUIDelegat
 
     func observe() async -> ScreenObservation? {
         guard let url = webView.url else {
-            return ScreenObservation(app: "Bobb Browser", bundleId: "bobb.browser", window: "", elements: [], screenText: lastError)
+            return ScreenObservation(app: "OpenDuet Browser", bundleId: "bobb.browser", window: "", elements: [], screenText: lastError)
         }
         guard permits(url) else { return nil }
         let script = #"""
@@ -133,7 +133,7 @@ final class WebComputer: NSObject, TaskDriver, WKNavigationDelegate, WKUIDelegat
         }
         let host = url.host ?? ""
         let specific = boundaries().app(bundleId: "web:\(host)", name: host) != nil
-        return ScreenObservation(app: specific ? host : "Bobb Browser", bundleId: specific ? "web:\(host)" : "bobb.browser",
+        return ScreenObservation(app: specific ? host : "OpenDuet Browser", bundleId: specific ? "web:\(host)" : "bobb.browser",
                 window: url.absoluteString, elements: elements, screenText: (result["text"] as? String ?? "") + "\n" + lastError,
                 defaultButton: result["defaultButton"] as? String ?? "")
     }

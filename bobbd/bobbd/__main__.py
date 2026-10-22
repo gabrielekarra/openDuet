@@ -1,6 +1,6 @@
 """`python -m bobbd`: bind the socket, load the model, serve until told to stop.
 
-In the shipped app the daemon is a child of Bobb.app, which passes
+In the shipped app the daemon is a child of OpenDuet.app, which passes
 `--parent-pid`. If that process disappears — a crash, a force quit — the
 daemon exits within a few seconds instead of holding the model weights in
 unified memory for nobody. A lock file in the data directory makes a second
@@ -32,7 +32,7 @@ PARENT_POLL_SECONDS = 2.0
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(prog="bobbd", description="Bobb's on-device daemon.")
+    parser = argparse.ArgumentParser(prog="bobbd", description="OpenDuet's on-device daemon.")
     parser.add_argument("--version", action="version", version=f"bobbd {__version__}")
     parser.add_argument("--floor", type=float, default=None, help="override the saved interruption floor")
     parser.add_argument("--model", default=os.environ.get("BOBB_MODEL", DEFAULT_MODEL))

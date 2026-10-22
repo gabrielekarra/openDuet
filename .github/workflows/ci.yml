@@ -11,6 +11,46 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  workspace:
+    name: OpenDuet workspace (Python + browser)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Install portable workspace
+        run: uv sync --locked --extra dev --extra browser
+      - name: Runtime regressions and lint
+        run: |
+          uv run --no-sync pytest tests/runtime -q
+          uv run --no-sync ruff check --select E4,E7,E9,F,I,UP openduet tests/runtime
+      - name: Browser smoke with disposable local fixture
+        env:
+          OPENDUET_TOKEN: ci-preview-only-token-not-a-real-credential
+          OPENDUET_PREVIEW_DATA: /tmp/openduet-ci-preview
+        run: |
+          uv run --no-sync playwright install --with-deps chromium
+          uv run --no-sync uvicorn tests.fixtures.openduet_preview:app --host 127.0.0.1 --port 8766 --no-access-log > /tmp/openduet-preview.log 2>&1 &
+          PREVIEW_PID=$!
+          trap 'kill "$PREVIEW_PID"' EXIT
+          python - <<'PY'
+          import time, urllib.request
+          for attempt in range(60):
+              try:
+                  urllib.request.urlopen('http://127.0.0.1:8766', timeout=1)
+                  break
+              except OSError:
+                  time.sleep(0.5)
+          else:
+              raise SystemExit('Preview server did not start')
+          PY
+          uv run --no-sync python tests/runtime/browser_smoke.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: openduet-workspace-screenshots
+          path: .runtime/screenshots
+          if-no-files-found: ignore
+
   daemon:
     name: bobbd (Python)
     runs-on: ubuntu-latest
@@ -98,7 +138,7 @@ jobs:
         run: BOBB_TEST_PYTHON="$(python -c 'import sys; print(sys.executable)')" .build/debug/BobbApp --check-integrations "$GITHUB_WORKSPACE/tests/fixtures/mcp_http_server.py"
 
   package:
-    name: Bobb.dmg (bundle, daemon smoke test, DMG)
+    name: OpenDuet.dmg (bundle, daemon smoke test, DMG)
     runs-on: macos-latest
     needs: [app, daemon]
     steps:
@@ -114,11 +154,11 @@ jobs:
         run: scripts/package.sh
       - name: Render screenshots of the real views
         run: |
-          dist/Bobb.app/Contents/MacOS/BobbApp --render-docs dist/screenshots || true
+          dist/OpenDuet.app/Contents/MacOS/BobbApp --render-docs dist/screenshots || true
           ls -la dist/screenshots || true
       - uses: actions/upload-artifact@v4
         with:
-          name: Bobb-dmg
+          name: OpenDuet-dmg
           path: |
             dist/*.dmg
             dist/*.sha256

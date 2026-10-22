@@ -75,7 +75,7 @@ public enum NativeAppToolCatalog {
         tool("music.volume", "Music / Musica: set volume", "Set Music's volume, from 0 to 100.", "Music", "com.apple.Music", .write,
              ["level": ["type": "integer", "minimum": 0, "maximum": 100]], ["level"]),
         tool("mail.selected", "Mail / Posta: read selected email", "Read the email selected in Apple Mail, with its exact Message-ID.", "Mail", "com.apple.mail"),
-        tool("mail.inbox", "Mail / Posta: read recent inbox", "Read up to 100 recent inbox messages. For the full archive use Bobb Email.", "Mail", "com.apple.mail", .navigate,
+        tool("mail.inbox", "Mail / Posta: read recent inbox", "Read up to 100 recent inbox messages. For the full archive use OpenDuet Email.", "Mail", "com.apple.mail", .navigate,
              ["limit": limit]),
         tool("mail.draft", "Mail / Posta: create draft", "Open an editable new draft in the user's Apple Mail. Does not send.", "Mail", "com.apple.mail", .write,
              ["to": ["type": "array", "maxItems": 20, "items": requiredText("Exact email address")], "subject": text("Subject"), "body": requiredText("Body")], ["to", "subject", "body"]),

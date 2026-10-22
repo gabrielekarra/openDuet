@@ -377,10 +377,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// machine's basics. No memory, no history, no drafts.
     private func exportDiagnostics() {
         let panel = NSSavePanel()
-        panel.nameFieldStringValue = "Bobb-diagnostics.zip"
+        panel.nameFieldStringValue = "OpenDuet-diagnostics.zip"
         guard panel.runModal() == .OK, let destination = panel.url else { return }
         let fm = FileManager.default
-        let staging = fm.temporaryDirectory.appendingPathComponent("Bobb-diagnostics-\(UUID().uuidString)", isDirectory: true)
+        let staging = fm.temporaryDirectory.appendingPathComponent("OpenDuet-diagnostics-\(UUID().uuidString)", isDirectory: true)
         try? fm.createDirectory(at: staging, withIntermediateDirectories: true)
         if let logs = try? fm.contentsOfDirectory(at: AppPaths.logsDirectory, includingPropertiesForKeys: nil) {
             for log in logs { try? fm.copyItem(at: log, to: staging.appendingPathComponent(log.lastPathComponent)) }
@@ -392,7 +392,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try? data.write(to: staging.appendingPathComponent("app-settings.json"))
         }
         let info = """
-        Bobb \(BuildInfo.version) (\(BuildInfo.build))
+        OpenDuet \(BuildInfo.version) (\(BuildInfo.build))
         macOS \(ProcessInfo.processInfo.operatingSystemVersionString)
         Memory: \(ProcessInfo.processInfo.physicalMemory / 1_073_741_824) GB
         Model installed: \(downloader.isInstalled)

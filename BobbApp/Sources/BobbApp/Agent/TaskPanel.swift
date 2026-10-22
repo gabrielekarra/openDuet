@@ -351,7 +351,7 @@ final class TaskController {
         loop?.stop(); running?.cancel()
         if let leaseId { ScreenLease.shared.release(leaseId) }
         leaseId = nil
-        guard !needsDesktop || ScreenLease.shared.acquire(id) else { return BobbCopy.t("The desktop is busy. Stop its current task in Bobb Activity.", "Lo schermo è occupato. Ferma l’incarico attuale in Attività di Bobb.") }
+        guard !needsDesktop || ScreenLease.shared.acquire(id) else { return BobbCopy.t("The desktop is busy. Stop its current task in OpenDuet Activity.", "Lo schermo è occupato. Ferma l’incarico attuale in Attività di OpenDuet.") }
         if needsDesktop { leaseId = id }
         let driver = AXDriver()
         driver.settings = { [weak self] in self?.state.settings ?? BobbSettings() }

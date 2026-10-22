@@ -102,12 +102,12 @@ final class CUABrowserComputer: TaskDriver {
             error = ""
             let host = url.host ?? ""
             let specific = boundaries().app(bundleId:"web:" + host,name:host) != nil
-            return ScreenObservation(app: specific ? host : "Bobb Browser", bundleId: specific ? "web:" + host : "bobb.browser",
+            return ScreenObservation(app: specific ? host : "OpenDuet Browser", bundleId: specific ? "web:" + host : "bobb.browser",
                 window: url.absoluteString, elements: elements,
                 screenText: "Source URL: \(url.absoluteString)\n" + String((snapshot["outline"]?.stringValue ?? "").prefix(18000)))
         } catch {
             self.error = "CUA: \(stage). \(error.localizedDescription)"
-            return ScreenObservation(app: "Bobb Browser", bundleId: "bobb.browser", window: "", elements: [], screenText: self.error, unreadable: true)
+            return ScreenObservation(app: "OpenDuet Browser", bundleId: "bobb.browser", window: "", elements: [], screenText: self.error, unreadable: true)
         }
     }
     func perform(_ action: DriverAction) async -> DriverResult {

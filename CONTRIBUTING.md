@@ -1,16 +1,13 @@
-# Contributing to Bobb
+# Contributing to OpenDuet
 
-Bobb welcomes fixes, evaluations, accessibility improvements, translations and
-real workflow reports. The source is available for inspection and contributions
-under the [Bobb Source Available License](LICENSE), not an open source license.
-You may fork and modify it to contribute to Bobb; redistribution as another
-product or unofficial binary is not permitted. The license explains permitted
-personal and internal professional use.
+OpenDuet welcomes fixes, evaluations, accessibility improvements, translations
+and real workflow reports under the [MIT License](LICENSE). Contributions use
+the same license. Submit only work you are authorized to license; identify
+third-party material and preserve its notices.
 
-By intentionally submitting a contribution, you agree to section 5 of LICENSE:
-you keep ownership and grant the maintainer the rights needed to incorporate,
-distribute and relicense it as part of Bobb. Submit only work you are authorized
-to license; identify third-party material and preserve its notices.
+The portable service lives in `openduet/`. Run `uv sync --extra dev` and
+`uv run pytest tests/runtime`. The Mac app and isolated local daemon retain
+their existing directories and internal identifiers for compatibility.
 
 Read [README](README.md), [the capability guide](docs/BOBB.md) and
 [the product review](docs/PRODUCT-REVIEW-2026-10-01.md). Use a branch and pull

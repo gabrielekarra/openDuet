@@ -86,7 +86,7 @@ final class BobbWorkspace {
     }
     func show() {
         if window == nil {
-            window = WindowPresenter.makeWindow(title: "Bobb", size: NSSize(width: 880, height: 720),
+            window = WindowPresenter.makeWindow(title: "OpenDuet", size: NSSize(width: 880, height: 720),
                                                 content: BobbView(workspace: self))
         }
         WindowPresenter.present(window)

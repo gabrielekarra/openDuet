@@ -1,3 +1,16 @@
+# OpenDuet — 2026-10-22
+
+- Rename the product to OpenDuet and license original project code under MIT.
+- Add the portable self-hosted workspace with configurable local and API LLM providers.
+- Add conversations/channels, reviewed shared memory, chat search and memory import/export.
+- Add durable tasks, one-use approvals, cancellation, restart recovery and uncertain-action review.
+- Add scheduled routines, MCP tools, optional dedicated browser and private login.
+- Add document, spreadsheet, slide and HTML artifact generation with a Make gallery.
+- Add local voice transcription, event notifications and optional notification relay.
+- Add container deployment, runtime regressions and desktop/mobile browser smoke CI.
+- Document primary-source Claude Duet research and remaining capability gaps.
+- Preserve Mac bundle, storage and IPC identifiers; add a configurable workspace link in the Mac app.
+
 # Unreleased — Bobb
 
 - For you home brings together grounded context initiatives, commitments, learned routines and blocked work. Context initiatives persist, support snooze/dismiss/prepare, and learn when to stop suggesting.

@@ -63,7 +63,7 @@ final class MCPConnection {
                 try await transport.start()
             }
             let hello = try await request("initialize", params: .object(["protocolVersion": .string(protocolVersion), "capabilities": .object([:]),
-                "clientInfo": .object(["name": "Bobb", "version": "2.0.0"])]))
+                "clientInfo": .object(["name": "OpenDuet", "version": "2.0.0"])]))
             guard let version = hello["protocolVersion"]?.stringValue,
                   ["2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"].contains(version),
                   hello["capabilities"]?["tools"] != nil else { throw ConnectorError.response }

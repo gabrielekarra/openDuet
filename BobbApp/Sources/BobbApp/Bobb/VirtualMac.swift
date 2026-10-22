@@ -33,7 +33,7 @@ final class VirtualMac {
     private func install(_ ipsw: URL) async throws {
         #if arch(arm64)
         guard VZVirtualMachine.isSupported, ProcessInfo.processInfo.physicalMemory >= 24 * 1_073_741_824 else {
-            throw NSError(domain: "BobbVM", code: 1, userInfo: [NSLocalizedDescriptionKey: "The virtual Mac requires Apple silicon and at least 24 GB of RAM alongside Bobb."])
+            throw NSError(domain: "BobbVM", code: 1, userInfo: [NSLocalizedDescriptionKey: "The virtual Mac requires Apple silicon and at least 24 GB of RAM alongside OpenDuet."])
         }
         guard !FileManager.default.fileExists(atPath: directory.path) else {
             throw NSError(domain: "BobbVM", code: 2, userInfo: [NSLocalizedDescriptionKey: "A virtual Mac directory already exists. Review it before replacing an interrupted installation."])
@@ -120,7 +120,7 @@ final class VirtualMac {
         let view = VZVirtualMachineView(); view.virtualMachine = machine; view.capturesSystemKeys = true
         if window == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 800), styleMask: [.titled, .closable, .resizable], backing: .buffered, defer: false)
-            w.title = "Bobb — Virtual Mac"; w.isReleasedWhenClosed = false; window = w
+            w.title = "OpenDuet — Virtual Mac"; w.isReleasedWhenClosed = false; window = w
         }
         window?.contentView = view; window?.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true)
     }

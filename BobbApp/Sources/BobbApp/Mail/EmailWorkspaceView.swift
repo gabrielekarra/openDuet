@@ -21,7 +21,7 @@ struct EmailWorkspaceView: View {
             Divider()
             if !workspace.coordinator.permitsEmail {
                 ContentUnavailableView(t("Mail is excluded", "Mail è esclusa"), systemImage: "lock",
-                    description: Text(t("Enable Mail in Bobb’s Boundaries.", "Abilita Mail nei Confini di Bobb.")))
+                    description: Text(t("Enable Mail in OpenDuet’s Boundaries.", "Abilita Mail nei Confini di OpenDuet.")))
             } else {
                 switch workspace.tab {
                 case "reminders": reminders
@@ -237,7 +237,7 @@ struct EmailWorkspaceView: View {
     private var resultEditor: some View {
         VStack(alignment: .leading, spacing: 10) {
             Divider()
-            Text(workspace.isBody ? t("Editable draft", "Bozza modificabile") : t("Bobb’s notes", "Note di Bobb")).font(.headline)
+            Text(workspace.isBody ? t("Editable draft", "Bozza modificabile") : t("OpenDuet’s notes", "Note di OpenDuet")).font(.headline)
             TextEditor(text: Binding(get: { workspace.text }, set: { workspace.text = $0; workspace.edited = true }))
                 .font(.body).frame(height: 180).disabled(workspace.writing)
                 .padding(8).background(.thinMaterial, in: RoundedRectangle(cornerRadius: 10))
@@ -336,7 +336,7 @@ struct EmailWorkspaceView: View {
             Toggle(t("Draft automatically when I click Reply in Mail", "Prepara la bozza automaticamente quando clicco Rispondi in Mail"), isOn: Binding(get: { state.settings.mailInlineReplies }, set: { value in workspace.coordinator.updateSettings { $0.mailInlineReplies = value } }))
             Toggle(t("Proactive email help", "Aiuto proattivo email"), isOn: Binding(get: { state.settings.mailProactive }, set: { value in workspace.coordinator.updateSettings { $0.mailProactive = value } }))
             Toggle(t("Draft checks and tone", "Controlli bozza e tono"), isOn: Binding(get: { state.settings.toneCheck }, set: { value in workspace.coordinator.updateSettings { $0.toneCheck = value } }))
-            Text(t("Quiet hours, app exclusions, memory and history retention use Bobb’s general settings.", "Ore di silenzio, app escluse, memoria e conservazione della cronologia usano le impostazioni generali di Bobb."))
+            Text(t("Quiet hours, app exclusions, memory and history retention use OpenDuet’s general settings.", "Ore di silenzio, app escluse, memoria e conservazione della cronologia usano le impostazioni generali di OpenDuet."))
                 .font(.caption).foregroundStyle(.secondary)
         }.formStyle(.grouped).padding(16)
     }

@@ -8,7 +8,7 @@ func runCUASmokeCheck() {
     Task {
         guard let raw = AppPaths.argument("--check-cua"), let url = URL(string: raw),
               let computer = CUABrowserComputer(url: url, boundaries: { BoundaryConfiguration() }) else { exit(1) }
-        let query = "Bobb local test & verification"
+        let query = "OpenDuet local test & verification"
         var passed = false, detail = "unavailable"
         if let before = await computer.observe(), let field = before.elements.first(where: { $0.title == "Search query" && $0.valueSettable }) {
             let typed = await computer.perform(.type(key: field.key, text: query, submit: false))

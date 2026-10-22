@@ -1,0 +1,35 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openduet"
+version = "0.2.0"
+description = "An open source, self-hosted proactive assistant for local and remote language models"
+requires-python = ">=3.12"
+license = "MIT"
+dependencies = [
+  "fastapi>=0.115,<1", "uvicorn>=0.34,<1", "httpx>=0.28,<1",
+  "jsonschema>=4.23,<5", "mcp>=1.26,<2",
+  "openpyxl>=3.1,<4", "python-pptx>=1.0,<2", "python-docx>=1.1,<2",
+]
+
+[project.optional-dependencies]
+browser = ["playwright>=1.51,<2"]
+voice = ["faster-whisper>=1.1,<2"]
+dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1"]
+
+[project.scripts]
+openduet = "openduet.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["openduet"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests/runtime"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 110
+

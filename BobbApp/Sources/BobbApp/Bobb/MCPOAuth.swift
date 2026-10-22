@@ -70,7 +70,7 @@ enum MCPOAuth {
         var clientId = oauth.clientId
         if clientId.isEmpty {
             guard let registration = server["registration_endpoint"]?.stringValue.flatMap(MCPRemoteProtocol.endpoint) else { throw ConnectorError.registration }
-            let result = try await json(registration, method: "POST", body: ["client_name": "Bobb", "redirect_uris": .array([.string(redirect.absoluteString)]),
+            let result = try await json(registration, method: "POST", body: ["client_name": "OpenDuet", "redirect_uris": .array([.string(redirect.absoluteString)]),
                 "grant_types": ["authorization_code", "refresh_token"], "response_types": ["code"], "token_endpoint_auth_method": "none"])
             guard let registered = result["client_id"]?.stringValue, !registered.isEmpty,
                   (result["token_endpoint_auth_method"]?.stringValue ?? "none") == "none" else { throw ConnectorError.registration }

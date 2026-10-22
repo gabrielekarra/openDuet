@@ -19,7 +19,7 @@ func runUserBrowserSmokeCheck() {
         var automated = false
         let trusted = AXIsProcessTrusted()
         if trusted {
-            let query = "Bobb user session test"
+            let query = "OpenDuet user session test"
             if let initial = await computer.observe(), let field = initial.elements.first(where: { $0.title == "Search query" || $0.description == "Search query" || $0.placeholder == "Search query" }) {
                 let typed = await computer.perform(.type(key: field.key, text: query, submit: false))
                 await computer.settle()

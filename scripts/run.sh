@@ -13,5 +13,5 @@ if [[ "$START_DAEMON" == 1 ]]; then
     uv sync --project "$ROOT/bobbd" --frozen
 fi
 "$ROOT/scripts/build.sh"
-echo "==> launching $ROOT/dist/Bobb.app"
-open "$ROOT/dist/Bobb.app" --args "$@"
+echo "==> launching $ROOT/dist/OpenDuet.app"
+open "$ROOT/dist/OpenDuet.app" --args "$@"

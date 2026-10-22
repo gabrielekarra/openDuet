@@ -30,7 +30,7 @@ public struct BobbAgent: Codable, Sendable, Equatable, Identifiable {
     public var name: String
     public var character: String
     public var profile: String
-    public init(id: String = "bobb", name: String = "Bobb", character: String = "Practical and concise.", profile: String = "general") {
+    public init(id: String = "bobb", name: String = "OpenDuet", character: String = "Practical and concise.", profile: String = "general") {
         self.id = id; self.name = name; self.character = character; self.profile = profile
     }
     public var introduction: String {

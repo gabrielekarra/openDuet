@@ -1,4 +1,4 @@
-"""Bobb's durable work ledger. No scheduler thread, tools, or network here.
+"""OpenDuet's durable work ledger. No scheduler thread, tools, or network here.
 
 The Mac app ticks and claims work, then executes it through the same checked
 task loop as a foreground request. A crash never silently replays a partially
@@ -110,10 +110,14 @@ class Workspace:
         """)
         if recover:
             conn.execute("UPDATE bobb_runs SET status='interrupted',owner=NULL,lease=NULL,report=? WHERE status IN ('running','waiting')",
-                         ("Bobb restarted. Review the last steps before retrying.",))
+                         ("OpenDuet restarted. Review the last steps before retrying.",))
             conn.commit()
         if not self.entities("agent"):
-            self.put("agent", {"id": "bobb", "name": "Bobb", "character": "Practical, thoughtful, concise.", "profile": "general"})
+            self.put("agent", {"id": "bobb", "name": "OpenDuet", "character": "Practical, thoughtful, concise.", "profile": "general"})
+        else:
+            for agent in self.entities("agent"):
+                if agent["id"] == "bobb" and agent["name"] == "Bobb":
+                    self.put("agent", {**agent, "name": "OpenDuet"})
 
     def entities(self, kind):
         return [json.loads(r[0]) for r in self.conn.execute(
@@ -180,7 +184,7 @@ class Workspace:
     def delete(self, kind, identifier):
         self.get(kind, identifier)
         if kind == "agent" and len(self.entities("agent")) <= 1:
-            raise ValueError("at least one Bobb must remain")
+            raise ValueError("at least one OpenDuet must remain")
         if kind == "agent" and any(e.get("agent_id") == identifier for k in ("job", "project") for e in self.entities(k)):
             raise ValueError("remove the agent's jobs and projects first")
         if self.conn.execute("SELECT 1 FROM bobb_runs WHERE status='running' AND (agent_id=? OR source_id=? OR project_id=?)",

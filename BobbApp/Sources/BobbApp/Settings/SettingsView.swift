@@ -23,6 +23,7 @@ final class SettingsUIModel {
 /// through `BobbCoordinator.updateSettings`, which persists the change
 /// and sends the daemon the part it enforces.
 struct SettingsView: View {
+    @AppStorage("OpenDuetWorkspaceURL") private var workspaceURL = "http://127.0.0.1:8765"
     @Bindable var state: AppState
     @Bindable var ui: SettingsUIModel
     @Bindable var license: LicenseController
@@ -65,7 +66,16 @@ struct SettingsView: View {
 
     private var general: some View {
         Form {
-            Button("Bobb · " + BobbCopy.t("Projects, assignments & boundaries", "Progetti, incarichi e confini"), action: services.openBobb)
+            Button("OpenDuet · " + BobbCopy.t("Projects, assignments & boundaries", "Progetti, incarichi e confini"), action: services.openBobb)
+            Section(BobbCopy.t("Self-hosted workspace", "Workspace sul tuo server")) {
+                TextField(BobbCopy.t("Workspace URL", "URL del workspace"), text: $workspaceURL)
+                Button(BobbCopy.t("Open web workspace", "Apri il workspace web")) {
+                    if let url = URL(string: workspaceURL), ["http", "https"].contains(url.scheme ?? "") {
+                        NSWorkspace.shared.open(url)
+                    }
+                }
+                hint(BobbCopy.t("Run the OpenDuet server to use local or API models, channels and server-side tasks. The workspace has its own memory and connections.", "Avvia il server OpenDuet per usare modelli locali o API, canali e attività sul server. Il workspace ha memoria e connessioni proprie."))
+            }
             Picker(L10n.t(.settingsLanguage), selection: binding(\.language)) {
                 Text(L10n.t(.settingsLanguageSystem)).tag(AppLanguage.system)
                 Text("English").tag(AppLanguage.en)
@@ -362,7 +372,7 @@ struct SettingsView: View {
             Section {
                 switch license.entitlement {
                 case .community:
-                    Label("Bobb · Open source", systemImage: "heart")
+                    Label("OpenDuet · Open source", systemImage: "heart")
                 case .trial(let days):
                     Label(L10n.t(.licenseTrial, ["days": "\(days)"]), systemImage: "hourglass")
                 case .trialExpired:
@@ -415,7 +425,7 @@ struct SettingsView: View {
         VStack(spacing: 14) {
             Spacer()
             BobbAppIcon(size: 72)
-            Text("Bobb").font(.system(size: 24, weight: .bold, design: .rounded))
+            Text("OpenDuet").font(.system(size: 24, weight: .bold, design: .rounded))
             Text(L10n.t(.settingsVersion, ["version": "\(BuildInfo.version) (\(BuildInfo.build))"]))
                 .foregroundStyle(.secondary)
             Text(L10n.t(.settingsBuiltWithLocalModels))

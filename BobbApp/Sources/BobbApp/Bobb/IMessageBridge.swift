@@ -46,7 +46,7 @@ final class IMessageBridge {
         let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Messages/chat.db").path
         var db: OpaquePointer?
         if sqlite3_open_v2(path, &db, SQLITE_OPEN_READONLY | SQLITE_OPEN_NOMUTEX, nil) != SQLITE_OK {
-            if let db { sqlite3_close(db) }; status = "Allow Full Disk Access for Bobb to read Messages."; return nil
+            if let db { sqlite3_close(db) }; status = "Allow Full Disk Access for OpenDuet to read Messages."; return nil
         }
         sqlite3_busy_timeout(db, 100)
         return db
@@ -109,6 +109,6 @@ final class IMessageBridge {
             return "ok"
         end reply_to_self
         """
-        _ = try AppleScriptRunner.shared.call(source, handler: "reply_to_self", arguments: [exactAddress, "[Bobb] " + String(text.prefix(6000))])
+        _ = try AppleScriptRunner.shared.call(source, handler: "reply_to_self", arguments: [exactAddress, "[OpenDuet] " + String(text.prefix(6000))])
     }
 }

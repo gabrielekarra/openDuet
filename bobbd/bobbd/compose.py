@@ -1,4 +1,4 @@
-"""Every writing task Bobb does, as a prompt: what to send the text model.
+"""Every writing task OpenDuet does, as a prompt: what to send the text model.
 
 Two entry points share one shape. `for_action` turns an approved suggestion
 ("Prepare") into a task; `for_request` turns something the user typed into
@@ -338,7 +338,7 @@ def chat_reply(event: dict, memory: MemoryStore | None, locale: str, instruction
 def summarize_notice(event: dict, locale: str) -> Task:
     language = LANGUAGE_NAMES[locale_or_default(locale)]
     system = (
-        "You are Bobb, a private assistant. Summarize an automated notice for a busy person in at most "
+        "You are OpenDuet, a private assistant. Summarize an automated notice for a busy person in at most "
         "three short bullet points: what happened, what the user must do (if anything), and by when. "
         f"Write in {language}. Do not add advice the notice does not support. " + _UNTRUSTED
     )
@@ -370,7 +370,7 @@ def review_tone(event: dict, locale: str) -> Task:
     p = _payload(event)
     draft = str(p.get("draft", "") or "")
     system = (
-        "You are Bobb. Rewrite the user's email draft so it is calm, respectful and professional while "
+        "You are OpenDuet. Rewrite the user's email draft so it is calm, respectful and professional while "
         "keeping its point. Rules:\n"
         "- Keep every fact, request and deadline that is in the draft, and add none: no new dates, figures, "
         "names or promises.\n"
@@ -394,7 +394,7 @@ def continue_draft(event: dict, memory: MemoryStore | None, locale: str) -> Task
     hits, terms = related_memory(memory, f"{p.get('to', '')} {p.get('subject', '')}")
     block, sources = _memory_block(hits, terms, locale)
     system = (
-        "You are Bobb. The user stopped in the middle of an email. Write only the text that should come "
+        "You are OpenDuet. The user stopped in the middle of an email. Write only the text that should come "
         f"next, continuing seamlessly in the same voice, and end the email naturally. {_language_rule(draft)} "
         "Do not repeat what is already written. Invent no facts, dates or figures. " + _UNTRUSTED
     )
@@ -422,7 +422,7 @@ def meeting_brief(event: dict, memory: MemoryStore | None, locale: str, promises
     language = LANGUAGE_NAMES[locale_or_default(locale)]
     owed = "\n".join(f"- {promise}" for promise in promises[:6])
     system = (
-        "You are Bobb, a private assistant. The user has a meeting in a few minutes. Write a brief of at most "
+        "You are OpenDuet, a private assistant. The user has a meeting in a few minutes. Write a brief of at most "
         "four short bullet points from the notes below only: what it is about, what is still open, anything the "
         "user promised these people, and one useful question to ask. Cite notes as [1], [2]. If the notes say "
         f"nothing relevant, say so in one line. Write in {language}. " + _UNTRUSTED
@@ -527,7 +527,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
 
     if mode == "rewrite":
         system = (
-            "You are Bobb. Rewrite the text the user selected, keeping every fact in it. Unless the user "
+            "You are OpenDuet. Rewrite the text the user selected, keeping every fact in it. Unless the user "
             f"says otherwise, make it clearer, more concise and more natural. {_language_rule(selection)} "
             "Keep the same speaker, recipient, who does each action, negations and deadlines. "
             "Keep first-person pronouns singular or plural exactly as in the original: me must not become us. "
@@ -544,7 +544,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
     if mode == "translate":
         target = _target_language(request, locale)
         system = (
-            f"You are Bobb. Translate the selected text into {target}. Preserve meaning, tone, formatting "
+            f"You are OpenDuet. Translate the selected text into {target}. Preserve meaning, tone, formatting "
             "and names. Output only the translation. " + _UNTRUSTED
         )
         return Task("translate", _msgs(system, f"Text:\n{_fence(selection, 6000)}"), max_tokens=600,
@@ -552,14 +552,14 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
 
     if mode == "summarize":
         system = (
-            f"You are Bobb. Summarize the selected text in {language}: the gist in one sentence, then up "
+            f"You are OpenDuet. Summarize the selected text in {language}: the gist in one sentence, then up "
             "to four short bullet points with the facts, decisions and deadlines that matter. " + _UNTRUSTED
         )
         return Task("summarize", _msgs(system, f"Text:\n{_fence(selection, 8000)}"), max_tokens=260, temperature=0.2)
 
     if mode == "explain":
         system = (
-            f"You are Bobb. Explain the selected text to the user in {language}, briefly and plainly: what "
+            f"You are OpenDuet. Explain the selected text to the user in {language}, briefly and plainly: what "
             "it means and, if it is a term, a one-line definition. " + _UNTRUSTED
         )
         user = f"Selected text:\n{_fence(selection, 2000)}"
@@ -569,7 +569,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
 
     if mode == "compute":
         system = (
-            f"You are Bobb. Work out the calculation in the selected text, step by step but briefly, in "
+            f"You are OpenDuet. Work out the calculation in the selected text, step by step but briefly, in "
             f"{language}, and give the result on its own last line. " + _UNTRUSTED
         )
         return Task("compute", _msgs(system, f"Selected text:\n{_fence(selection, 2000)}"), max_tokens=220, temperature=0.0)
@@ -578,7 +578,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
         hits, terms = related_memory(memory, selection[:300])
         block, sources = _memory_block(hits, terms, locale)
         system = (
-            "You are Bobb, writing a reply on the user's behalf to the message they selected. "
+            "You are OpenDuet, writing a reply on the user's behalf to the message they selected. "
             f"{_language_rule(selection)} Write only the reply, ready to send, without placeholders. Invent no "
             "facts, dates or figures. " + _UNTRUSTED
         )
@@ -599,7 +599,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
 
     if mode == "write":
         system = (
-            "You are Bobb, a private assistant that runs entirely on the user's Mac. Write what the user "
+            "You are OpenDuet, a private assistant that runs entirely on the user's Mac. Write what the user "
             "asks for, ready to use: output only that text, with no preamble. Use facts from MEMORY when they "
             "are relevant and never invent specifics that are not there. Write in the language the user "
             "wrote in. " + _UNTRUSTED
@@ -618,7 +618,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
         # sheet, this page, this code, this error — answered from the window
         # itself first, and from memory for anything it does not show.
         system = (
-            "You are Bobb, a private assistant that runs entirely on the user's Mac. ON SCREEN NOW is the text "
+            "You are OpenDuet, a private assistant that runs entirely on the user's Mac. ON SCREEN NOW is the text "
             "of the window in front of the user; MEMORY holds numbered excerpts of things they saw earlier. Fulfil "
             "the user's request. Use your knowledge for general questions and the user's instructions for writing. "
             "For facts about the user's work, answer from ON SCREEN NOW first and MEMORY second, citing excerpts "
@@ -636,7 +636,7 @@ def for_request(request: Request, memory: MemoryStore | None, locale: str) -> Ta
                     grounding="\n".join((instruction, selection, screen, block)))
 
     system = (
-        "You are Bobb, a private assistant that runs entirely on the user's Mac. MEMORY holds excerpts "
+        "You are OpenDuet, a private assistant that runs entirely on the user's Mac. MEMORY holds excerpts "
         "of things the user has seen on screen, numbered. Fulfil the user's request. Use your knowledge for "
         "general questions and the user's instructions for writing. For facts about the user's work, use MEMORY "
         "and cite excerpts you used like [1] or [2]. Never invent personal facts, past conversations, commitments "

@@ -1,6 +1,6 @@
 # Third-party notices
 
-Bobb's original source code is distributed under the Bobb Source Available License 1.0 (see LICENSE). Third-party materials are excluded from that license and retain their own permissions and obligations.
+OpenDuet's original source code is distributed under the MIT License (see LICENSE). Third-party materials retain their own permissions and obligations.
 It includes or downloads the following third-party components under their own licenses.
 
 ## Local models and decision runtime

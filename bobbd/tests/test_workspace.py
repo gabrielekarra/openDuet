@@ -21,6 +21,13 @@ def job(w, **changes):
                          "schedule": {"kind": "once", "at": 100}, **changes}, now=90)
 
 
+def test_product_rename_updates_default_agent_and_keeps_custom_names(workspace):
+    workspace.put("agent", {"id": "bobb", "name": "Bobb"})
+    assert Workspace(workspace.conn).get("agent", "bobb")["name"] == "OpenDuet"
+    workspace.put("agent", {"id": "bobb", "name": "My assistant"})
+    assert Workspace(workspace.conn).get("agent", "bobb")["name"] == "My assistant"
+
+
 def test_schedule_coalesces_and_does_not_queue_twice(workspace):
     j = job(workspace)
     workspace.tick(now=1000)
@@ -209,7 +216,7 @@ async def test_workspace_protocol_without_a_loaded_model(tmp_path):
     await server._dispatch(json.dumps({"t": "bobb.command", "id": "w1", "op": "list"}).encode(), client)
     assert client.frames[-1]["t"] == "bobb.state"
     assert client.frames[-1]["request_id"] == "w1"
-    assert client.frames[-1]["agents"][0]["name"] == "Bobb"
+    assert client.frames[-1]["agents"][0]["name"] == "OpenDuet"
     await server._dispatch(json.dumps({"t": "bobb.command", "id": "bad", "op": "put", "payload": {}}).encode(), client)
     assert client.frames[-1]["t"] == "error" and client.frames[-1]["request_id"] == "bad"
     server.close()

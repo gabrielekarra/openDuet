@@ -34,7 +34,7 @@ final class StatusItemController {
             button.addSubview(iconView)
             button.target = self
             button.action = #selector(togglePopover)
-            button.setAccessibilityLabel("Bobb")
+            button.setAccessibilityLabel("OpenDuet")
         }
 
         observeState()
@@ -77,6 +77,6 @@ final class StatusItemController {
     private func refreshIcon() {
         iconView.activityState = state.activityState
         iconView.watching = state.watching
-        statusItem.button?.toolTip = "Bobb"
+        statusItem.button?.toolTip = "OpenDuet"
     }
 }

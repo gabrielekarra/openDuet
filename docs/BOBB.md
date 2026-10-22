@@ -1,6 +1,6 @@
 # Bobb — guida e stato di implementazione
 
-Bobb comprende codice, interfaccia Liquid Glass, logo nero con occhiali rivolti in alto a sinistra e [licenza source-available](../LICENSE). I moduli Swift sono `BobbApp` e `BobbCore`, il daemon è `bobbd`, il bundle ID è `com.bobb.app` e i dati risiedono in `~/Library/Application Support/Bobb`. Le funzionalità desiderate e le priorità sono in [FEATURES.md](FEATURES.md).
+Bobb comprende codice, interfaccia Liquid Glass, logo nero con occhiali rivolti in alto a sinistra e [licenza MIT](../LICENSE). I moduli Swift sono `BobbApp` e `BobbCore`, il daemon è `bobbd`, il bundle ID è `com.bobb.app` e i dati risiedono in `~/Library/Application Support/Bobb`. Le funzionalità desiderate e le priorità sono in [FEATURES.md](FEATURES.md).
 
 | Area | Implementazione |
 |---|---|

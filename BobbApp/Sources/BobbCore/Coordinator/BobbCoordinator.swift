@@ -409,7 +409,7 @@ public final class BobbCoordinator {
         state.emailError = nil
         let frame = EmailCommandFrame(op: op, payload: payload)
         if case .email(let result)? = await request(.email(frame), id: frame.id, timeout: 15) { return result }
-        if state.emailError == nil { state.emailError = L10n.code == "it" ? "Bobb non è connesso. Riprova." : "Bobb is not connected. Try again." }
+        if state.emailError == nil { state.emailError = L10n.code == "it" ? "OpenDuet non è connesso. Riprova." : "OpenDuet is not connected. Try again." }
         return nil
     }
 
@@ -441,7 +441,7 @@ public final class BobbCoordinator {
         Task {
             if !(await client.send(.email(frame))), state.emailWriting?.requestId == frame.id {
                 state.emailWriting?.streaming = false
-                state.emailError = L10n.code == "it" ? "Bobb non è connesso. Riprova." : "Bobb is not connected. Try again."
+                state.emailError = L10n.code == "it" ? "OpenDuet non è connesso. Riprova." : "OpenDuet is not connected. Try again."
             }
         }
     }

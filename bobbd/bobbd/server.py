@@ -1,4 +1,4 @@
-"""Async unix-socket server implementing the Bobb IPC contract.
+"""Async unix-socket server implementing the OpenDuet IPC contract.
 
 NDJSON both ways over a single unix domain socket, one object per line. A
 malformed line becomes an `error` frame, never a dropped connection:
@@ -466,7 +466,7 @@ class BobbServer:
         )
         await client.send(decision)
         # What the user just did may answer an earlier question (a reply
-        # started, a message left unread): that is how Bobb learns
+        # started, a message left unread): that is how OpenDuet learns
         # without asking.
         if specialist_mod.record_implicit(self.conn, event):
             self.maybe_train()
@@ -641,7 +641,7 @@ class BobbServer:
                 route, p = await self._run_model(agent_mod.route_request, self.attention.engine, request.prompt)
             if route == "do":
                 if not frame.get("route"):
-                    await client.send(_error_frame("Le azioni di Bobb sono disattivate nelle impostazioni.", request_id=request_id))
+                    await client.send(_error_frame("Le azioni di OpenDuet sono disattivate nelle impostazioni.", request_id=request_id))
                     return
                 try:
                     from .planning import intake
@@ -1232,7 +1232,7 @@ class BobbServer:
         audit_mod.end_task(self.conn, task_id, status, detail=str(frame.get("detail") or ""))
         if session is not None:
             session.status = status
-            # A task that worked is a way of doing it, learned by watching Bobb.
+            # A task that worked is a way of doing it, learned by watching OpenDuet.
             if status == "done":
                 procedures_mod.record(self.conn, session.goal, procedures_mod.from_task(self.conn, task_id), source="task")
                 # Scheduled work must not manufacture evidence of a user routine.
@@ -1279,7 +1279,7 @@ class BobbServer:
         await client.send({"t": "bobb.state", "ts": _now(), "request_id": frame.get("id"), **result})
 
     async def _on_procedure_record(self, frame: dict, client: _Client) -> None:
-        """The user showed Bobb how ("Show me"), step by step."""
+        """The user showed OpenDuet how ("Show me"), step by step."""
         steps = [s for s in (frame.get("steps") or []) if isinstance(s, dict)]
         procedure = procedures_mod.record(self.conn, str(frame.get("goal") or ""), steps, source="demonstration")
         await client.send({"t": "procedure.recorded", "ts": _now(), "request_id": frame.get("id"),
@@ -1434,7 +1434,7 @@ _WARMUP_EVENT = {
     "kind": "mail.opened",
     "app": "Mail",
     "payload": {
-        "sender": "Bobb <bobb@localhost>",
+        "sender": "OpenDuet <bobb@localhost>",
         "subject": "warm-up",
         "body": "This message exists only to warm the model's kernels and caches at startup.",
         "thread_len": 1,

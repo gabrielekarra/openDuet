@@ -6,7 +6,7 @@ import BobbCore
 struct BobbView: View {
     @Bindable var workspace: BobbWorkspace
     @State private var tab = "today"
-    @State private var name = "Bobb"
+    @State private var name = "OpenDuet"
     @State private var character = "Practical and concise."
     @State private var profile = "general"
     @State private var appFilter = ""
@@ -48,7 +48,7 @@ struct BobbView: View {
 
     private var pages: [(id: String, title: String, icon: String)] {
         [("today", t("For you", "Per te"), "sparkles"),
-         ("identity", t("Your Bobb", "Il tuo Bobb"), "person.crop.circle"),
+         ("identity", t("Your OpenDuet", "Il tuo OpenDuet"), "person.crop.circle"),
          ("boundaries", t("Boundaries", "Confini"), "hand.raised"),
          ("work", t("Work", "Lavoro"), "checklist"),
          ("activity", t("Activity", "Attività"), "clock"),
@@ -68,7 +68,7 @@ struct BobbView: View {
             VStack(alignment: .leading, spacing: 24) {
                 VStack(alignment: .leading, spacing: 14) {
                     BobbMark(size: 64)
-                    Text("Bobb").font(.system(size: 28, weight: .bold, design: .rounded))
+                    Text("OpenDuet").font(.system(size: 28, weight: .bold, design: .rounded))
                     Text(t("A little help.\nRoom for big ideas.", "Un piccolo aiuto.\nSpazio alle grandi idee."))
                         .font(.callout).foregroundStyle(.secondary)
                 }.padding(.horizontal, 12).padding(.top, 12)
@@ -101,14 +101,14 @@ struct BobbView: View {
             VStack(alignment: .leading, spacing: 16) {
                 HStack(alignment: .center) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(pages.first { $0.id == tab }?.title ?? "Bobb")
+                        Text(pages.first { $0.id == tab }?.title ?? "OpenDuet")
                             .font(.system(size: 25, weight: .bold, design: .rounded))
                         Text(workspace.activeAgent.name).font(.callout).foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Picker(t("Active Bobb", "Bobb attivo"), selection: binding(\.activeAgent)) {
+                    Picker(t("Active OpenDuet", "OpenDuet attivo"), selection: binding(\.activeAgent)) {
                         ForEach(workspace.agents) { agent in Text(agent.name).tag(agent.id) }
-                    }.labelsHidden().frame(width: 130).help(t("Active Bobb", "Bobb attivo"))
+                    }.labelsHidden().frame(width: 130).help(t("Active OpenDuet", "OpenDuet attivo"))
                     Toggle(t("Background", "Background"), isOn: binding(\.backgroundEnabled))
                         .toggleStyle(.switch).font(.caption).fixedSize()
                 }.padding(14).bobbGlass(radius: 20)
@@ -148,7 +148,7 @@ struct BobbView: View {
             VStack(alignment: .leading, spacing: 16) {
                 GroupBox(t("A step ahead", "Un passo avanti")) {
                     VStack(alignment: .leading, spacing: 10) {
-                        hint(t("Bobb connects what you are working on with a useful next step. Suggestions explain why and show the source. You decide what to prepare.", "Bobb collega ciò su cui lavori a un prossimo passo utile. I suggerimenti spiegano il perché e mostrano la fonte. Scegli tu cosa preparare."))
+                        hint(t("OpenDuet connects what you are working on with a useful next step. Suggestions explain why and show the source. You decide what to prepare.", "OpenDuet collega ciò su cui lavori a un prossimo passo utile. I suggerimenti spiegano il perché e mostrano la fonte. Scegli tu cosa preparare."))
                         Toggle(t("Suggest next steps from my apps", "Suggerisci prossimi passi dalle mie app"), isOn: Binding(
                             get: { state.settings.contextProactive },
                             set: { value in workspace.coordinator.updateSettings { $0.contextProactive = value } }))
@@ -158,7 +158,7 @@ struct BobbView: View {
                         } else if !state.modelInstalled || !state.connection.isReady {
                             hint(t("Local intelligence is preparing. Check progress in the menu bar.", "L’intelligenza locale si sta preparando. Controlla l’avanzamento nel menu."))
                         } else if !AXIsProcessTrusted() {
-                            hint(t("Grant Accessibility from the menu bar to let Bobb understand your apps.", "Concedi Accessibilità dal menu per permettere a Bobb di comprendere le tue app."))
+                            hint(t("Grant Accessibility from the menu bar to let OpenDuet understand your apps.", "Concedi Accessibilità dal menu per permettere a OpenDuet di comprendere le tue app."))
                         } else if !state.settings.memoryEnabled {
                             hint(t("Enable local memory in Settings to receive context suggestions.", "Attiva la memoria locale nelle Impostazioni per ricevere suggerimenti dal contesto."))
                         }
@@ -187,7 +187,7 @@ struct BobbView: View {
                 ForEach(state.forYou, id: \.id) { decision in
                     GroupBox {
                         VStack(alignment: .leading, spacing: 8) {
-                            Text(decision.suggestion?.title ?? decision.explanation ?? "Bobb").font(.headline)
+                            Text(decision.suggestion?.title ?? decision.explanation ?? "OpenDuet").font(.headline)
                             if let explanation = decision.explanation { hint(explanation) }
                             HStack {
                                 Button(t("Prepare", "Prepara")) { workspace.coordinator.approve(decision) }
@@ -214,7 +214,7 @@ struct BobbView: View {
                     }
                 }
                 if state.promisesDue().isEmpty && state.forYou.isEmpty && (workspace.snapshot?.initiatives ?? []).isEmpty {
-                    hint(t("No new suggestion yet. Work normally in your apps: Bobb looks for unresolved requests, missing information and actionable errors. It learns from what you accept or dismiss.", "Ancora nessun suggerimento. Lavora normalmente nelle tue app: Bobb cerca richieste aperte, informazioni mancanti ed errori su cui intervenire. Impara da ciò che accetti o ignori."))
+                    hint(t("No new suggestion yet. Work normally in your apps: OpenDuet looks for unresolved requests, missing information and actionable errors. It learns from what you accept or dismiss.", "Ancora nessun suggerimento. Lavora normalmente nelle tue app: OpenDuet cerca richieste aperte, informazioni mancanti ed errori su cui intervenire. Impara da ciò che accetti o ignori."))
                 }
                 if let muted = workspace.snapshot?.mutedInitiativeApps, !muted.isEmpty {
                     GroupBox(t("What I learned", "Cosa ho imparato")) {
@@ -264,7 +264,7 @@ struct BobbView: View {
 
     private var identity: some View {
         Form {
-            Section(t("Create your Bobb", "Crea il tuo Bobb")) {
+            Section(t("Create your OpenDuet", "Crea il tuo OpenDuet")) {
                 TextField(t("Name", "Nome"), text: $name)
                 TextField(t("Character", "Carattere"), text: $character, axis: .vertical).lineLimit(2...4)
                 Picker(t("Profile", "Profilo"), selection: $profile) {
@@ -274,7 +274,7 @@ struct BobbView: View {
                 }
                 HStack {
                     Button(t("Save", "Salva")) { saveAgent(id: workspace.activeAgent.id) }
-                    Button(t("Create another Bobb", "Crea un altro Bobb")) { saveAgent(id: UUID().uuidString) }
+                    Button(t("Create another OpenDuet", "Crea un altro OpenDuet")) { saveAgent(id: UUID().uuidString) }
                     Button(t("Remove", "Rimuovi"), role: .destructive) { workspace.delete("agent", id: workspace.activeAgent.id) }
                         .disabled(workspace.agents.count <= 1)
                 }.disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -287,7 +287,7 @@ struct BobbView: View {
                     hint(t("I haven't observed your work yet. Grant macOS permissions so I can read the apps you use.", "Non ho ancora osservato il tuo lavoro. Concedi i permessi macOS per leggere le app che usi."))
                 }
             }
-            hint(t("Each Bobb has its own assignments. Your apps, browser and desktop are shared one task at a time.", "Ogni Bobb ha i suoi incarichi. Le tue app, il browser e lo schermo sono condivisi, un incarico alla volta."))
+            hint(t("Each OpenDuet has its own assignments. Your apps, browser and desktop are shared one task at a time.", "Ogni OpenDuet ha i suoi incarichi. Le tue app, il browser e lo schermo sono condivisi, un incarico alla volta."))
         }.formStyle(.grouped)
     }
     private func loadIdentity() { let a = workspace.activeAgent; name = a.name; character = a.character; profile = a.profile }
@@ -303,7 +303,7 @@ struct BobbView: View {
     private var boundaries: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                hint(t("Bobb discovers this Mac's apps automatically. Allow reading and use, or exclude an app. Sending, payments, deletion and publishing ask by default. Password managers and secure fields stay protected.", "Bobb scopre automaticamente le app del Mac. Puoi consentire lettura e uso oppure escludere un’app. Invio, pagamenti, eliminazione e pubblicazione chiedono conferma di default. Gestori di password e campi segreti restano protetti."))
+                hint(t("OpenDuet discovers this Mac's apps automatically. Allow reading and use, or exclude an app. Sending, payments, deletion and publishing ask by default. Password managers and secure fields stay protected.", "OpenDuet scopre automaticamente le app del Mac. Puoi consentire lettura e uso oppure escludere un’app. Invio, pagamenti, eliminazione e pubblicazione chiedono conferma di default. Gestori di password e campi segreti restano protetti."))
                 TextField(t("Find an app", "Cerca un’app"), text: $appFilter)
                 ForEach(boundaryApps) { app in
                     let protected = ScreenMemoryPolicy(extraProtected: state.settings.extraProtectedApps).isProtected(bundleId: app.id, appName: app.name)
@@ -373,7 +373,7 @@ struct BobbView: View {
     }
     private var boundaryApps: [AppBoundary] {
         var apps: [String: AppBoundary] = [:]
-        for app in discoveredApps + [AppBoundary(id: "bobb.browser", name: "Bobb Browser")] + state.settings.bobb.boundaries.apps {
+        for app in discoveredApps + [AppBoundary(id: "bobb.browser", name: "OpenDuet Browser")] + state.settings.bobb.boundaries.apps {
             apps[app.id] = app
         }
         for config in state.settings.bobb.connectors {
@@ -434,11 +434,11 @@ struct BobbView: View {
                         Task { projectSteps = (await workspace.planProject(goal: goal, profile: workspace.activeAgent.profile))?.joined(separator: "\n") ?? ""; planning = false }
                     }.disabled(planning || goal.isEmpty)
                     TextEditor(text: $projectSteps).frame(height: 130)
-                    hint(t("Review and edit the subtasks, one per line. Bobb saves progress after each one and pauses when it needs you.", "Controlla e modifica le sotto-attività, una per riga. Bobb salva l’avanzamento dopo ciascuna e si ferma quando ha bisogno di te."))
+                    hint(t("Review and edit the subtasks, one per line. OpenDuet saves progress after each one and pauses when it needs you.", "Controlla e modifica le sotto-attività, una per riga. OpenDuet salva l’avanzamento dopo ciascuna e si ferma quando ha bisogno di te."))
                 }
                 Button(workKind == "request" ? t("Start", "Avvia") : t("Save and enable", "Salva e attiva"), action: saveWork)
                     .disabled(goal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || (workKind == "project" && projectSteps.isEmpty))
-                hint(t("Standing assignments run while this Mac is awake, Bobb is open, and background work is enabled. Desktop work waits until you are away. On Macs with up to 16 GB RAM, one background task runs at a time.", "Gli incarichi partono quando il Mac è sveglio, Bobb è aperto e il lavoro in background è attivo. Il lavoro sullo schermo aspetta che tu sia assente. Sui Mac con fino a 16 GB di RAM parte un solo incarico in background alla volta."))
+                hint(t("Standing assignments run while this Mac is awake, OpenDuet is open, and background work is enabled. Desktop work waits until you are away. On Macs with up to 16 GB RAM, one background task runs at a time.", "Gli incarichi partono quando il Mac è sveglio, OpenDuet è aperto e il lavoro in background è attivo. Il lavoro sullo schermo aspetta che tu sia assente. Sui Mac con fino a 16 GB di RAM parte un solo incarico in background alla volta."))
             }
             entities("project", items: workspace.snapshot?.projects ?? [])
             entities("job", items: workspace.snapshot?.jobs ?? [])
@@ -526,7 +526,7 @@ struct BobbView: View {
                     }
                 }
                 ForEach(workspace.executions) { execution in
-                    GroupBox(workspace.agents.first { $0.id == execution.run.agentId }?.name ?? "Bobb") {
+                    GroupBox(workspace.agents.first { $0.id == execution.run.agentId }?.name ?? "OpenDuet") {
                         TaskView(state: execution.state, actions: TaskActions(stop: { workspace.stop(execution) },
                             allow: { workspace.allow($0, execution: execution) }, undo: { Task { await execution.loop.undoLast() } },
                             close: { workspace.executions.removeAll { $0.id == execution.id && $0.finished } }))
@@ -569,7 +569,7 @@ struct BobbView: View {
                     Button(t("Use default", "Usa predefinito")) { workspace.coordinator.updateSettings { $0.bobb.localModelPath = "" } }
                 }
             }
-            hint(t("Bobb speaks only when you talk to it using the microphone. Typed requests, suggestions and assignments stay silent.", "Bobb parla solo quando gli parli con il microfono. Le richieste scritte, i suggerimenti e gli incarichi restano silenziosi."))
+            hint(t("OpenDuet speaks only when you talk to it using the microphone. Typed requests, suggestions and assignments stay silent.", "OpenDuet parla solo quando gli parli con il microfono. Le richieste scritte, i suggerimenti e gli incarichi restano silenziosi."))
         }.formStyle(.grouped)
     }
     private func chooseModel() {
@@ -582,7 +582,7 @@ struct BobbView: View {
         Form {
             Section(t("Your browser", "Il tuo browser")) {
                 Button(t("Open your browser", "Apri il tuo browser")) { workspace.inspectBrowser(agentId: workspace.activeAgent.id) }
-                hint(t("Bobb uses your usual browser and its signed-in accounts. Browser work shares the desktop with your other apps.", "Bobb usa il browser abituale e gli account già aperti. Gli incarichi nel browser condividono il desktop con le altre app."))
+                hint(t("OpenDuet uses your usual browser and its signed-in accounts. Browser work shares the desktop with your other apps.", "OpenDuet usa il browser abituale e gli account già aperti. Gli incarichi nel browser condividono il desktop con le altre app."))
             }
             Section("iMessage") {
                 TextField(t("Your own iMessage address", "Il tuo indirizzo iMessage"), text: binding(\.selfAddress))
@@ -592,7 +592,7 @@ struct BobbView: View {
             }
             Section(t("Native app integrations", "Integrazioni native delle app")) {
                 Text(t("Calendar, Reminders, Contacts, Shortcuts, Music, Mail and Messages", "Calendario, Promemoria, Contatti, Comandi Rapidi, Musica, Mail e Messaggi"))
-                hint(t("Ask Bobb from Option–Space or a desktop assignment. It can choose native tools, configured connectors and your real app controls in the same task. macOS asks for access when a tool first needs it; app boundaries apply to every call.", "Chiedi a Bobb da Option–Spazio o da un incarico sul desktop. Può scegliere strumenti nativi, connettori configurati e controlli delle tue app nello stesso incarico. macOS chiede accesso quando uno strumento ne ha bisogno; i confini delle app valgono per ogni chiamata."))
+                hint(t("Ask OpenDuet from Option–Space or a desktop assignment. It can choose native tools, configured connectors and your real app controls in the same task. macOS asks for access when a tool first needs it; app boundaries apply to every call.", "Chiedi a OpenDuet da Option–Spazio o da un incarico sul desktop. Può scegliere strumenti nativi, connettori configurati e controlli delle tue app nello stesso incarico. macOS chiede accesso quando uno strumento ne ha bisogno; i confini delle app valgono per ogni chiamata."))
             }
             folderSettings
             connectorSettings
@@ -606,7 +606,7 @@ struct BobbView: View {
                     Button(t("Open", "Apri")) { workspace.virtualMac.inspect() }
                     Button(t("Shut down", "Spegni")) { workspace.virtualMac.stop() }
                 }
-                hint(t("Apple silicon, 24 GB RAM, a local macOS IPSW and a separate 64 GB sparse disk. Install Bobb in the guest, grant Accessibility, review its app exclusions and configure Remote Login with a dedicated SSH key. Verify its SSH fingerprint before connecting. No shared folders or forwarded credentials.", "Apple silicon, 24 GB di RAM, un IPSW macOS locale e un disco sparso separato da 64 GB. Installa Bobb nel guest, concedi Accessibilità, controlla le esclusioni delle app e configura Login remoto con una chiave SSH dedicata. Verifica prima l’impronta SSH. Nessuna cartella condivisa o credenziale inoltrata."))
+                hint(t("Apple silicon, 24 GB RAM, a local macOS IPSW and a separate 64 GB sparse disk. Install OpenDuet in the guest, grant Accessibility, review its app exclusions and configure Remote Login with a dedicated SSH key. Verify its SSH fingerprint before connecting. No shared folders or forwarded credentials.", "Apple silicon, 24 GB di RAM, un IPSW macOS locale e un disco sparso separato da 64 GB. Installa OpenDuet nel guest, concedi Accessibilità, controlla le esclusioni delle app e configura Login remoto con una chiave SSH dedicata. Verifica prima l’impronta SSH. Nessuna cartella condivisa o credenziale inoltrata."))
                 TextField(t("Guest private IPv4 address", "Indirizzo IPv4 privato del guest"), text: $guestAddress)
                 TextField(t("Guest account", "Account del guest"), text: $guestUser)
                 HStack {
@@ -644,7 +644,7 @@ struct BobbView: View {
                 workspace.coordinator.updateSettings { if $0.bobb.fileFolders == nil { $0.bobb.fileFolders = [] }; $0.bobb.fileFolders?.append(folder) }
                 connect(id: "com.apple.finder", name: "Finder")
             }
-            hint(t("Bobb can search, read and edit files inside these folders. Finder's boundaries control its actions. Remember documents adds bounded excerpts to local memory while observation and memory are enabled; removing a folder stops new reads. Existing memories follow retention and can be deleted in Memory.", "Bobb può cercare, leggere e modificare file in queste cartelle. I Confini di Finder controllano le azioni. Ricorda documenti aggiunge estratti alla memoria locale quando osservazione e memoria sono attive; rimuovere una cartella ferma le letture. I ricordi già salvati seguono la conservazione e si eliminano da Memoria."))
+            hint(t("OpenDuet can search, read and edit files inside these folders. Finder's boundaries control its actions. Remember documents adds bounded excerpts to local memory while observation and memory are enabled; removing a folder stops new reads. Existing memories follow retention and can be deleted in Memory.", "OpenDuet può cercare, leggere e modificare file in queste cartelle. I Confini di Finder controllano le azioni. Ricorda documenti aggiunge estratti alla memoria locale quando osservazione e memoria sono attive; rimuovere una cartella ferma le letture. I ricordi già salvati seguono la conservazione e si eliminano da Memoria."))
         }
     }
     private var connectorSettings: some View {

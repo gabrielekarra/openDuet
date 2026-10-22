@@ -1,0 +1,51 @@
+# Copy to openduet.toml. Credentials belong in environment variables, never in this file.
+data_dir = ".runtime/openduet"
+host = "127.0.0.1"
+port = 8765
+default_provider = "local"
+max_turns = 20
+daily_token_budget = 200000
+browser = false
+browser_hosts = []  # Exact HTTPS hosts, including login and required subresource hosts.
+# voice_model = "/absolute/path/to/already-downloaded-faster-whisper-model"
+# notify_url = "https://your-ntfy.example/private-topic"
+# notify_token_env = "NTFY_TOKEN"
+
+[providers.local]
+kind = "openai"
+base_url = "http://127.0.0.1:11434/v1"
+model = "qwen3.5:4b"  # Install your preferred model separately in Ollama.
+tools = true         # false enables the text tool protocol for models without tool calling.
+
+# LM Studio: base_url = "http://127.0.0.1:1234/v1"
+# llama.cpp: base_url = "http://127.0.0.1:8080/v1"
+# vLLM / MLX server / OpenRouter / Gemini compatibility: use that service's /v1 base URL.
+# In Docker, 127.0.0.1 is the container itself. Use the host gateway or another service name.
+
+# [providers.ollama-native]
+# kind = "ollama"
+# base_url = "http://127.0.0.1:11434"  # Native API has no /v1 suffix.
+# model = "qwen3.5:4b"
+
+# [providers.anthropic]
+# kind = "anthropic"
+# base_url = "https://api.anthropic.com/v1"
+# api_key_env = "ANTHROPIC_API_KEY"
+# model = "your-available-model-id"
+
+# [providers.remote]
+# kind = "openai"
+# base_url = "https://api.openai.com/v1"
+# api_key_env = "OPENAI_API_KEY"
+# model = "your-available-model-id"
+
+# [connectors.business]
+# url = "https://your-mcp.example/mcp"
+# header_env = { Authorization = "BUSINESS_AUTHORIZATION" }  # Env value includes Bearer prefix.
+# safe_tools = ["list_invoices", "get_calendar_events"] # Operator-reviewed, read-only tools only.
+# excluded_tools = ["transfer_money", "trade_securities"]
+
+# [connectors.local-tools]
+# command = "/absolute/path/to/mcp-server"
+# args = ["--stdio"]
+# env_names = ["SERVICE_API_KEY"] # Only these named secrets are given to the child process.

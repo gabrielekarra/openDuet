@@ -38,7 +38,7 @@ func renderDocsScreenshots() async {
             state.entitlement = .community
             state.settings.bobb.boundaries.apps = [
                 AppBoundary(id: "com.apple.mail", name: "Mail"),
-                AppBoundary(id: "bobb.browser", name: "Bobb Browser"),
+                AppBoundary(id: "bobb.browser", name: "OpenDuet Browser"),
             ]
             let workspace = BobbWorkspace(state: state, coordinator: coordinator)
             let initiative: [String: Any] = [
@@ -327,13 +327,13 @@ private struct Fixtures {
         }
         add(.mailOpened, "Mail", ["sender": "Techmeme <news@techmeme.com>", "subject": "Techmeme Daily"],
             decision(id: "dec_0", event: "evt_0", action: .ignore, confidence: 0.98,
-                     explanation: it ? "Bobb ha imparato da te che messaggi così possono aspettare, quindi è rimasto in silenzio senza interpellare il modello."
-                                     : "Bobb has learned from you that messages like this can wait, so it stayed quiet without asking the model.",
+                     explanation: it ? "OpenDuet ha imparato da te che messaggi così possono aspettare, quindi è rimasto in silenzio senza interpellare il modello."
+                                     : "OpenDuet has learned from you that messages like this can wait, so it stayed quiet without asking the model.",
                      latency: 0.4, why: "personal specialist: p_surface=0.021 <= 0.08", tier: "specialist"))
         add(.mailOpened, "Mail", ["sender": "Dana Whitfield <dana@apexsearch.co>", "subject": "Quick chat?"],
             decision(id: "dec_2", event: "evt_2", action: .wait, confidence: 0.54,
-                     explanation: it ? "Dana Whitfield ti chiede qualcosa (entro la settimana). Bobb era sicuro al 54%, sotto la tua soglia del 60%: è rimasto in silenzio."
-                                     : "Dana Whitfield is asking you for something (this week). Bobb was 54% sure, below your 60% threshold, so it stayed quiet.",
+                     explanation: it ? "Dana Whitfield ti chiede qualcosa (entro la settimana). OpenDuet era sicuro al 54%, sotto la tua soglia del 60%: è rimasto in silenzio."
+                                     : "Dana Whitfield is asking you for something (this week). OpenDuet was 54% sure, below your 60% threshold, so it stayed quiet.",
                      abstained: true, readouts: [messageType, weekUrgency], latency: 641,
                      why: "message_type=personal_request p=0.93, urgency=2 p=0.55, user_state=reading, policy=suggest basis=urgency+message_type, floor=0.60"))
         add(.mailOpened, "Mail", ["sender": "Marco Rossi <marco@studiorossi.it>", "subject": "Preventivo revisione", "thread_len": 2],

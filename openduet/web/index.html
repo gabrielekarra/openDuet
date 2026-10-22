@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f5f3ed"><meta name="description" content="Your work, moving forward. An open source proactive assistant.">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml"><link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/style.css"><title>OpenDuet</title>
+</head>
+<body>
+  <section id="login" hidden><div class="login-card"><div class="mark">od<span class="arrow" aria-hidden="true"></span></div><p class="eyebrow">YOUR OWN ASSISTANT</p>
+    <h1>Good work starts<br>with a little space.</h1><p>Sign in to your OpenDuet workspace.</p>
+    <form id="login-form"><label for="token">Workspace access token</label><input id="token" type="password" required autocomplete="current-password"><button>Open workspace <span class="arrow" aria-hidden="true"></span></button></form>
+    <small>Your server. Your models. Your call.</small></div></section>
+  <div id="workspace" hidden>
+    <aside><a class="brand" href="/">OpenDuet<span class="arrow" aria-hidden="true"></span></a><p class="workspace-label">PERSONAL WORKSPACE</p>
+      <nav aria-label="Main navigation">
+        <button data-view="home" class="active"><span>◉</span> Home</button>
+        <button data-view="tasks"><span>☷</span> Tasks <b id="task-count"></b></button>
+        <button data-view="make"><span>▧</span> Make</button>
+        <button data-view="routines"><span>↻</span> Routines</button>
+        <button data-view="memory"><span>◎</span> Memory</button>
+        <button data-view="connections"><span>⌘</span> Connections</button>
+        <button data-view="settings"><span>⚙</span> Settings</button>
+      </nav>
+      <div class="channel-heading">CHANNELS <button id="new-channel" aria-label="New channel">+</button></div><div id="channels"></div>
+      <div class="sidebar-bottom"><span class="dot"></span> Self-hosted & open source<br><small>Made for your way of working.</small></div>
+    </aside>
+    <main><header><span id="breadcrumb">Workspace / Home</span><div><span class="local-badge">YOUR WORKSPACE</span><button id="notifications" class="quiet" title="Enable notifications while this app is open">♧ Notifications</button></div></header>
+      <div id="content"></div>
+    </main>
+  </div>
+  <dialog id="editor"><form method="dialog"><button class="quiet close">Close ×</button></form><h2 id="editor-title">Edit artifact</h2><textarea id="editor-content" rows="20"></textarea><button id="save-artifact">Save a new version</button></dialog>
+  <div id="toast" role="status" hidden></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>

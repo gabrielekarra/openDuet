@@ -17,3 +17,9 @@ dist/intro/*
 
 # SQLite session journals are runtime data, never source.
 *.ses
+
+# Local configuration and credentials
+openduet.toml
+.env
+.env.*
+!.env.example

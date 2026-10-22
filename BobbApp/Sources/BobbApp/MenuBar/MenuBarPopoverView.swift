@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 import BobbCore
 
@@ -6,6 +7,7 @@ import BobbCore
 /// a field to ask something, what is waiting for the user, how much
 /// Bobb stayed quiet, and the way to everything else.
 struct MenuBarPopoverView: View {
+    @AppStorage("OpenDuetWorkspaceURL") private var workspaceURL = "http://127.0.0.1:8765"
     @Bindable var state: AppState
     let actions: MenuBarActions
     var downloader: ModelDownloader? = nil
@@ -28,11 +30,17 @@ struct MenuBarPopoverView: View {
                 .padding(.top, 10)
             if let permissions, permissions.accessibility != .granted {
                 noticeCard(icon: "cursorarrow.rays",
-                           text: BobbCopy.t("Let Bobb read and use your apps.", "Consenti a Bobb di leggere e usare le tue app."),
+                           text: BobbCopy.t("Let OpenDuet read and use your apps.", "Consenti a OpenDuet di leggere e usare le tue app."),
                            button: BobbCopy.t("Allow", "Consenti"), action: actions.requestAccessibility)
             }
-            Button("Bobb · " + BobbCopy.t("For you, work & boundaries", "Per te, lavoro e confini"), action: actions.openBobb)
+            Button("OpenDuet · " + BobbCopy.t("For you, work & boundaries", "Per te, lavoro e confini"), action: actions.openBobb)
                 .buttonStyle(.plain).font(.system(size: 11, weight: .medium)).padding(12)
+            Button(BobbCopy.t("Open web workspace", "Apri il workspace web")) {
+                if let url = URL(string: workspaceURL), ["http", "https"].contains(url.scheme ?? "") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+            .buttonStyle(.plain).font(.system(size: 11, weight: .medium)).padding(.horizontal, 12).padding(.bottom, 8)
             forYou
             Button(action: actions.openEmail) {
                 HStack {
@@ -78,7 +86,7 @@ struct MenuBarPopoverView: View {
         switch state.activityState {
         case .disconnected: L10n.t(.statusDisconnected)
         case .starting: L10n.t(.statusStarting)
-        case .setupNeeded: BobbCopy.t("Preparing Bobb", "Bobb si sta preparando")
+        case .setupNeeded: BobbCopy.t("Preparing OpenDuet", "OpenDuet si sta preparando")
         case .paused: state.entitlement.allowsAssistance ? L10n.t(.statusPaused) : L10n.t(.statusTrialExpired)
         case .watching: L10n.t(.statusWatching)
         case .waitingForYou: L10n.t(.statusWaitingForYou)

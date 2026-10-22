@@ -21,7 +21,7 @@ permissions:
 
 jobs:
   release:
-    name: Signed, notarized Bobb.dmg
+    name: Signed, notarized OpenDuet.dmg
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
@@ -88,12 +88,12 @@ jobs:
           VERSION="$(cat VERSION)"
           NOTES="$(awk -v v="## $VERSION" '$0 ~ "^## " { p = index($0, v) == 1; next } p' CHANGELOG.md)"
           gh release create "$GITHUB_REF_NAME" \
-            "dist/Bobb-$VERSION.dmg" "dist/Bobb-$VERSION.dmg.sha256" \
-            --title "Bobb $VERSION" --notes "$NOTES"
+            "dist/OpenDuet-$VERSION.dmg" "dist/OpenDuet-$VERSION.dmg.sha256" \
+            --title "OpenDuet $VERSION" --notes "$NOTES"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Bobb-release
+          name: OpenDuet-release
           path: |
             dist/*.dmg
             dist/*.sha256

@@ -70,7 +70,7 @@ final class GuestMCPServer {
         switch request["method"]?.stringValue {
         case "initialize":
             result(id, .object(["protocolVersion": "2025-11-25", "capabilities": .object(["tools": .object([:])]),
-                "serverInfo": .object(["name": "Bobb Virtual Mac", "version": "2.0.0"])]))
+                "serverInfo": .object(["name": "OpenDuet Virtual Mac", "version": "2.0.0"])]))
         case "ping": result(id, .object([:]))
         case "tools/list":
             result(id, .object(["tools": .array([
@@ -95,7 +95,7 @@ final class GuestMCPServer {
     private func observe(_ args: JSONValue) async -> JSONValue {
         nonce = ""; observation = nil; candidates = nil
         guard AXIsProcessTrusted(), let screen = await driver.observe() else {
-            return .object(["error": "Grant Accessibility and review app exclusions in Bobb inside the guest."])
+            return .object(["error": "Grant Accessibility and review app exclusions in OpenDuet inside the guest."])
         }
         let goal = String((args["goal"]?.stringValue ?? "").prefix(4000))
         let ranked = CandidateRanker(limits: .init(press: 22, text: 8, scroll: 4)).rank(screen.elements, goal: goal)

@@ -15,7 +15,7 @@ struct OverlayView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 7) {
                 BobbMark(size: 22, color: Theme.attention, eyes: .look(CGVector(dx: -0.4, dy: 0.9)))
-                Text("Bobb")
+                Text("OpenDuet")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundStyle(.primary)
             }
