@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import time
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -421,3 +422,36 @@ async def test_reused_call_id_cannot_change_approved_payload(cfg):
     await run(runtime, ident)
     assert runtime.store.task(ident)["status"] == "failed"
     assert [m["content"] for m in runtime.store.rows("SELECT * FROM memories")] == ["first action"]
+
+
+async def test_private_login_requires_the_page_user_reviewed(cfg):
+    browser = Browser(cfg.data_dir, ["example.com", "other.example"])
+    browser.context = object()
+    browser.page = SimpleNamespace(url="https://other.example/login")
+    with pytest.raises(ValueError, match="page changed"):
+        await browser.login("input", "private value", "https://example.com/login")
+
+
+async def test_private_login_errors_do_not_echo_credentials(cfg, monkeypatch):
+    cfg.browser = True
+    app = create_app(cfg, start_worker=False)
+
+    async def failing_login(*args):
+        raise ValueError("fill(private-password) failed")
+
+    monkeypatch.setattr(app.state.runtime.browser, "login", failing_login)
+    async with httpx.AsyncClient(
+        transport=httpx.ASGITransport(app),
+        base_url="http://test",
+        headers={"Authorization": "Bearer " + cfg.token()},
+    ) as client:
+        result = await client.post(
+            "/api/browser/login",
+            json={
+                "selector": "input",
+                "value": "private-password",
+                "expected_url": "https://example.com/login",
+            },
+        )
+        assert result.status_code == 400
+        assert "private-password" not in result.text

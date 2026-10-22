@@ -74,10 +74,12 @@ class Browser:
             "text": (await self.page.locator("body").inner_text())[:24000],
         }
 
-    async def login(self, selector, value):
+    async def login(self, selector, value, expected_url):
         await self.start()
         if not self.allowed(self.page.url):
             raise ValueError("Open an allowed login page first")
+        if self.page.url != expected_url:
+            raise ValueError("Browser page changed; refresh before entering a private value")
         await self.page.locator(selector).fill(value)
 
     async def close(self):

@@ -60,6 +60,7 @@ class Login(BaseModel):
 class BrowserLogin(BaseModel):
     selector: str = Field(min_length=1, max_length=1000)
     value: str = Field(min_length=1, max_length=4096)
+    expected_url: str = Field(min_length=1, max_length=4096)
 
 
 class Resolution(BaseModel):
@@ -407,7 +408,13 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
         if not config.browser or runtime.current:
             raise HTTPException(409, "Pause browser work before entering a login")
         runtime.private_values.add(body.value)
-        await runtime.browser.login(body.selector, body.value)
+        try:
+            await runtime.browser.login(body.selector, body.value, body.expected_url)
+        except Exception:
+            # Playwright diagnostics can echo fill values. Do not log or return them.
+            raise HTTPException(
+                400, "Private login failed. Refresh and check the current page and field."
+            ) from None
         return {"ok": True}
 
     @app.post("/api/transcribe")
