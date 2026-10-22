@@ -13,3 +13,5 @@
   VNC and native release pipeline. Preserve native history at `bobb-mac-final`.
 - Add responsive/dark console modules, original glasses assets, runtime/browser
   regression fixtures and real Chromium/LibreOffice acceptance checks.
+- Record the first real Kev CPU/bfloat16 benchmark without treating its failed
+  quality gate as a passing model baseline; preserve explicit live acceptance gaps.

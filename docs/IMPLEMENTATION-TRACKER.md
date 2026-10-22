@@ -39,15 +39,15 @@ the native source before deletion.
 | #27 | Removed free-form Routines UI; built-in brief/report and approved check-ins remain | Delivered |
 | #28 | Removed spoken responses/TTS; bounded local voice input remains | Real Whisper model/audio quality not evaluated |
 | #29 | Removed obsolete pitch/demo/video/docs; relocated relevant Kev history with explicit historical labels | Delivered |
-| #30 | Typed Kev/event/policy/learning engine separate from selected work LLM | Real semantic calibration/parity remains unverified |
+| #30 | Typed Kev/event/policy/learning engine separate from selected work LLM | Real CPU seed evaluation failed the quality gate; semantic calibration/parity is not qualified |
 | #31 | Owner-paired durable Telegram loop, shared tasks, artifacts, approvals, media and optional Mini App | Real BotFather account/network delivery still needs live acceptance |
-| #32 | Separate Torch/MLX service, pinned checksums, explicit downloads, health and brief-only fallback | CPU service startup checked; real model and MLX/Torch parity not established locally |
+| #32 | Separate Torch/MLX service, pinned checksums, explicit downloads, health and brief-only fallback | CPU service startup and real BF16 inference checked; quality gate failed, MLX/Torch parity remains pending |
 | #33 | Durable normalized events/cursors/dedup/edits; Gmail/M365/calendar/Slack/finance contracts | Reviewed MCP polling tools and real account scopes required |
 | #34 | Deterministic ignore/brief/prepare/silent/interrupt policy and stored readouts | Policy branches pass without a loaded model |
 | #35 | Feedback floors, sender mute/undo, exact reply labels, held-out specialist gate and forget | Synthetic learning tests pass; personal utility requires user labels |
 | #36 | Sourced commitments, working-day quiet follow-ups, calendar/travel conflicts, deduplicated/snoozable prep | Friday promise and call/flight fixtures pass; external moves stay approved |
 | #37 | Stored-data explanations, /why, /quiet, decision feedback and task decision links | No explanation LLM call required |
-| #38 | EN/IT typed benchmark, JSON/MD metrics, fake PR checks, real weekly/manual workflow and parity comparator | Fixture report committed. First real CPU run and approved real regression baseline remain pending |
+| #38 | EN/IT typed benchmark, JSON/MD metrics, fake PR checks, real weekly/manual workflow and parity comparator | Fixture and failed real CPU reports committed; workflow and metrics verified. Approved passing baseline/MLX parity remain pending |
 | #39 | BotFather guide, encrypted validation/pairing/rotation/disconnect, second-account denial | Browser fixture passes; two-minute live onboarding not measured |
 | #40 | Durable inbox/offset/outbox, rate/backoff, escaping/splitting, topic routing and uncertain delivery review | Restart/429/owner boundary fixtures pass |
 | #41 | Inline approval/edit/defer/expiry/receipt and quick replies; deferred Review buttons in /tasks/brief | Single-execution and deferred-review fixtures pass |

@@ -50,9 +50,17 @@ at most .02 and ECE at most .03. A fixture cannot serve as a model baseline.
 Model swaps require real MLX/Torch reports with at least .95 label agreement and
 maximum probability difference .15. Record exact precision and hardware when
 reviewing those tolerances. The weekly/manual `Real Kev benchmark` workflow
-publishes its JSON/Markdown artifacts; failed gates remain failures.
+publishes its JSON/Markdown artifacts; failed gates remain failures. A committed
+`kev-torch-<dtype>-baseline.json` is used automatically only when it is passing
+and matches the evaluated backend/precision.
 
-Real MLX/Torch parity, RAM and latency are not established by fixture results.
+The [first real CPU/bfloat16 run](../benchmarks/kev-torch-bfloat16-2026-10-22.md)
+failed the quality gate: 65.4% answer accuracy and no urgent interruptions on the
+12-case seed corpus. Its measured median latency was 3.282 s/case and peak
+process RSS about 7.94 GiB; these measurements do not qualify other backends or
+precisions. The failed report is not an approved baseline.
+
+Real MLX/Torch parity is pending. RAM/latency are not established by fixture results.
 The current managed development environment has an 8 GB memory limit, below
 the pinned base's unquantized footprint, so its local validation uses adapter
 fixtures. Run the real job on a sufficiently provisioned runner/Mac before

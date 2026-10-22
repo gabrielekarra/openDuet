@@ -71,3 +71,20 @@ def test_debiased_rows_keep_exact_opaque_labels():
         [q], owners, [np.array([3, 0]), np.array([0, 3])], temperature=2.406, calibrators=[None], elapsed_ms=1
     )[0]
     assert result.value == "event:42" and result.confidence > 0.95
+
+
+def test_failed_report_cannot_become_a_regression_baseline(tmp_path, monkeypatch):
+    import json
+    import sys
+
+    from openduet.kev import eval as evaluation
+
+    report = evaluation.evaluate()
+    report["passed"] = False
+    baseline = tmp_path / "failed.json"
+    baseline.write_text(json.dumps(report))
+    monkeypatch.setattr(
+        sys, "argv", ["openduet-kev-eval", "--baseline", str(baseline), "--output", str(tmp_path / "report")]
+    )
+    with pytest.raises(SystemExit, match="passing baseline"):
+        evaluation.main()

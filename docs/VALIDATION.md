@@ -1,15 +1,16 @@
 # Validation record — 22 October 2026
 
-Local verification for OpenDuet 0.3.0, before publication. Disposable transports
+Verification for OpenDuet 0.3.0, including published main and GitHub CI. Disposable transports
 contain no user accounts, real bot tokens, issuer credentials or private data.
 GitHub's [CI workflow](../.github/workflows/ci.yml) repeats the runtime, Mac import,
 Office, specialist research, console/accessibility and isolated-computer checks.
+[All five CI jobs passed](https://github.com/gabrielekarra/openDuet/actions/runs/39860491142).
 Its `workspace-evidence` artifact contains all 28 console screenshots and the
 sanitized accessibility report.
 
 | Check | Observed result |
 | --- | --- |
-| Runtime/policy/transport/integration tests | **136 passed** in 42.17 s |
+| Runtime/policy/transport/integration tests | **137 passed** in 33.20 s |
 | Separate specialist research package | **87 passed** in 13.43 s |
 | Ruff E4/E7/E9/F/I/UP | Passed |
 | Chromium console path | Pair bot → Telegram task → shared Make file → approval passed |
@@ -19,6 +20,8 @@ sanitized accessibility report.
 | Real Docker Chromium computer | Arbitrary public example.com; no workspace secrets/DB; private/metadata URL and injected POST denied |
 | Real LibreOffice | 12-month formula forecast recalculates after assumption changes; PPTX renders into actual PNG previews |
 | Synthetic Kev benchmark | Adapter/policy gate passed; report in [benchmarks](benchmarks/kev-fixture.md) |
+| Complete Compose startup | Workspace, computer, egress, prototype origin and CPU Kev started; health and internal service access passed |
+| Real Kev CPU/bfloat16 | 12 cases / 52 readouts; accuracy 65.4%, 0/3 urgent interruptions; **quality gate failed**, [report](benchmarks/kev-torch-bfloat16-2026-10-22.md) |
 | Python distribution | 0.3.0 source distribution and wheel built successfully |
 
 Reproduce the central checks:
@@ -42,12 +45,23 @@ the real opaque origin and `scripts/check_accessibility.py` runs Lighthouse.
 
 ## Limits of this evidence
 
+The final Compose startup used separately selected core/all-extras validation
+images to fit the managed worker’s Docker vfs storage; service commands, networks,
+health checks and persistent-volume layout came from the actual Compose file.
+Office and browser checks ran separately against their actual installed runtimes.
+
 The local worker is Linux with an 8 GiB memory limit. It did not load the pinned
-9.48 GB Torch model or run MLX. The fixture report uses synthetic logits and
+9.48 GB Torch model or run MLX. A separate GitHub CPU run loaded the real pinned
+Torch model in bfloat16 and **failed** the fixed quality gate; its report is
+committed above. This is not an approved regression baseline. Its 3.282 s median
+per-case latency and 7.94 GiB peak process RSS apply to that runner/precision only.
+The fixture report uses synthetic logits and
 must never be represented as model accuracy, calibration, parity or throughput.
 The [real benchmark workflow](../.github/workflows/kev-benchmark.yml) explicitly
 downloads verified weights and publishes failures as well as successes. Model
-swaps require real comparison reports and an approved baseline.
+swaps require real comparison reports and an approved baseline. Weekly runs use
+a committed passing `kev-torch-<dtype>-baseline.json` if one exists. No passing
+real baseline or MLX/Torch parity result exists yet.
 
 Mac bridge contracts are exercised with mocked OS objects; the macOS CI job
 imports the real PyObjC frameworks. Actual Accessibility/Screen Recording

@@ -29,7 +29,11 @@ jobs:
           path: .runtime/kev-models
           key: kev-pinned-${{ hashFiles('openduet/kev/manifest.json') }}
       - name: Explicit verified download and CPU evaluation
-        run: uv run --no-sync openduet-kev-eval --backend torch --download --output docs/benchmarks/kev-torch
+        run: |
+          set --
+          baseline="docs/benchmarks/kev-torch-${OPENDUET_KEV_DTYPE}-baseline.json"
+          if [ -f "$baseline" ]; then set -- --baseline "$baseline"; fi
+          uv run --no-sync openduet-kev-eval --backend torch --download --output docs/benchmarks/kev-torch "$@"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

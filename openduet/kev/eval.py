@@ -210,11 +210,19 @@ def main():
         baseline = json.loads(args.baseline.read_text())
         if baseline["synthetic_adapter_fixture"] != report["synthetic_adapter_fixture"]:
             raise SystemExit("A fixture report cannot be used as a model baseline")
+        if not baseline.get("passed") or any(
+            baseline.get(key) != report.get(key) for key in ("backend", "dtype")
+        ):
+            raise SystemExit("Use a passing baseline with the same backend and precision")
         passed &= report["overall"]["accuracy"] >= baseline["overall"]["accuracy"] - 0.02
         passed &= report["overall"]["ece"] <= baseline["overall"]["ece"] + 0.03
         passed &= report["interrupt_precision"] >= baseline["interrupt_precision"] - 0.02
     passed &= report.get("parity", {}).get("passed", True)
     report["passed"] = bool(passed)
+    if args.backend != "fixture":
+        from .models import manifest
+
+        report["models"] = [entry for entry in manifest() if entry["backend"] == args.backend]
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.with_suffix(".json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     text = f"# Kev evaluation: {args.backend}\n\n" + (
@@ -228,6 +236,20 @@ def main():
     text += f"\n\nInterrupt precision: {report['interrupt_precision']:.3f}; recall: {report['interrupt_recall']:.3f}. Hostile interrupts: {report['hostile_interrupts']}.\n\nLatency ms: {report['latency_ms']}. Gate: {'passed' if passed else 'failed'}.\n"
     args.output.with_suffix(".md").write_text(text)
     print(f"Saved {args.output}.json and .md; gate {'passed' if passed else 'failed'}")
+    print(
+        json.dumps(
+            {
+                key: report[key]
+                for key in (
+                    "overall",
+                    "interrupt_precision",
+                    "interrupt_recall",
+                    "hostile_interrupts",
+                    "latency_ms",
+                )
+            }
+        )
+    )
     if not passed:
         raise SystemExit(1)
 
