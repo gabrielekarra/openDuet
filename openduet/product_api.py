@@ -7,6 +7,7 @@ import json
 import os
 import time
 from dataclasses import asdict
+from pathlib import Path
 
 import httpx
 from fastapi import HTTPException, Request
@@ -40,11 +41,16 @@ def install(app, runtime, signature):
         return {
             "telegram": runtime.telegram.public(),
             "proactivity": runtime.attention.snapshot(),
-            "directory": catalog.directory(),
+            "directory": catalog.directory()
+            + [
+                dict(item, capability=item["description"], setup_url="", scopes=[])
+                for item in runtime.plugins.connections()
+            ],
             "recipes": catalog.RECIPES,
             "plugins": runtime.plugins.listing(),
             "skills": runtime.plugins.descriptions(),
             "mac": {"enabled": runtime.mac.enabled, "platform": os.sys.platform},
+            "wallet": runtime.wallet.settings(),
             "approvals": [
                 preview(call)
                 for call in store.rows(
@@ -131,7 +137,9 @@ def install(app, runtime, signature):
         if not runtime.config.kev_url:
             return {"ready": False, "message": "Configure the separate Kev service to enable local inference"}
         try:
-            async with httpx.AsyncClient(timeout=5) as client:
+            async with httpx.AsyncClient(
+                timeout=5, trust_env=runtime.config.kev_url.startswith("https://")
+            ) as client:
                 response = await client.get(runtime.config.kev_url.rstrip("/") + "/health")
                 response.raise_for_status()
                 return response.json()
@@ -142,7 +150,9 @@ def install(app, runtime, signature):
     async def kev_download():
         if not runtime.config.kev_url:
             raise HTTPException(409, "Configure the Kev service first")
-        async with httpx.AsyncClient(timeout=10) as client:
+        async with httpx.AsyncClient(
+            timeout=10, trust_env=runtime.config.kev_url.startswith("https://")
+        ) as client:
             response = await client.post(runtime.config.kev_url.rstrip("/") + "/model/download")
             if response.is_error:
                 raise HTTPException(409, "Download unavailable or already in progress")
@@ -212,6 +222,16 @@ def install(app, runtime, signature):
             store.set_preference("default_provider", name)
         return {"model": name}
 
+    @app.post("/api/voice")
+    async def voice(request: Request):
+        body = await request.json()
+        path = str(body.get("model", ""))
+        if path and not Path(path).expanduser().is_dir():
+            raise ValueError("Select an already downloaded local faster-whisper model directory")
+        runtime.config.voice_model = str(Path(path).expanduser().resolve()) if path else ""
+        store.set_preference("voice_model", runtime.config.voice_model)
+        return {"enabled": bool(path)}
+
     async def bounded(request, limit):
         content = bytearray()
         async for chunk in request.stream():
@@ -245,7 +265,7 @@ def install(app, runtime, signature):
                 # Events are invalidations; private content stays behind authenticated JSON endpoints.
                 marker = json.dumps(
                     store.rows(
-                        "SELECT (SELECT COUNT(*) FROM events) AS events,(SELECT MAX(updated) FROM tasks) AS tasks,(SELECT COUNT(*) FROM decisions) AS decisions"
+                        "SELECT (SELECT COUNT(*) FROM events) AS events,(SELECT MAX(updated) FROM tasks) AS tasks,(SELECT COUNT(*) FROM decisions) AS decisions,(SELECT MAX(rowid) FROM preferences) AS preferences"
                     )
                 )
                 if marker != last:

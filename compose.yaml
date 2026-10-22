@@ -1,17 +1,103 @@
 services:
   openduet:
-    build: .
+    build:
+      context: .
+      args: {OPENDUET_OFFICE: "true"}
     restart: unless-stopped
-    ports:
-      - "127.0.0.1:8765:8765"
+    ports: ["127.0.0.1:8765:8765"]
     environment:
-      OPENDUET_TOKEN: ${OPENDUET_TOKEN:?Set a random OPENDUET_TOKEN of at least 24 characters}
-      # Add only the provider/connector credentials you intend this service to use.
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+      OPENDUET_TOKEN: ${OPENDUET_TOKEN:?Set a random workspace token of at least 24 characters}
+      OPENDUET_COMPUTER_TOKEN: ${OPENDUET_COMPUTER_TOKEN:?Set a separate random computer token of at least 24 characters}
+    extra_hosts: ["host.docker.internal:host-gateway"]
     volumes:
       - ./openduet.docker.toml:/app/openduet.toml:ro
       - openduet-data:/data
+      - prototype-data:/data/prototypes
+    networks: [outbound, computer]
+    depends_on:
+      computer: {condition: service_healthy}
+      prototypes: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
     init: true
+  computer:
+    build:
+      context: .
+      args: {OPENDUET_BROWSER: "true"}
+    command: ["/app/.venv/bin/openduet-computer"]
+    restart: unless-stopped
+    environment:
+      OPENDUET_COMPUTER_TOKEN: ${OPENDUET_COMPUTER_TOKEN:?Set a separate computer token}
+      OPENDUET_EGRESS_PROXY: http://egress:8890
+    volumes: ["computer-data:/computer"]
+    networks: [computer]
+    depends_on: [egress]
+    shm_size: 256mb
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8769/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    init: true
+  egress:
+    build: .
+    command: ["/app/.venv/bin/openduet-egress"]
+    restart: unless-stopped
+    networks: [computer, outbound]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    init: true
+  prototypes:
+    build: .
+    command: ["/app/.venv/bin/openduet-prototypes"]
+    restart: unless-stopped
+    volumes: ["prototype-data:/prototypes:ro"]
+    ports: ["127.0.0.1:8767:8767"]
+    networks: [outbound]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8767/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    init: true
+  kev:
+    profiles: [kev]
+    build:
+      context: .
+      args: {OPENDUET_KEV: "true"}
+    command: ["/app/.venv/bin/openduet-kev"]
+    restart: unless-stopped
+    environment:
+      OPENDUET_KEV_MODELS: /models
+      OPENDUET_KEV_BACKEND: torch
+      OPENDUET_KEV_DEVICE: cpu
+    volumes: ["kev-models:/models"]
+    networks: [outbound]
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    init: true
+  ollama:
+    profiles: [ollama]
+    image: ollama/ollama:0.13.5
+    restart: unless-stopped
+    volumes: ["ollama-models:/root/.ollama"]
+    networks: [outbound]
+    init: true
+networks:
+  computer: {internal: true}
+  outbound: {}
 volumes:
-  openduet-data:
+  openduet-data: {}
+  computer-data: {}
+  prototype-data: {}
+  kev-models: {}
+  ollama-models: {}

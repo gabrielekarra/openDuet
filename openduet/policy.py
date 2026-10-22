@@ -8,10 +8,36 @@ def check_payload(arguments):
     text = json.dumps(arguments)
     if re.search(r"\b\d{3}-\d{2}-\d{4}\b", text):
         raise ValueError("Government identification must not be passed to tools")
-    if re.search(
-        r"\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b|\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b", text, re.I
-    ):
-        raise ValueError("Government IDs and full bank account identifiers must not be shared")
+    if re.search(r"\b[A-Z]{6}\d{2}[A-Z]\d{2}[A-Z]\d{3}[A-Z]\b", text, re.I):
+        raise ValueError("Government IDs must not be shared")
+    lengths = {
+        "IT": 27,
+        "GB": 22,
+        "DE": 22,
+        "FR": 27,
+        "ES": 24,
+        "NL": 18,
+        "BE": 16,
+        "CH": 21,
+        "AT": 20,
+        "IE": 22,
+        "PT": 25,
+        "PL": 28,
+        "GR": 27,
+        "LU": 20,
+        "DK": 18,
+        "FI": 18,
+        "NO": 15,
+        "SE": 24,
+    }
+    for match in re.finditer(r"\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]){11,30}\b", text, re.I):
+        value = match[0].replace(" ", "").upper()
+        if len(value) != lengths.get(value[:2]):
+            continue
+        rearranged = value[4:] + value[:4]
+        number = "".join(str(ord(c) - 55) if c.isalpha() else c for c in rearranged)
+        if int(number) % 97 == 1:
+            raise ValueError("Full bank account identifiers must not be shared")
     if re.search(r'"(?:password|passwd|secret|api_key|access_token)"\s*:\s*"[^"\s]+"', text, re.I):
         raise ValueError("Enter credentials through the private sign-in form")
     for match in re.finditer(r"(?<!\d)(?:\d[ -]?){12,18}\d(?!\d)", text):

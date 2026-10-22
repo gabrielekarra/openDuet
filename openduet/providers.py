@@ -57,6 +57,16 @@ class Provider:
             history = []
             for original in messages:
                 message = dict(original)
+                if isinstance(message.get("content"), list):
+                    blocks = message["content"]
+                    message["content"] = "\n".join(
+                        block.get("text", "") for block in blocks if block["type"] == "text"
+                    )
+                    message["images"] = [
+                        block["image_url"]["url"].split(",", 1)[1]
+                        for block in blocks
+                        if block["type"] == "image_url"
+                    ]
                 if message["role"] == "tool":
                     message["tool_name"] = message.pop("name", "")
                     message.pop("tool_call_id", None)
@@ -171,7 +181,25 @@ class Provider:
                 blocks = [{"type": "tool_result", "tool_use_id": m["tool_call_id"], "content": m["content"]}]
             else:
                 role = m["role"]
-                blocks = [{"type": "text", "text": m["content"]}] if m.get("content") else []
+                if isinstance(m.get("content"), list):
+                    blocks = []
+                    for block in m["content"]:
+                        if block["type"] == "text":
+                            blocks.append(block)
+                        elif block["type"] == "image_url":
+                            prefix, data = block["image_url"]["url"].split(",", 1)
+                            blocks.append(
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": prefix[5:].split(";")[0],
+                                        "data": data,
+                                    },
+                                }
+                            )
+                else:
+                    blocks = [{"type": "text", "text": m["content"]}] if m.get("content") else []
                 for call in m.get("tool_calls", []):
                     blocks.append(
                         {

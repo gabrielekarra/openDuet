@@ -14,6 +14,7 @@ import httpx
 from . import connectors
 from .events import EventStore, unpack
 from .kev import learning, specialist
+from .kev.audit import sender_key
 from .kev.dates import due_from_text
 from .kev.schema import Bool, Choice, Score
 from .store import uid
@@ -72,7 +73,7 @@ def questions(kind):
 def policy(event, readouts, floor, context):
     def result(action, reason, names=()):
         confidence = min((readouts[name].confidence for name in names if name in readouts), default=1.0)
-        if confidence < floor and action != "ignore":
+        if confidence < floor:
             return {
                 "action": "brief",
                 "reason": "Below the personal confidence floor",
@@ -100,6 +101,8 @@ def policy(event, readouts, floor, context):
     relevant = readouts.get("asks_user", readouts.get("conflict", readouts.get("material")))
     if urgent and urgent.value >= 4 and relevant and relevant.value:
         return result("interrupt", "Urgent actionable request", ["urgency", relevant.name])
+    if (context.get("always") or context.get("vip")) and relevant and relevant.value:
+        return result("notify_silent", "User priority rule: actionable item", [relevant.name])
     preparation = readouts.get("prepare") or readouts.get("asks_user")
     if preparation and preparation.value:
         return result("prepare", "Prepare useful work before asking the user", [preparation.name])
@@ -157,7 +160,7 @@ class Attention:
         quiet |= local.weekday() not in preferences["working_days"]
         quiet |= not preferences["working_start"] <= clock < preferences["working_end"]
         payload = event.get("payload", {})
-        sender = str(payload.get("sender", next(iter(event.get("actors", [])), ""))).lower()
+        sender = sender_key({"sender": payload.get("sender", next(iter(event.get("actors", [])), ""))})
         midnight = local.replace(hour=0, minute=0, second=0, microsecond=0).timestamp()
         used = self.store.rows(
             "SELECT COUNT(*) AS n FROM decisions WHERE action='interrupt' AND ts>=?", (midnight,)
@@ -175,7 +178,8 @@ class Attention:
             "muted": muted,
             "capped": used >= preferences["max_interrupts"],
             "floor": floor,
-            "vip": sender in preferences["vip"],
+            "vip": sender in [str(value).lower() for value in preferences["vip"]],
+            "always": any(str(term).lower() in haystack for term in preferences["always"] if term),
             "local_time": local.isoformat(),
         }
 
@@ -185,7 +189,9 @@ class Attention:
         batch = questions(event["kind"])
         values = [{"kind": question.kind, **asdict(question)} for question in batch]
         try:
-            async with httpx.AsyncClient(timeout=90) as client:
+            async with httpx.AsyncClient(
+                timeout=90, trust_env=self.runtime.config.kev_url.startswith("https://")
+            ) as client:
                 response = await client.post(
                     self.runtime.config.kev_url.rstrip("/") + "/decide",
                     json={
@@ -213,6 +219,15 @@ class Attention:
 
     async def triage(self, row):
         event = json.loads(row["data"])
+        previous = self.store.rows("SELECT * FROM decisions WHERE event_id=?", (event["id"],))
+        if previous:
+            decision = previous[0]
+            if decision["action"] in {"interrupt", "notify_silent"} and not decision["delivered"]:
+                self.deliver_decision(decision["decision_id"], event, decision)
+            elif decision["action"] == "prepare":
+                await self.prepare(event)
+            self.store.execute("UPDATE connector_events SET processed=1 WHERE id=?", (event["id"],))
+            return
         context = self.context(event)
         payload = event["payload"] | {
             "sender": next(iter(event["actors"]), ""),
@@ -245,7 +260,7 @@ class Attention:
                 row["created"],
                 event["kind"],
                 row["connector"],
-                payload["sender"].lower(),
+                sender_key(payload),
                 outcome["action"],
                 outcome["reason"],
                 json.dumps([asdict(answer) for answer in answers]),
@@ -257,15 +272,16 @@ class Attention:
                 route.p if route else None,
             ),
         )
-        self.store.execute("UPDATE connector_events SET processed=1 WHERE id=?", (event["id"],))
         if event["kind"] == "mail.sent":
             await self.commitment(event, answers)
-            with self.store.db() as db:
-                specialist.record_implicit(db, specialist_event)
+            self.record_thread_reply(event)
+        if event["kind"].startswith("calendar."):
+            self.calendar_state(event)
         if outcome["action"] == "prepare":
             await self.prepare(event)
         elif outcome["action"] in {"interrupt", "notify_silent"}:
             self.deliver_decision(ident, event, outcome)
+        self.store.execute("UPDATE connector_events SET processed=1 WHERE id=?", (event["id"],))
 
     def deliver_decision(self, ident, event, outcome):
         keyboard = [
@@ -307,6 +323,73 @@ class Attention:
                     "INSERT INTO task_surfaces VALUES(?,'telegram',?,NULL,NULL,NULL)",
                     (task, config["owner_chat"]),
                 )
+        self.attach_sources(task, [event])
+
+    def attach_sources(self, task, events):
+        values = [self.runtime.sources.register(task, event["source"], event) for event in events]
+        if values:
+            self.store.execute(
+                "UPDATE tasks SET request=request||? WHERE id=?",
+                ("\nRetrieved source IDs to cite as [^source_id]: " + json.dumps(values), task),
+            )
+
+    def record_thread_reply(self, event):
+        """Strong implicit labels require an exact reply message/thread identifier."""
+        payload = event["payload"]
+        reply_id = str(payload.get("in_reply_to", "")).strip()
+        thread = str(payload.get("thread_id", payload.get("threadId", ""))).strip()
+        if not reply_id and not thread:
+            return
+        for row in self.store.rows(
+            "SELECT decision_id,event_payload FROM decisions WHERE kind='mail.received' AND response IS NULL"
+        ):
+            original = json.loads(row["event_payload"])
+            matches = reply_id and reply_id == str(original.get("message_id", original.get("id", "")))
+            matches |= bool(thread and thread == str(original.get("thread_id", original.get("threadId", ""))))
+            if matches:
+                self.store.execute(
+                    "INSERT INTO labels VALUES(?,1,1,'reply-header',?) ON CONFLICT(decision_id) DO NOTHING",
+                    (row["decision_id"], time.time()),
+                )
+
+    def calendar_state(self, event):
+        payload = event["payload"]
+        now = time.time()
+        try:
+            start, end = float(payload["start"]), float(payload["end"])
+        except (KeyError, ValueError, TypeError):
+            return
+        if start <= now < end and payload.get("status") != "cancelled":
+            self.store.set_preference(
+                "calendar_busy_until", max(end, self.store.preference("calendar_busy_until", 0))
+            )
+
+    async def followups(self, now=None):
+        """Prepare a nudge only for explicitly waiting sent threads, once per record."""
+        stamp = now if now is not None else time.time()
+        for row in self.store.rows(
+            "SELECT data FROM connector_events WHERE kind='mail.sent' AND created<?", (stamp - 3 * 86400,)
+        ):
+            event = json.loads(row["data"])
+            payload = event["payload"]
+            thread = payload.get("thread_id", payload.get("threadId"))
+            if not payload.get("awaiting_reply") or not thread:
+                continue
+            incoming = self.store.rows("SELECT data FROM connector_events WHERE kind='mail.received'")
+            if any(
+                json.loads(item["data"])["payload"].get(
+                    "thread_id", json.loads(item["data"])["payload"].get("threadId")
+                )
+                == thread
+                and json.loads(item["data"])["occurred_at"] > event["occurred_at"]
+                for item in incoming
+            ):
+                continue
+            event["text"] = (
+                "Prepare a quiet follow-up draft for this waiting thread; sending requires approval.\n"
+                + event["text"]
+            )
+            await self.prepare(event)
 
     async def commitment(self, event, answers):
         # Only sent messages can establish the user's own commitment; no commitments are executed.
@@ -320,7 +403,9 @@ class Attention:
         if not self.runtime.config.kev_url:
             return
         try:
-            async with httpx.AsyncClient(timeout=90) as client:
+            async with httpx.AsyncClient(
+                timeout=90, trust_env=self.runtime.config.kev_url.startswith("https://")
+            ) as client:
                 response = await client.post(
                     self.runtime.config.kev_url.rstrip("/") + "/decide",
                     json={"context": json.dumps(event), "questions": [{"kind": "bool", **asdict(question)}]},
@@ -390,6 +475,10 @@ class Attention:
     def forget_connector(self, name):
         with self.store.db() as db:
             db.execute(
+                "DELETE FROM learned_overrides WHERE subject IN (SELECT 'sender:'||sender FROM decisions WHERE app=?)",
+                (name,),
+            )
+            db.execute(
                 "DELETE FROM labels WHERE decision_id IN (SELECT decision_id FROM decisions WHERE app=?)",
                 (name,),
             )
@@ -425,6 +514,7 @@ class Attention:
             tier0 = specialist.snapshot(db, self.specialist, since=time.time() - 86400)
         return {
             "health": self.health,
+            "configured": self.store.preference("attention", None) is not None,
             "preferences": self.preferences(),
             "learning": personal,
             "specialist": tier0,
@@ -449,7 +539,7 @@ class Attention:
                 return
         candidates = self.store.rows(
             "SELECT d.*,e.data FROM decisions d JOIN connector_events e ON e.id=d.event_id "
-            "WHERE d.briefed=0 AND d.action!='ignore' ORDER BY d.confidence DESC,d.ts LIMIT 7"
+            "WHERE d.briefed=0 AND d.action='brief' ORDER BY d.confidence DESC,d.ts LIMIT 7"
         )
         commitments = self.store.rows(
             "SELECT * FROM commitments WHERE status='open' AND due<=?",
@@ -490,6 +580,7 @@ class Attention:
             for item in candidates:
                 db.execute("UPDATE decisions SET briefed=1 WHERE decision_id=?", (item["decision_id"],))
             db.execute("INSERT OR IGNORE INTO local_schedule_runs VALUES(?,?)", (kind, day))
+        self.attach_sources(task, [json.loads(item["data"]) for item in candidates])
         return task
 
     async def poll_connectors(self):
@@ -532,11 +623,14 @@ class Attention:
                 )
 
     async def tick(self, now=None):
+        await self.runtime.mac.tick()
+        await self.runtime.wallet.tick()
         await self.poll_connectors()
         for row in self.store.rows(
             "SELECT * FROM connector_events WHERE processed=0 ORDER BY created LIMIT 20"
         ):
             await self.triage(row)
+        await self.followups(now)
         config = self.runtime.telegram.settings()
         if config.get("paired") and self.runtime.config.connectors:
             await self.brief(now=now)
@@ -553,6 +647,7 @@ class Attention:
             self.store.set_preference("specialist_trained", time.time())
         cutoff = time.time() - self.preferences()["retention_days"] * 86400
         self.store.execute("DELETE FROM connector_events WHERE created<?", (cutoff,))
+        self.store.execute("UPDATE decisions SET event_payload='{}' WHERE ts<?", (cutoff,))
 
     async def run(self):
         while not self.runtime.stop.is_set():

@@ -8,6 +8,8 @@ import time
 
 from pydantic import BaseModel, Field
 
+from .mappers import normalize, timestamp
+
 
 class ConnectorEvent(BaseModel):
     version: int = 1
@@ -41,6 +43,7 @@ class EventStore:
         with self.store.db() as db:
             db.execute("BEGIN IMMEDIATE")
             for raw in records:
+                raw = normalize(raw, default_kind, connector)
                 record = str(raw.get("id", raw.get("message_id", raw.get("record_id", ""))))[:200]
                 if not record:
                     continue
@@ -50,10 +53,7 @@ class EventStore:
                 body = str(raw.get("text", raw.get("body", raw.get("description", ""))))[:16000]
                 actors = raw.get("actors", [str(raw.get("sender", raw.get("from", "")))])
                 stamp = raw.get("occurred_at", raw.get("updated_at", raw.get("sent_at", now)))
-                try:
-                    stamp = float(stamp)
-                except (TypeError, ValueError):
-                    stamp = now
+                stamp = timestamp(stamp, now)
                 stable = {"subject": subject, "text": body, "actors": actors, "payload": payload}
                 digest = hashlib.sha256(json.dumps(stable, sort_keys=True, default=str).encode()).hexdigest()
                 previous = db.execute(
@@ -69,7 +69,9 @@ class EventStore:
                     source=connector + ":" + record,
                     kind=kind,
                     occurred_at=stamp,
-                    actors=[str(value)[:300] for value in actors[:30]],
+                    actors=[
+                        str(value)[:300] for value in (actors if isinstance(actors, list) else [actors])[:30]
+                    ],
                     subject=subject,
                     text=body,
                     links=raw.get("links", [raw["url"]] if raw.get("url") else [])[:20],

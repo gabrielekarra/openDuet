@@ -22,12 +22,17 @@ browser = ["playwright>=1.51,<2"]
 voice = ["faster-whisper>=1.1,<2"]
 kev = ["torch>=2.8,<3", "transformers>=5,<6", "peft>=0.18,<1"]
 mlx = ["mlx-lm>=0.31.3,<0.32; sys_platform == 'darwin'", "torch>=2.8,<3", "transformers>=5,<6"]
-mac = ["pyobjc-framework-Cocoa>=11; sys_platform == 'darwin'", "pyobjc-framework-ApplicationServices>=11; sys_platform == 'darwin'"]
+mac = ["pyobjc-framework-Quartz>=11; sys_platform == 'darwin'", "pyobjc-framework-Cocoa>=11; sys_platform == 'darwin'", "pyobjc-framework-ApplicationServices>=11; sys_platform == 'darwin'"]
 dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1"]
 
 [project.scripts]
 openduet = "openduet.__main__:main"
 openduet-kev = "openduet.kev.service:main"
+openduet-kev-eval = "openduet.kev.eval:main"
+openduet-computer = "openduet.computer:main"
+openduet-egress = "openduet.egress:main"
+openduet-prototypes = "openduet.prototypes:main"
+openduet-plugin = "openduet.plugins:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["openduet"]
@@ -41,3 +46,11 @@ target-version = "py312"
 line-length = 110
 extend-exclude = ["openduet/kev/vendor"]
 
+# Linux inference uses CPU wheels by default; CUDA operators can select their own index.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu", marker = "sys_platform == 'linux'" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

@@ -109,6 +109,10 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
     app = FastAPI(title="OpenDuet", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
     app.state.store, app.state.runtime = store, runtime
 
+    @app.get("/health")
+    async def health():
+        return {"ok": True}
+
     @app.middleware("http")
     async def security(request: Request, call_next):
         if request.url.path.startswith("/api/"):
@@ -119,6 +123,7 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
                 "/api/login",
                 "/api/telegram/session",
                 "/api/connectors/oauth/callback",
+                "/api/wallet/webhook",
             }:
                 bearer = request.headers.get("authorization", "").removeprefix("Bearer ")
                 if not hmac.compare_digest(bearer, token) and not valid_session(
@@ -135,7 +140,9 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "no-referrer",
             "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'",
+            "img-src 'self' data: blob:; connect-src 'self'; frame-src "
+            + config.prototype_url
+            + "; frame-ancestors 'self' https://web.telegram.org; object-src 'none'; base-uri 'none'",
         }.items():
             response.headers.setdefault(key, value)
         return response
@@ -202,11 +209,18 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             "schedules": store.rows("SELECT * FROM schedules ORDER BY next_run"),
             "memories": store.rows("SELECT * FROM memories ORDER BY created DESC"),
             "providers": {
-                n: {"model": p.model, "kind": p.kind, "base_url": p.base_url, "tools": p.tools}
+                n: {
+                    "model": p.model,
+                    "kind": p.kind,
+                    "base_url": p.base_url,
+                    "tools": p.tools,
+                    "vision": p.vision,
+                }
                 for n, p in config.providers.items()
             },
             "default_provider": config.default_provider,
             "voice": bool(config.voice_model),
+            "voice_model": config.voice_model,
             "computers": {key: {"name": c.name, "enabled": c.enabled} for key, c in config.computers.items()},
             "remote_desktop_active": runtime.desktop.active,
             "connectors": {
@@ -430,7 +444,9 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
         rows = store.rows("SELECT * FROM artifacts WHERE id=?", (ident,))
         if not rows:
             raise HTTPException(404, "Artifact not found")
-        return create_artifact(store, config.data_dir / "artifacts", rows[0]["task"], **body.model_dump())
+        return create_artifact(
+            store, config.data_dir / "artifacts", rows[0]["task"], parent=ident, **body.model_dump()
+        )
 
     @app.post("/api/browser/login")
     async def browser_login(body: BrowserLogin):
@@ -496,5 +512,8 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
     from .product_api import install
 
     install(app, runtime, signature)
+    from .product_extras import install as install_extras
+
+    install_extras(app, runtime)
     app.mount("/", StaticFiles(directory=Path(__file__).parent / "web", html=True), name="web")
     return app

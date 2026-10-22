@@ -1,0 +1,77 @@
+"""Deterministic wire normalization for common MCP service records; originals stay untrusted."""
+
+from __future__ import annotations
+
+import base64
+from datetime import UTC, datetime
+
+
+def timestamp(value, fallback=None):
+    if isinstance(value, dict):
+        value = value.get("dateTime", value.get("date"))
+    try:
+        number = float(value)
+        return number / 1000 if number > 100_000_000_000 else number
+    except (TypeError, ValueError):
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            if parsed.tzinfo is None:
+                parsed = parsed.replace(tzinfo=UTC)
+            return parsed.timestamp()
+        except (TypeError, ValueError):
+            return fallback
+
+
+def normalize(raw, kind, connector):
+    item = dict(raw)
+    payload = dict(raw.get("payload", raw))
+    if isinstance(raw.get("payload"), dict) and isinstance(raw["payload"].get("headers"), list):
+        headers = {entry["name"].lower(): entry.get("value", "") for entry in raw["payload"]["headers"]}
+        item.setdefault("subject", headers.get("subject", ""))
+        item.setdefault("sender", headers.get("from", ""))
+        payload.update(
+            message_id=headers.get("message-id", raw.get("id", "")),
+            in_reply_to=headers.get("in-reply-to", ""),
+            thread_id=raw.get("threadId", ""),
+        )
+        item.setdefault("body", raw.get("snippet", ""))
+        body = raw["payload"].get("body", {}).get("data", "")
+        if body and raw["payload"].get("mimeType") == "text/plain":
+            try:
+                item["body"] = base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)).decode(
+                    "utf-8", errors="replace"
+                )[:16000]
+            except (ValueError, TypeError):
+                pass
+        labels = raw.get("labelIds", [])
+        item["kind"] = "mail.sent" if "SENT" in labels else kind
+        payload["unread"] = "UNREAD" in labels
+    if "threadId" in raw:
+        payload.setdefault("thread_id", raw["threadId"])
+    if kind.startswith("calendar."):
+        for field in ("start", "end"):
+            if field in raw:
+                payload[field] = timestamp(raw[field])
+        item.setdefault("subject", raw.get("summary", raw.get("subject", "")))
+        item.setdefault("links", [raw["htmlLink"]] if raw.get("htmlLink") else [])
+    if "body" in item and isinstance(item["body"], dict):
+        body = item["body"]
+        # HTML remains inert data; the model does not get permission from it.
+        item["body"] = str(body.get("content", body.get("text", "")))
+    if "ts" in raw and (kind.startswith("chat.") or connector == "slack"):
+        item.setdefault("id", raw["ts"])
+        item.setdefault("sender", raw.get("user", ""))
+        item.setdefault("occurred_at", timestamp(raw["ts"]))
+        payload.setdefault("thread_id", raw.get("thread_ts", raw["ts"]))
+    if "sender" in item and isinstance(item["sender"], dict):
+        item["sender"] = item["sender"].get("emailAddress", {}).get("address", "")
+    if isinstance(raw.get("from"), dict):
+        item.setdefault("sender", raw["from"].get("emailAddress", {}).get("address", ""))
+    for key in ("internalDate", "receivedDateTime", "sentDateTime", "updated_at", "created"):
+        if key in raw and timestamp(raw[key]) is not None:
+            item.setdefault("occurred_at", timestamp(raw[key]))
+            break
+    payload.setdefault("sender", item.get("sender", item.get("from", "")))
+    payload.setdefault("subject", item.get("subject", ""))
+    item["payload"] = payload
+    return item

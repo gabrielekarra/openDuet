@@ -7,6 +7,7 @@ import os
 import time
 from dataclasses import asdict
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
@@ -70,7 +71,7 @@ def create_service(backend_name=None):
                 await models.download(name)
                 state["ready"] = False
                 backend = None
-            except (OSError, ValueError):
+            except (OSError, ValueError, httpx.HTTPError):
                 state["ready"] = False
 
         download_task = asyncio.create_task(perform())
@@ -81,7 +82,8 @@ def create_service(backend_name=None):
         nonlocal backend
         questions = []
         for spec in batch.questions:
-            kind = spec.pop("kind")
+            spec = dict(spec)
+            kind = spec.pop("kind", None)
             cls = {"bool": Bool, "score": Score, "choice": Choice}.get(kind)
             if cls is None:
                 raise HTTPException(422, "Unknown question type")

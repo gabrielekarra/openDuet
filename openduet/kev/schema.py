@@ -13,7 +13,7 @@ from dataclasses import dataclass
 
 
 def _check_options(options: tuple[str, ...]) -> None:
-    if len(options) < 2:
+    if not 2 <= len(options) <= 255:
         raise ValueError(f"need at least 2 options, got {len(options)}")
     if any(not opt for opt in options):
         raise ValueError(f"options must be non-empty strings, got {options}")
@@ -60,7 +60,7 @@ class Score:
     def __post_init__(self) -> None:
         if not self.name:
             raise ValueError("Score.name must be non-empty")
-        if self.hi <= self.lo:
+        if self.hi <= self.lo or self.hi - self.lo >= 255:
             raise ValueError(f"Score.hi must exceed Score.lo, got lo={self.lo} hi={self.hi}")
 
     @property
@@ -134,6 +134,15 @@ class Decision:
             raise ValueError(f"unknown Decision.kind {self.kind!r}")
         if set(self.probabilities) != set(self.raw_probabilities):
             raise ValueError("probabilities and raw_probabilities must share the same keys")
+        for distribution in (self.probabilities, self.raw_probabilities):
+            if any(not math.isfinite(p) or not 0 <= p <= 1 for p in distribution.values()):
+                raise ValueError("Probabilities must be finite and within [0,1]")
+        if self.kind == "bool" and not isinstance(self.value, bool):
+            raise ValueError("Bool decisions require a boolean value")
+        if self.kind == "score" and (not isinstance(self.value, int) or isinstance(self.value, bool)):
+            raise ValueError("Score decisions require an integer value")
+        if self.kind == "choice" and not isinstance(self.value, str):
+            raise ValueError("Choice decisions require a string value")
         total = sum(self.probabilities.values())
         if not math.isclose(total, 1.0, abs_tol=1e-6):
             raise ValueError(f"probabilities must sum to 1, got {total}")

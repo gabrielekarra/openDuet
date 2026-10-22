@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import time
 from pathlib import Path
@@ -31,19 +32,57 @@ class Vault:
                 CREATE TABLE IF NOT EXISTS secret_audit(
                     id INTEGER PRIMARY KEY, reference TEXT, purpose TEXT, task TEXT, created REAL);
             """)
+        previous = self.key_path.with_suffix(".previous")
+        rows = store.rows("SELECT ciphertext FROM secrets LIMIT 1")
+        if rows:
+            from cryptography.fernet import InvalidToken
+
+            try:
+                self.cipher.decrypt(rows[0]["ciphertext"])
+            except InvalidToken:
+                if os.environ.get("OPENDUET_SECRET_KEY") or not previous.is_file():
+                    raise ValueError(
+                        "The vault encryption key does not match the stored credentials"
+                    ) from None
+                recovery = Fernet(previous.read_bytes())
+                recovery.decrypt(rows[0]["ciphertext"])
+                self.key_path.write_bytes(previous.read_bytes())
+                self.cipher = recovery
+        if previous.exists():
+            previous.unlink()
+
+    def remember(self, value):
+        self.resolved.add(value)
+        try:
+            parsed = json.loads(value)
+        except (ValueError, TypeError):
+            return
+        if isinstance(parsed, dict):
+            for key in (
+                "access_token",
+                "refresh_token",
+                "client_secret",
+                "password",
+                "api_key",
+                "token",
+                "number",
+                "cvc",
+            ):
+                if isinstance(parsed.get(key), str) and parsed[key]:
+                    self.resolved.add(parsed[key])
 
     def put(self, reference, value):
         self.store.execute(
             "INSERT OR REPLACE INTO secrets VALUES(?,?)", (reference, self.cipher.encrypt(value.encode()))
         )
-        self.resolved.add(value)
+        self.remember(value)
 
     def get(self, reference, *, purpose="transport", task=None):
         rows = self.store.rows("SELECT ciphertext FROM secrets WHERE name=?", (reference,))
         if not rows:
             raise ValueError("Credential is not connected")
         value = self.cipher.decrypt(rows[0]["ciphertext"]).decode()
-        self.resolved.add(value)
+        self.remember(value)
         self.store.execute(
             "INSERT INTO secret_audit(reference,purpose,task,created) VALUES(?,?,?,?)",
             (reference, purpose, task, time.time()),

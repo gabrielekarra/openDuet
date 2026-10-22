@@ -2,7 +2,11 @@ data_dir = "/data"
 host = "0.0.0.0"
 port = 8765
 default_provider = "local"
-browser = false
+browser = true
+computer_url = "http://computer:8769"
+kev_url = "http://kev:8768"
+prototype_url = "http://127.0.0.1:8767"
+# Set public_url to your HTTPS workspace origin to enable Telegram Mini Apps.
 
 [providers.local]
 kind = "openai"

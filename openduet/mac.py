@@ -19,6 +19,7 @@ class MacHost:
         self.snapshot_id = ""
         self.pid = None
         self.lock = asyncio.Lock()
+        self.awake = None
 
     @property
     def enabled(self):
@@ -132,14 +133,69 @@ class MacHost:
         self.elements = {}
         if action == "type":
             error = AX.AXUIElementSetAttributeValue(target, "AXValue", value)
+        elif action == "key":
+            import Quartz
+
+            keys = {
+                "RETURN": (36, 0),
+                "ESCAPE": (53, 0),
+                "TAB": (48, 0),
+                "DELETE": (51, 0),
+                "LEFT": (123, 0),
+                "RIGHT": (124, 0),
+                "DOWN": (125, 0),
+                "UP": (126, 0),
+                "CMD_L": (37, Quartz.kCGEventFlagMaskCommand),
+                "CMD_A": (0, Quartz.kCGEventFlagMaskCommand),
+                "CMD_F": (3, Quartz.kCGEventFlagMaskCommand),
+                "CMD_T": (17, Quartz.kCGEventFlagMaskCommand),
+                "CMD_W": (13, Quartz.kCGEventFlagMaskCommand),
+                "CMD_Z": (6, Quartz.kCGEventFlagMaskCommand),
+            }
+            if value not in keys:
+                raise ValueError("Choose a supported key: " + ", ".join(keys))
+            code, flags = keys[value]
+            for down in (True, False):
+                event = Quartz.CGEventCreateKeyboardEvent(None, code, down)
+                Quartz.CGEventSetFlags(event, flags)
+                Quartz.CGEventPostToPid(self.pid, event)
+            error = 0
         else:
-            operation = {"click": "AXPress", "open": "AXOpen", "raise": "AXRaise"}.get(action)
+            operation = {
+                "click": "AXPress",
+                "open": "AXOpen",
+                "raise": "AXRaise",
+                "scroll_down": "AXScrollDown",
+                "scroll_up": "AXScrollUp",
+            }.get(action)
             if not operation:
                 raise ValueError("Unsupported native action")
             error = AX.AXUIElementPerformAction(target, operation)
         if error:
             raise ValueError("The application refused the action; observe its current state")
         return {"performed": action}
+
+    async def tick(self):
+        if self.enabled and (self.awake is None or self.awake.returncode is not None):
+            import os
+
+            self.awake = await asyncio.create_subprocess_exec(
+                "/usr/bin/caffeinate",
+                "-i",
+                "-w",
+                str(os.getpid()),
+                stdout=asyncio.subprocess.DEVNULL,
+                stderr=asyncio.subprocess.DEVNULL,
+            )
+        elif not self.enabled and self.awake and self.awake.returncode is None:
+            self.awake.terminate()
+            await self.awake.wait()
+            self.awake = None
+
+    async def close(self):
+        if self.awake and self.awake.returncode is None:
+            self.awake.terminate()
+            await self.awake.wait()
 
     async def screenshot(self, task=None):
         self.check()

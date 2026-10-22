@@ -16,6 +16,7 @@ class ProviderConfig:
     api_key_env: str = ""
     tools: bool = True
     max_tokens: int = 4096
+    vision: bool = False
 
     def __post_init__(self):
         url = urlsplit(self.base_url)
@@ -99,6 +100,25 @@ class Config:
     kev_url: str = ""
     computer_url: str = ""
     prototype_port: int = 8767
+    prototype_url: str = "http://127.0.0.1:8767"
+    wallet_allow_live: bool = False
+
+    def __post_init__(self):
+        for name in ("public_url", "prototype_url", "computer_url", "kev_url"):
+            value = getattr(self, name)
+            if not value:
+                continue
+            url = urlsplit(value)
+            if (
+                url.scheme not in {"http", "https"}
+                or not url.hostname
+                or url.username
+                or url.password
+                or any(character.isspace() or character in "'\";" for character in value)
+            ):
+                raise ValueError(name + " requires an HTTP(S) origin without credentials")
+            if name == "public_url" and (url.scheme != "https" or url.query or url.fragment):
+                raise ValueError("public_url must be a public HTTPS URL for Telegram Mini Apps")
 
     @classmethod
     def load(cls, path: Path | None = None) -> Config:

@@ -119,3 +119,166 @@ class Plugins:
             for path in root.glob("*/.claude-plugin/plugin.json"):
                 result.append(json.loads(path.read_text()))
         return result
+
+    def connections(self):
+        """Directory suggestions only: installing never connects an account."""
+        entries = []
+        for plugin in self.listing():
+            root = self.bundled / plugin["name"]
+            if not root.exists():
+                root = self.directory / plugin["name"]
+            connectors = list(plugin.get("connectors", []))
+            if (root / ".mcp.json").is_file():
+                values = json.loads((root / ".mcp.json").read_text()).get("mcpServers", {})
+                connectors += [{"name": key, **value} for key, value in values.items()]
+            for index, connector in enumerate(connectors):
+                entries.append(
+                    {
+                        "id": plugin["name"] + "-" + str(index),
+                        "name": connector.get("name", plugin["name"]),
+                        "url": connector.get("url", ""),
+                        "plugin": plugin["name"],
+                        "description": connector.get("description", plugin.get("description", "")),
+                    }
+                )
+        return entries
+
+
+def local_archive(directory):
+    """Create a bounded static bundle, refusing links before reading their targets."""
+    directory = Path(directory).resolve()
+    output = io.BytesIO()
+    with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
+        total, count = 0, 0
+        for path in directory.rglob("*"):
+            relative = path.relative_to(directory)
+            if ".git" in relative.parts:
+                continue
+            if path.is_symlink():
+                raise ValueError("Plugin sources cannot contain symbolic links")
+            if not path.is_file():
+                continue
+            count += 1
+            total += path.stat().st_size
+            if count > 300 or total > 10_000_000:
+                raise ValueError("Plugin source exceeds limits")
+            archive.writestr(str(relative), path.read_bytes())
+    return output.getvalue()
+
+
+def main():
+    import argparse
+    import os
+    import subprocess
+    import tempfile
+
+    import httpx
+
+    from .config import Config
+    from .runtime import Runtime
+    from .store import Store
+
+    parser = argparse.ArgumentParser(
+        description="Inspect/install static plugins from operator-reviewed sources"
+    )
+    parser.add_argument("source", help="Local directory/zip, HTTPS Git URL, or HTTPS marketplace JSON")
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--plugin", help="Plugin name in a marketplace")
+    parser.add_argument("--revision", help="Pinned full Git commit id")
+    parser.add_argument(
+        "--allow-source", action="store_true", help="Operator approval for this exact remote source"
+    )
+    parser.add_argument(
+        "--install", action="store_true", help="Install after inspecting the displayed additions"
+    )
+    args = parser.parse_args()
+    config = Config.load(args.config)
+    runtime = Runtime(config, Store(config.data_dir))
+    source = args.source
+    if source.startswith("https://"):
+        allowed = runtime.store.preference("plugin_sources", [])
+        if source not in allowed and not args.allow_source:
+            raise SystemExit("Remote plugin source needs operator --allow-source approval")
+        if args.allow_source:
+            runtime.store.set_preference("plugin_sources", sorted(set(allowed + [source])))
+        if source.endswith(".json"):
+            response = httpx.get(source, timeout=20, follow_redirects=False)
+            response.raise_for_status()
+            if len(response.content) > 1_000_000:
+                raise SystemExit("Marketplace exceeds limit")
+            entries = response.json().get("plugins", [])
+            entry = next((entry for entry in entries if entry.get("name") == args.plugin), None)
+            if not entry:
+                print(
+                    json.dumps(
+                        [
+                            {
+                                key: value
+                                for key, value in item.items()
+                                if key in {"name", "description", "source"}
+                            }
+                            for item in entries
+                        ],
+                        indent=2,
+                    )
+                )
+                return
+            selected = entry["source"]
+            if isinstance(selected, dict):
+                source = selected.get("url") or "https://github.com/" + selected["repo"] + ".git"
+            elif selected.startswith("./"):
+                raise SystemExit(
+                    "Local marketplace paths require downloading and reviewing the repository first"
+                )
+            else:
+                source = selected
+            # Marketplace approval is not approval of arbitrary additional repositories.
+            if source not in runtime.store.preference("plugin_sources", []):
+                raise SystemExit("Review the selected plugin source separately: " + source)
+        if (
+            not source.startswith("https://")
+            or not args.revision
+            or not re.fullmatch(r"[0-9a-f]{40}", args.revision)
+        ):
+            raise SystemExit(
+                "Remote plugins require an HTTPS Git URL and a pinned --revision (40 hex characters)"
+            )
+        with tempfile.TemporaryDirectory() as temporary:
+            environment = os.environ | {
+                "GIT_CONFIG_NOSYSTEM": "1",
+                "GIT_CONFIG_GLOBAL": "/dev/null",
+                "GIT_TERMINAL_PROMPT": "0",
+            }
+            options = [
+                "git",
+                "-c",
+                "core.hooksPath=/dev/null",
+                "-c",
+                "protocol.ext.allow=never",
+                "-c",
+                "protocol.file.allow=never",
+            ]
+            destination = Path(temporary) / "plugin"
+            subprocess.run(
+                options + ["clone", "--no-checkout", "--", source, str(destination)],
+                env=environment,
+                check=True,
+                capture_output=True,
+                timeout=120,
+            )
+            subprocess.run(
+                options + ["-C", str(destination), "checkout", "--detach", args.revision],
+                env=environment,
+                check=True,
+                capture_output=True,
+                timeout=30,
+            )
+            data = local_archive(destination)
+    else:
+        path = Path(source)
+        data = local_archive(path) if path.is_dir() else path.read_bytes()
+    metadata = runtime.plugins.inspect(data)
+    print(json.dumps(metadata, ensure_ascii=False, indent=2))
+    if args.install:
+        runtime.plugins.install(data)
+        print("Installed. Connector accounts remain disconnected; default check-ins require confirmation.")

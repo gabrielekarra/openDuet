@@ -66,6 +66,8 @@ async def ingest(runtime, data, name, task=None):
         from PIL import Image
 
         with Image.open(io.BytesIO(data)) as picture:
+            if picture.width * picture.height > 20_000_000:
+                raise ValueError("Image exceeds the 20 megapixel decode limit")
             picture.verify()
     path.write_bytes(data)
     path.chmod(0o600)
@@ -80,7 +82,9 @@ async def ingest(runtime, data, name, task=None):
                 model = WhisperModel(
                     runtime.config.voice_model, device="cpu", compute_type="int8", local_files_only=True
                 )
-                segments, _ = model.transcribe(str(path), vad_filter=True)
+                segments, info = model.transcribe(str(path), vad_filter=True)
+                if info.duration > 180:
+                    raise ValueError("Voice input is limited to three minutes")
                 return " ".join(segment.text for segment in segments)[:32000]
 
             transcript = await asyncio.to_thread(transcribe)

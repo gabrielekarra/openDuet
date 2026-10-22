@@ -35,6 +35,11 @@ class Tool:
     remote_name: str = ""
     risk: str = ""
 
+    def needs_approval(self, arguments):
+        if self.name == "browser" and arguments.get("action") in {"open", "read"}:
+            return False
+        return self.approval
+
     def spec(self):
         return {
             "type": "function",
@@ -79,6 +84,18 @@ class Tools:
             self.store.event("suggest_connector", json.dumps(arguments), task)
             return {"suggested": True, "instruction": "The user must connect the account in Connections"}
 
+        async def sign_in(arguments, task):
+            return await runtime.credentials.sign_in(arguments["site"], task)
+
+        async def purchase(arguments, task):
+            return await runtime.wallet.purchase(arguments, task)
+
+        async def checkout(arguments, task):
+            return await runtime.wallet.checkout(task=task, **arguments)
+
+        async def replies(arguments, task):
+            return runtime.telegram.offer_replies(task, **arguments)
+
         async def schedule(arguments, task):
             from .store import uid
 
@@ -99,6 +116,68 @@ class Tools:
             return {"schedule": ident}
 
         tools = [
+            Tool(
+                "offer_replies",
+                "Offer 2–4 short Telegram reply choices. A choice starts follow-up work; external effects still require approval.",
+                schema(
+                    {
+                        "question": STRING,
+                        "options": {
+                            "type": "array",
+                            "minItems": 2,
+                            "maxItems": 4,
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "label": {"type": "string", "maxLength": 40},
+                                    "text": {"type": "string", "maxLength": 6000},
+                                },
+                                "required": ["label", "text"],
+                                "additionalProperties": False,
+                            },
+                        },
+                    }
+                ),
+                replies,
+            ),
+            Tool(
+                "sign_in",
+                "Request private sign-in from a dedicated password-manager vault for the current HTTPS site. Requires user approval; never returns credentials.",
+                schema({"site": STRING}),
+                sign_in,
+                True,
+            ),
+            Tool(
+                "purchase_card",
+                "Propose a merchant-scoped purchase card. Amount is an integer in minor currency units. Disabled until an issuer is configured; requires approval.",
+                schema(
+                    {
+                        "merchant": STRING,
+                        "amount": {"type": "integer", "minimum": 1},
+                        "currency": {"type": "string", "pattern": "^[A-Za-z]{3}$"},
+                    }
+                ),
+                purchase,
+                True,
+            ),
+            Tool(
+                "private_checkout",
+                "Fill the approved purchase card into its exact configured HTTPS checkout. Credentials bypass the model. Submit checkout separately with approval.",
+                schema(
+                    {
+                        "purchase": STRING,
+                        "expected_url": STRING,
+                        "selectors": {
+                            "type": "object",
+                            "properties": {key: STRING for key in ("number", "cvc", "exp_month", "exp_year")},
+                            "required": ["number", "cvc", "exp_month", "exp_year"],
+                            "additionalProperties": False,
+                        },
+                    }
+                ),
+                checkout,
+                True,
+            ),
             Tool("mac_apps", "List permitted applications installed on the user's Mac.", schema({}), apps),
             Tool(
                 "mac_observe",
@@ -125,7 +204,9 @@ class Tools:
                     {
                         "snapshot": STRING,
                         "element": STRING,
-                        "action": {"enum": ["click", "open", "raise", "type"]},
+                        "action": {
+                            "enum": ["click", "open", "raise", "type", "key", "scroll_down", "scroll_up"]
+                        },
                         "value": STRING,
                     },
                     ["snapshot", "element", "action"],
@@ -178,7 +259,18 @@ class Tools:
             return {"id": self.store.memory(arguments["content"])}
 
         async def artifact(arguments, task):
-            return artifacts.create(self.store, self.config.data_dir / "artifacts", task, **arguments)
+            import asyncio
+
+            sources = self.runtime.sources.listing(task) if hasattr(self, "runtime") else []
+            if sources and arguments["format"] in {"md", "txt"}:
+                arguments = arguments | {
+                    "content": arguments["content"]
+                    + "\n\nSources\n"
+                    + "\n".join(f"[^{source['id']}] {source['url'] or source['tool']}" for source in sources)
+                }
+            return await asyncio.to_thread(
+                artifacts.create, self.store, self.config.data_dir / "artifacts", task, **arguments
+            )
 
         async def browse(arguments, task):
             return await self.browser.run(**arguments)
@@ -200,19 +292,30 @@ class Tools:
             Tool(
                 "create_artifact",
                 "Create a downloadable document, deck, spreadsheet or dashboard. "
-                "Use CSV rows for xlsx; slide title and body separated by newline --- newline for pptx. "
-                "Include source references. HTML is downloaded, never executed by OpenDuet.",
+                "Xlsx JSON: {sheets:[{name,cells:{A1:{value:1},A2:{formula:'=SUM(A1:A1)'}}}]}. "
+                "Pptx JSON: {slides:[{title,layout,body,notes,needs_review}]}; docx: {executive_summary,sections}. "
+                "Dashboard JSON: {tiles:[{label,value,trend,source}],tables,charts,where_to_look}. "
+                "Webapp JSON: {files:{'index.html':'...'}} runs in a sandbox origin. Cite [^source_id]. "
+                "Set parent to revise a file; refresh={local_time,timezone,prompt} schedules dashboard updates.",
                 schema(
                     {
                         "title": {"type": "string", "maxLength": 200},
                         "format": {"enum": sorted(artifacts.FORMATS)},
                         "content": STRING,
-                    }
+                        "parent": STRING,
+                        "refresh": {
+                            "type": "object",
+                            "properties": {"local_time": STRING, "timezone": STRING, "prompt": STRING},
+                            "required": ["local_time", "timezone", "prompt"],
+                            "additionalProperties": False,
+                        },
+                    },
+                    ["title", "format", "content"],
                 ),
                 artifact,
             ),
         ]
-        if self.config.browser:
+        if self.config.browser or self.config.computer_url:
             tools.append(
                 Tool(
                     "browser",
@@ -220,7 +323,7 @@ class Tools:
                     "Use CSS selectors for click/fill. Never enter secrets via this tool.",
                     schema(
                         {
-                            "action": {"enum": ["open", "read", "click", "fill"]},
+                            "action": {"enum": ["open", "read", "click", "fill", "screenshot", "download"]},
                             "url": STRING,
                             "selector": STRING,
                             "text": STRING,
@@ -299,6 +402,10 @@ class Tools:
 
     async def invoke(self, name, arguments, task):
         tool = self.get(name, arguments)
+        if tool.connector and tool.needs_approval(arguments):
+            from .policy import check_outgoing
+
+            check_outgoing(json.dumps(arguments), self.store.task(task)["request"])
         result = await tool.run(arguments, task)
         if tool.connector and hasattr(self, "runtime"):
             result = self.runtime.sources.register(task, name, result)

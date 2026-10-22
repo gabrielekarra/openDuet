@@ -4,10 +4,12 @@ import json
 import os
 from pathlib import Path
 
-from openduet.config import ComputerConfig, Config
+import httpx
+from fastapi import Request
+
+from openduet.config import Config
 from openduet.providers import Reply
 from openduet.server import create_app
-from tests.fixtures.rfb_server import FixtureDesktop
 
 
 class PreviewProvider:
@@ -48,18 +50,43 @@ class PreviewProvider:
         )
 
 
-desktop = FixtureDesktop().start()
-config = Config(
-    data_dir=Path(os.environ.get("OPENDUET_PREVIEW_DATA", "/tmp/openduet-ui-preview")),
-    computers={"fixture": ComputerConfig(name="Synthetic desktop", port=desktop.server_address[1])},
-)
+config = Config(data_dir=Path(os.environ.get("OPENDUET_PREVIEW_DATA", "/tmp/openduet-ui-preview")))
 app = create_app(config, provider_factory=PreviewProvider)
+runtime = app.state.runtime
 static_files = app.router.routes.pop()
+deliveries = []
 
 
-@app.get("/api/fixture/desktop-events")
-async def fixture_events():
-    return desktop.events
+def telegram_transport(request):
+    method = request.url.path.rsplit("/", 1)[-1]
+    payload = (
+        json.loads(request.content)
+        if request.headers.get("content-type", "").startswith("application/json")
+        else {"file": True}
+    )
+    if method != "getUpdates":
+        deliveries.append({"method": method, "payload": payload})
+    if method == "getMe":
+        result = {"id": 123456, "is_bot": True, "username": "openduet_fixture_bot", "first_name": "OpenDuet"}
+    elif method == "getUpdates":
+        result = []
+    else:
+        result = {"message_id": len(deliveries), "chat": {"id": payload.get("chat_id", 12)}}
+    return httpx.Response(200, json={"ok": True, "result": result})
+
+
+runtime.telegram.client = httpx.AsyncClient(transport=httpx.MockTransport(telegram_transport))
+
+
+@app.post("/api/fixture/update")
+async def fixture_update(request: Request):
+    await runtime.telegram.receive(await request.json())
+    return {"ok": True}
+
+
+@app.get("/api/fixture/deliveries")
+async def fixture_deliveries():
+    return deliveries
 
 
 app.router.routes.append(static_files)
