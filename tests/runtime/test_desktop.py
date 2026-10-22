@@ -1,5 +1,6 @@
 import asyncio
 import json
+import socket
 import socketserver
 import threading
 from contextlib import contextmanager
@@ -91,6 +92,26 @@ def test_missing_and_disabled_computers_do_not_connect(config):
                     f"/api/computers/{key}/desktop", headers={"Origin": "http://testserver"}
                 ):
                     pass
+
+
+def test_unavailable_computer_releases_native_handoff(config):
+    # Reserve a local port without listening so connection refusal is deterministic.
+    with socket.socket() as reserved:
+        reserved.bind(("127.0.0.1", 0))
+        config.computers["host"] = ComputerConfig(
+            port=reserved.getsockname()[1], screen_lock=str(config.data_dir / "screen.lock")
+        )
+        app = create_app(config, start_worker=False)
+        with TestClient(app) as client:
+            client.post("/api/login", json={"token": config.token()})
+            with pytest.raises(WebSocketDisconnect) as ended:
+                with client.websocket_connect(
+                    "/api/computers/host/desktop", headers={"Origin": "http://testserver"}
+                ):
+                    pass
+            assert ended.value.code == 1011
+            assert not app.state.runtime.desktop.active
+            assert not (config.data_dir / "screen.lock.remote").exists()
 
 
 def test_logout_disconnects_live_desktop(config):

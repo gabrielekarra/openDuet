@@ -10,7 +10,7 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from anyio import BrokenResourceError, CancelScope, ClosedResourceError
+from anyio import BrokenResourceError, ClosedResourceError, create_task_group, move_on_after
 from fastapi import WebSocket
 from starlette.websockets import WebSocketDisconnect
 
@@ -55,7 +55,6 @@ class DesktopRelay:
             os.close(request_fd)
             raise DesktopBusy("This computer already has a remote session") from None
         descriptor = None
-        heartbeat = None
         try:
             descriptor = os.open(lock, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
 
@@ -72,30 +71,31 @@ class DesktopRelay:
                     await asyncio.sleep(3)
 
             renew()
-            heartbeat = asyncio.create_task(keep_alive())
-            until = time.monotonic() + 20
-            while True:
+            async with create_task_group() as heartbeat:
+                heartbeat.start_soon(keep_alive)
                 try:
-                    fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    break
-                except BlockingIOError:
-                    if time.monotonic() >= until:
-                        raise DesktopBusy("OpenDuet is finishing a desktop action. Stop that task and retry")
-                    await asyncio.sleep(0.1)
-            yield
+                    until = time.monotonic() + 20
+                    while True:
+                        try:
+                            fcntl.flock(descriptor, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                            break
+                        except BlockingIOError:
+                            if time.monotonic() >= until:
+                                raise DesktopBusy(
+                                    "OpenDuet is finishing a desktop action. Stop that task and retry"
+                                )
+                            await asyncio.sleep(0.1)
+                    yield
+                finally:
+                    heartbeat.cancel_scope.cancel()
         finally:
-            if heartbeat:
-                heartbeat.cancel()
-            # Release OS resources before any await: ASGI cancellation can recur during teardown.
+            # No awaits after the heartbeat stops: release the marker and OS locks together.
             try:
                 marker.unlink(missing_ok=True)
             finally:
                 if descriptor is not None:
                     os.close(descriptor)
                 os.close(request_fd)
-            if heartbeat:
-                with CancelScope(shield=True):
-                    await asyncio.gather(heartbeat, return_exceptions=True)
 
     async def connect(self, socket, key, config, valid_session):
         if self.active:
@@ -152,16 +152,31 @@ class DesktopRelay:
                         await asyncio.sleep(1)
                     await socket.close(code=1008, reason="Remote desktop session expired")
 
-                tasks = [asyncio.create_task(fn()) for fn in (from_computer, to_computer, expiry)]
+                async with create_task_group() as relay:
+
+                    async def transfer(fn):
+                        try:
+                            await fn()
+                        except (
+                            OSError,
+                            RuntimeError,
+                            WebSocketDisconnect,
+                            ClosedResourceError,
+                            BrokenResourceError,
+                        ):
+                            pass
+                        finally:
+                            relay.cancel_scope.cancel()
+
+                    for fn in (from_computer, to_computer, expiry):
+                        relay.start_soon(transfer, fn)
                 try:
-                    await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-                finally:
-                    for task in tasks:
-                        task.cancel()
-                    await asyncio.gather(*tasks, return_exceptions=True)
-        except DesktopBusy as error:
-            await socket.close(code=1013, reason=str(error)[:120])
-        except (OSError, TimeoutError, ssl.SSLError, RuntimeError):
+                    await socket.close(code=1000)
+                except (RuntimeError, WebSocketDisconnect, ClosedResourceError, BrokenResourceError, OSError):
+                    pass
+        except* DesktopBusy:
+            await socket.close(code=1013, reason="Computer busy. Stop running tasks and retry shortly")
+        except* (OSError, TimeoutError, ssl.SSLError, RuntimeError):
             try:
                 await socket.close(
                     code=1011, reason="Computer unavailable. Check screen sharing on that computer"
@@ -174,7 +189,7 @@ class DesktopRelay:
             if writer:
                 writer.close()
                 try:
-                    with CancelScope(shield=True):
-                        await asyncio.wait_for(writer.wait_closed(), timeout=2)
-                except (OSError, TimeoutError):
+                    with move_on_after(2, shield=True):
+                        await writer.wait_closed()
+                except OSError:
                     pass
