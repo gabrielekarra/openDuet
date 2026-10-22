@@ -151,6 +151,16 @@ sys.exit(f"unexpected frames, last: {frame}")
 PYEOF
     kill "$DPID"; wait "$DPID" 2>/dev/null || true
     rm -rf "$SMOKE"
+    step "smoke test: bundled remote service and desktop client"
+    "$PY" -s -m openduet --help >/dev/null
+    "$PY" -s - <<'PYEOF'
+from pathlib import Path
+import openduet
+web = Path(openduet.__file__).parent / "web"
+assert (web / "desktop.html").is_file()
+assert (web / "vendor/novnc/core/rfb.js").is_file()
+print("remote service and noVNC client ok")
+PYEOF
     du -sh "$DAEMON" | awk '{print "daemon bundle: " $1}'
 fi
 

@@ -10,7 +10,9 @@ import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from anyio import BrokenResourceError, CancelScope, ClosedResourceError
 from fastapi import WebSocket
+from starlette.websockets import WebSocketDisconnect
 
 from .store import uid
 
@@ -32,7 +34,7 @@ class DesktopRelay:
         for socket in list(self.sessions.values()):
             try:
                 await socket.close(code=1001)
-            except RuntimeError:
+            except (RuntimeError, WebSocketDisconnect, ClosedResourceError, BrokenResourceError, OSError):
                 pass
 
     @asynccontextmanager
@@ -84,11 +86,16 @@ class DesktopRelay:
         finally:
             if heartbeat:
                 heartbeat.cancel()
-                await asyncio.gather(heartbeat, return_exceptions=True)
-            marker.unlink(missing_ok=True)
-            if descriptor is not None:
-                os.close(descriptor)
-            os.close(request_fd)
+            # Release OS resources before any await: ASGI cancellation can recur during teardown.
+            try:
+                marker.unlink(missing_ok=True)
+            finally:
+                if descriptor is not None:
+                    os.close(descriptor)
+                os.close(request_fd)
+            if heartbeat:
+                with CancelScope(shield=True):
+                    await asyncio.gather(heartbeat, return_exceptions=True)
 
     async def connect(self, socket, key, config, valid_session):
         if self.active:
@@ -162,11 +169,12 @@ class DesktopRelay:
             except RuntimeError:
                 pass
         finally:
+            self.sessions.pop(key, None)
+            self.runtime.store.event("desktop_disconnected", f"Remote desktop closed: {config.name}")
             if writer:
                 writer.close()
                 try:
-                    await writer.wait_closed()
-                except OSError:
+                    with CancelScope(shield=True):
+                        await asyncio.wait_for(writer.wait_closed(), timeout=2)
+                except (OSError, TimeoutError):
                     pass
-            self.sessions.pop(key, None)
-            self.runtime.store.event("desktop_disconnected", f"Remote desktop closed: {config.name}")
