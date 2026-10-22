@@ -128,7 +128,9 @@ def test_invalid_reminders_are_rejected(store, due):
 
 @pytest.mark.parametrize("op", ["summary", "actions", "questions", "reply", "followup", "forward", "new", "rewrite", "translate", "digest", "meeting"])
 def test_every_writing_tool_is_grounded_and_bounded(op):
-    p = normalize(message(direction="sent" if op == "followup" else "received"))
+    # A live timestamp can contain "450" in its microseconds and fail the grounding check.
+    sent_at = datetime(2026, 10, 3, 10, tzinfo=ZoneInfo("Europe/Rome")).timestamp()
+    p = normalize(message(direction="sent" if op == "followup" else "received", sent_at=sent_at))
     task = writing_task(op, p, [p], "Keep it short; ask about delivery.", "it", {"style": "formal", "signature": "Gabriele"},
                         draft="Ciao, vorrei sapere la data di consegna.", target="French")
     assert task.max_tokens <= 600
