@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Bobb's on-device decision daemon: typed, calibrated readouts over a resident local model, gated to a unix socket."
 requires-python = "==3.12.*"
 dependencies = [
+    "openduet",
     "mlx",
     "mlx-lm>=0.31.3,<0.32",
     "numpy",
@@ -11,6 +12,9 @@ dependencies = [
     "torch>=2.6,<2.9",
     "kokoro-onnx>=0.4.9,<0.7",
 ]
+
+[tool.uv.sources]
+openduet = { path = "..", editable = true }
 
 [dependency-groups]
 dev = [

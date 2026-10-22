@@ -23,6 +23,7 @@ final class SettingsUIModel {
 /// through `BobbCoordinator.updateSettings`, which persists the change
 /// and sends the daemon the part it enforces.
 struct SettingsView: View {
+    @Bindable private var remoteAccess = RemoteAccessService.shared
     @AppStorage("OpenDuetWorkspaceURL") private var workspaceURL = "http://127.0.0.1:8765"
     @Bindable var state: AppState
     @Bindable var ui: SettingsUIModel
@@ -68,6 +69,15 @@ struct SettingsView: View {
         Form {
             Button("OpenDuet · " + BobbCopy.t("Projects, assignments & boundaries", "Progetti, incarichi e confini"), action: services.openBobb)
             Section(BobbCopy.t("Self-hosted workspace", "Workspace sul tuo server")) {
+                Toggle(BobbCopy.t("Enable remote desktop access while OpenDuet is running", "Abilita il desktop remoto mentre OpenDuet è attivo"),
+                       isOn: Binding(get: { remoteAccess.enabled }, set: { remoteAccess.setEnabled($0) }))
+                if remoteAccess.enabled {
+                    Button(BobbCopy.t("Copy workspace access token", "Copia il token di accesso")) { remoteAccess.copyAccessToken() }
+                    Button(BobbCopy.t("Show remote configuration", "Mostra la configurazione remota")) { remoteAccess.openConfiguration() }
+                    hint(remoteAccess.status)
+                    hint(BobbCopy.t("Remote access keeps this Mac awake while OpenDuet is open. Closing the app ends its remote service.", "L’accesso remoto mantiene il Mac sveglio mentre OpenDuet è aperto. Chiudendo l’app il servizio remoto si ferma."))
+                    hint(BobbCopy.t("Enable macOS Screen Sharing, then open Computers from your other device over a private network or HTTPS. Your Mac must stay awake.", "Abilita Condivisione schermo in macOS, poi apri Computer dall’altro dispositivo tramite rete privata o HTTPS. Il Mac deve restare acceso."))
+                }
                 TextField(BobbCopy.t("Workspace URL", "URL del workspace"), text: $workspaceURL)
                 Button(BobbCopy.t("Open web workspace", "Apri il workspace web")) {
                     if let url = URL(string: workspaceURL), ["http", "https"].contains(url.scheme ?? "") {

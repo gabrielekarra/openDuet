@@ -9,7 +9,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -132,7 +132,7 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             "X-Content-Type-Options": "nosniff",
             "Referrer-Policy": "no-referrer",
             "Content-Security-Policy": "default-src 'self'; script-src 'self'; style-src 'self'; "
-            "img-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'",
+            "img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; object-src 'none'; base-uri 'none'",
         }.items():
             response.headers.setdefault(key, value)
         return response
@@ -179,6 +179,7 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
 
     @app.post("/api/logout")
     async def logout():
+        await runtime.desktop.close()
         result = JSONResponse({"ok": True})
         result.delete_cookie("openduet")
         return result
@@ -203,6 +204,8 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             },
             "default_provider": config.default_provider,
             "voice": bool(config.voice_model),
+            "computers": {key: {"name": c.name, "enabled": c.enabled} for key, c in config.computers.items()},
+            "remote_desktop_active": runtime.desktop.active,
             "connectors": {
                 n: {"enabled": runtime.tools.enabled(n), "error": runtime.tools.errors.get(n)}
                 for n in config.connectors
@@ -220,6 +223,29 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             "usage": store.usage(),
             "daily_token_budget": config.daily_token_budget,
         }
+
+    @app.post("/api/computers/disconnect")
+    async def disconnect_desktop():
+        await runtime.desktop.close()
+        return {"ok": True}
+
+    @app.websocket("/api/computers/{key}/desktop")
+    async def remote_desktop(socket: WebSocket, key: str):
+        origin = urlsplit(socket.headers.get("origin", ""))
+        expected_scheme = "https" if socket.url.scheme == "wss" else "http"
+        cookie = socket.cookies.get("openduet")
+        if (
+            origin.scheme != expected_scheme
+            or origin.netloc != socket.headers.get("host")
+            or not valid_session(cookie)
+        ):
+            await socket.close(code=1008, reason="Sign in from this workspace to open a desktop")
+            return
+        computer = config.computers.get(key)
+        if not computer or not computer.enabled:
+            await socket.close(code=1008, reason="Computer is not configured or is disabled")
+            return
+        await runtime.desktop.connect(socket, key, computer, lambda: valid_session(cookie))
 
     @app.get("/api/messages")
     async def messages(channel: str = "main", before: float = 1e20):

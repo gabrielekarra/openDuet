@@ -48,10 +48,28 @@ async def main():
             "Mobile page overflows"
         )
         assert not errors, errors
-        await browser.close()
-        print(
-            "Browser smoke passed: chat, artifacts, editing, approval, memory, navigation and mobile layout"
+        await page.set_viewport_size({"width": 1440, "height": 1080})
+        await page.get_by_role("button", name="Computers", exact=False).first.click()
+        async with page.expect_popup() as popup:
+            await page.get_by_role("link", name="Open desktop", exact=False).click()
+        remote = await popup.value
+        remote.on("pageerror", lambda error: errors.append(str(error)))
+        await remote.get_by_text("View mode · agent paused", exact=True).wait_for(timeout=15000)
+        await remote.wait_for_function("document.querySelector('#remote-screen canvas')?.width === 320")
+        await remote.get_by_role("button", name="Take control", exact=True).click()
+        await remote.locator("#remote-screen canvas").click(position={"x": 50, "y": 50})
+        await remote.keyboard.press("a")
+        await remote.wait_for_function(
+            "async () => (await (await fetch('/api/fixture/desktop-events')).json()).some(e => e.type === 'key' && e.keysym === 97)"
         )
+        events = await (await remote.request.get("http://127.0.0.1:8766/api/fixture/desktop-events")).json()
+        assert any(event["type"] == "pointer" and event["mask"] == 1 for event in events)
+        await remote.screenshot(path=".runtime/screenshots/openduet-remote-desktop.png", full_page=True)
+        await remote.get_by_role("button", name="Disconnect", exact=True).click()
+        await remote.get_by_text("Disconnected. Agent work can continue.", exact=True).wait_for()
+        assert not errors, errors
+        await browser.close()
+        print("Browser smoke passed: workspace, mobile layout and remote desktop mouse/keyboard input")
 
 
 asyncio.run(main())

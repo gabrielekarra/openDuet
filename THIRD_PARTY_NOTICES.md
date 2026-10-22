@@ -3,6 +3,14 @@
 OpenDuet's original source code is distributed under the MIT License (see LICENSE). Third-party materials retain their own permissions and obligations.
 It includes or downloads the following third-party components under their own licenses.
 
+## Remote desktop
+
+- **noVNC 1.7.0**, MPL-2.0 and per-file licenses, vendored unmodified in
+  `openduet/web/vendor/novnc/`. Its source, authors and full license texts are
+  distributed there, including pako's own notice. See `PROVENANCE.md` for the
+  upstream archive and verified SHA-512. NoVNC communicates only with the
+  user's configured desktop through OpenDuet's authenticated relay.
+
 ## Local models and decision runtime
 
 The app downloads pinned weights at first launch and verifies every file's

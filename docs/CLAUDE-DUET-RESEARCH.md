@@ -59,6 +59,7 @@ means it needs the user's own model, MCP service, accounts or infrastructure.
 | Follow-ups and meeting preparation | Recurring instructions + connected sources | Configured; not hardcoded email-provider access |
 | Long-running delegated work | Server-side bounded agent loop | Implemented; server/model must remain online |
 | Separate computer | Deploy service/browser on a user-owned VM | Configured; no automatic VM provisioning |
+| Remote access to your computer | Computers tab, authenticated noVNC relay, native Mac service lifecycle and screen handoff | Implemented extension; user configures screen sharing and private connectivity |
 | Task progress and user decisions | Task states, errors, pending calls and review events | Implemented |
 | User-only completion | Ready-for-review vs completed | Implemented |
 | Generated documents | Markdown/text/DOCX | Implemented |

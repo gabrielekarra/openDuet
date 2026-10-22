@@ -1,5 +1,7 @@
 # Self-hosting OpenDuet
 
+For viewing and controlling the computer itself, see [remote desktop access](REMOTE-ACCESS.md).
+
 ## Models
 
 Copy `openduet.toml.example` to `openduet.toml`. Restart after editing server

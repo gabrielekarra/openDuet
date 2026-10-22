@@ -1,5 +1,9 @@
 # OpenDuet native Mac app (formerly Bobb)
 
+**Remote desktop:** opt in from General settings to start the authenticated web
+service with the app. See [remote access](REMOTE-ACCESS.md) for Screen Sharing,
+private network setup and control handoff.
+
 **A personal assistant that notices the next useful step.**
 
 Bobb lives on your Mac, learns from your work and brings you suggestions before

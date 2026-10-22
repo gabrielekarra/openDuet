@@ -1,3 +1,11 @@
+# OpenDuet remote desktop — 2026-10-22
+
+- Add Computers with authenticated desktop viewing and mouse/touch/keyboard control.
+- Pause agent work during human access, coordinate the native screen lock and stop automatic Mail insertion.
+- Add opt-in Mac service startup/shutdown, Keychain access token and an app-lifetime idle-sleep assertion.
+- Bundle noVNC source and portable service dependencies; validate RFB traffic in browser CI.
+- Document screen-sharing permissions and private/HTTPS connectivity for real computers and agent VMs.
+
 # OpenDuet — 2026-10-22
 
 - Rename the product to OpenDuet and license original project code under MIT.

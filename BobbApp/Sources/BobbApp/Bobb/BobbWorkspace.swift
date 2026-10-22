@@ -175,7 +175,7 @@ final class BobbWorkspace {
     }
     private func claim(runId: String? = nil, foreground: Bool) async {
         guard state.settings.actingEnabled, state.settings.bobb.boundaries.canWork() else { return }
-        var payload: [String: JSONValue] = ["owner": .string(owner), "desktop_available": .bool(ScreenLease.shared.owner == nil && (foreground || Self.desktopIdle))]
+        var payload: [String: JSONValue] = ["owner": .string(owner), "desktop_available": .bool(!ScreenLease.remoteRequested && ScreenLease.shared.owner == nil && (foreground || Self.desktopIdle))]
         if let runId { payload["run_id"] = .string(runId) }
         guard let response = await command("claim", .object(payload)), let raw = response.result, raw != .null,
               let data = try? JSONEncoder().encode(raw), let run = try? JSONDecoder().decode(WorkRun.self, from: data) else { return }
@@ -248,6 +248,11 @@ final class BobbWorkspace {
     func stop(_ execution: WorkExecution) {
         execution.loop.stop(); execution.task?.cancel()
         (execution.driver as? MCPComputer)?.shutdown()
+    }
+    func yieldDesktopToRemoteUser() {
+        for execution in executions where !execution.finished && ["desktop", "browser"].contains(execution.run.surface) {
+            stop(execution)
+        }
     }
     func allow(_ answer: PermissionAnswer, execution: WorkExecution) {
         if answer != .deny { execution.foreground = true }

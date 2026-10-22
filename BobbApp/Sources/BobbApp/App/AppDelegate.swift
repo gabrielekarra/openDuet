@@ -109,7 +109,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         draftPanel = DraftPanelController(state: state, coordinator: coordinator)
         emailWorkspace = EmailWorkspace(state: state, coordinator: coordinator)
         inlineMail = MailInlineAssistant(state: state, coordinator: coordinator)
-        coordinator.onMailReplyStarted = { [weak self] event in self?.inlineMail.handle(event) ?? false }
+        coordinator.onMailReplyStarted = { [weak self] event in
+            guard !ScreenLease.remoteRequested else { return false }
+            return self?.inlineMail.handle(event) ?? false
+        }
         inlineMail.onNotice = { [weak self] message in self?.emailWorkspace.notice = message }
         emailWorkspace.onPermissionDenied = { [weak self] in self?.permissions.refresh() }
         emailWorkspace.onReminder = { [weak self] initiative, response in
@@ -157,6 +160,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         coordinator.start()
         emailWorkspace.start()
         bobb.start()
+        RemoteAccessService.shared.onTakeover = { [weak self] in
+            self?.tasks.stop()
+            self?.bobb.yieldDesktopToRemoteUser()
+            self?.inlineMail.stop()
+        }
+        RemoteAccessService.shared.start()
         if Self.needsScreenSensor(settings) { screenSensor.start() }
         syncSensors(settings)
         syncLoginItem(settings.launchAtLogin)
@@ -173,6 +182,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        RemoteAccessService.shared.stop()
         emailWorkspace?.stop()
         inlineMail?.stop()
         commandBar?.close()

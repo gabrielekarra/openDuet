@@ -93,6 +93,18 @@ windows and provider-specific restrictions still matter.
 
 See [setup, deployment and boundaries](docs/SELF-HOSTING.md).
 
+## Access your computer remotely
+
+Open **Computers** in the workspace to view and control a configured desktop
+from another computer or phone. The native Mac app can start the authenticated
+remote service automatically while it is open: enable **Remote desktop access**
+in its General settings, enable macOS Screen Sharing, and connect over your
+private network or HTTPS. OpenDuet yields the screen before passing control.
+
+See [remote access setup](docs/REMOTE-ACCESS.md) for Mac, Windows/Linux VNC servers,
+agent VMs, private connectivity and the required local permissions. The computer
+must be awake; this does not wake a powered-off machine or bypass its login.
+
 ## Run on a server
 
 ```sh

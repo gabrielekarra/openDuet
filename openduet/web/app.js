@@ -62,6 +62,12 @@ function connections() {
     (Object.entries(state.connectors).map(([n,c]) => `<article class="card"><div class="split"><div><h3>${escape(n)}</h3><small>${c.enabled ? c.error ? escape(c.error) : 'Enabled' : 'Disconnected'}</small></div>${button(c.enabled ? 'Disconnect' : 'Enable','connector',n)}</div></article>`).join('') || empty('Connect your first tool.', 'Gmail, Calendar, Drive, Slack, Stripe and other services can be added through compatible MCP servers. Each service requires your own authorization.')) +
     `<div class="section-heading"><h2>Your browser</h2></div><div class="card"><h3>${state.browser.enabled ? 'Dedicated browser enabled' : 'Browser is optional'}</h3><p>${state.browser.enabled ? 'Allowed sites: ' + escape(state.browser.hosts.join(', ')) + '\nCurrent page: ' + escape(state.browser.url || 'No page open') : 'Install the browser extra and configure browser_hosts to let OpenDuet use websites without a connector.'}</p>${state.browser.enabled ? '<form id="browser-login"><label for="login-selector">Login field CSS selector</label><input id="login-selector" required placeholder="input[type=password]"><label for="login-value">Private login value</label><input id="login-value" type="password" required autocomplete="off"><div class="actions"><button>Enter directly in browser</button></div><p class="hint">Sent to the browser only. Never stored in conversation or sent to the language model. Pause browser work before using this form.</p></form>' : ''}</div>`;
 }
+function computers() {
+  return heading('Your computer, within reach.', 'See and control your desktop from another device while OpenDuet is running.') +
+    (state.remote_desktop_active ? '<div class="card approval"><h3>Remote session active</h3><p>Agent work is paused while the remote desktop is open.</p><button id="disconnect-desktop" class="quiet">Disconnect remote session</button></div>' : '') +
+    (Object.entries(state.computers).map(([key,c]) => `<article class="card"><div class="split"><div><h3>${escape(c.name)}</h3><small>${c.enabled ? 'Screen sharing configured' : 'Disabled'}</small></div>${c.enabled ? `<a class="desktop-link" href="/desktop.html?computer=${encodeURIComponent(key)}" target="_blank" rel="noopener">Open desktop <span class="arrow" aria-hidden="true"></span></a>` : ''}</div><p>Start in view mode, then take control when you need it. Disconnect to return the computer to OpenDuet.</p></article>`).join('') || empty('Connect your computer.', 'Enable screen sharing on the computer and add it under computers in openduet.toml. On Mac, enable Remote access in the native app settings.')) +
+    '<div class="card"><h3>Reach it from your phone or another computer</h3><p>Open this workspace through your private network or HTTPS address and sign in. The computer must be awake and OpenDuet must be running.</p><p class="hint">Your screen and remote input stay outside model context. The remote session uses the computer’s own screen-sharing authentication.</p></div>';
+}
 function settings() {
   const usage = state.usage.input + state.usage.output;
   return heading('Make it your own.', 'Your models, your instructions and your boundaries.') +
@@ -76,7 +82,7 @@ async function render() {
   document.querySelectorAll('nav button').forEach(b => b.classList.toggle('active', b.dataset.view === view));
   $('#task-count').textContent = state.tasks.filter(t => pendingStates.has(t.status)).length || '';
   $('#channels').innerHTML = state.channels.map(c => `<button data-channel="${c.id}" class="${c.id === channel ? 'selected' : ''}"># ${escape(c.name)}</button>`).join('');
-  $('#content').innerHTML = ({home, tasks: () => heading('Good things, in motion.', 'Review progress, approve the important steps and mark work complete when you are satisfied.') + approvals() + (state.tasks.map(taskCard).join('') || empty('A clear space.', 'Give OpenDuet a task to get started.')), make, routines, memory:memories, connections, settings})[view]();
+  $('#content').innerHTML = ({home, tasks: () => heading('Good things, in motion.', 'Review progress, approve the important steps and mark work complete when you are satisfied.') + approvals() + (state.tasks.map(taskCard).join('') || empty('A clear space.', 'Give OpenDuet a task to get started.')), make, routines, memory:memories, connections, computers, settings})[view]();
   document.querySelectorAll('[data-channel]').forEach(b => b.onclick = () => { channel = b.dataset.channel; view = 'home'; render(); });
   $('#prompt')?.addEventListener('input', e => draft = e.target.value);
   $('#provider')?.addEventListener('change', e => provider = e.target.value);
@@ -90,6 +96,7 @@ async function render() {
   $('#browser-login')?.addEventListener('submit', async e => { e.preventDefault(); try { await post('browser/login',{selector:$('#login-selector').value,value:$('#login-value').value,expected_url:state.browser.url}); $('#login-value').value = ''; toast('Value entered directly in browser.'); } catch(e) { toast(e.message); } });
   bind('#refresh-connectors', async () => { await post('connectors/refresh'); await refresh(true); toast('Tool discovery refreshed.'); });
   bind('#logout', async () => { await post('logout'); location.reload(); });
+  bind('#disconnect-desktop', async () => { await post('computers/disconnect'); await refresh(true); });
   if (view === 'home') {
     const messages = await api('messages?channel=' + channel);
     if (!$('#messages')) return;

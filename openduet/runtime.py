@@ -8,6 +8,7 @@ import time
 import httpx
 
 from .browser import Browser
+from .desktop import DesktopRelay
 from .providers import Provider
 from .store import uid
 from .tools import Tools
@@ -40,6 +41,7 @@ class Runtime:
         self.stop = asyncio.Event()
         self.current: tuple[str, asyncio.Task] | None = None
         self.private_values: set[str] = set()
+        self.desktop = DesktopRelay(self)
 
     def redact(self, text):
         # Credential bindings are not passed to the model, including if a service echoes a value.
@@ -265,6 +267,12 @@ class Runtime:
         self.store.recover()
         await self.tools.refresh()
         while not self.stop.is_set():
+            if self.desktop.active:
+                try:
+                    await asyncio.wait_for(self.stop.wait(), timeout=0.5)
+                except TimeoutError:
+                    pass
+                continue
             self.tick_schedules()
             queue = self.store.rows("SELECT id FROM tasks WHERE status='queued' ORDER BY created LIMIT 1")
             if queue:
@@ -298,6 +306,7 @@ class Runtime:
 
     async def close(self):
         self.stop.set()
+        await self.desktop.close()
         if self.current:
             self.current[1].cancel()
         await self.browser.close()

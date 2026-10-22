@@ -110,10 +110,11 @@ if [[ "$MODE" == "full" ]]; then
     rm -f "$DAEMON/python/lib/python$PYTHON_SERIES/EXTERNALLY-MANAGED"
 
     step "bobbd dependencies (from uv.lock, hash-checked, wheels only)"
-    uv export --project "$ROOT/bobbd" --frozen --no-dev --no-emit-project --format requirements-txt > "$WORK/requirements.txt"
+    uv export --project "$ROOT/bobbd" --frozen --no-dev --no-emit-project --no-emit-package openduet --format requirements-txt > "$WORK/requirements.txt"
     "$PY" -m pip install --quiet --no-cache-dir --no-deps --require-hashes --only-binary=:all: -r "$WORK/requirements.txt"
     SITE="$("$PY" -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
     cp -R "$ROOT/bobbd/bobbd" "$SITE/bobbd"
+    cp -R "$ROOT/openduet" "$SITE/openduet"
     find "$SITE/bobbd" -name '__pycache__' -type d -prune -exec rm -rf {} +
 
     step "slimming"

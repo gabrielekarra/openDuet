@@ -10,6 +10,15 @@ browser_hosts = []  # Exact HTTPS hosts, including login and required subresourc
 # voice_model = "/absolute/path/to/already-downloaded-faster-whisper-model"
 # notify_url = "https://your-ntfy.example/private-topic"
 # notify_token_env = "NTFY_TOKEN"
+# remote_session_seconds = 3600
+
+# Remote desktop (the computer must have a VNC-compatible screen-sharing server).
+# [computers.host]
+# name = "My computer"
+# host = "127.0.0.1"
+# port = 5900
+# screen_lock = "~/Library/Application Support/Bobb/screen.lock" # Mac native task handoff.
+# Non-loopback targets require TLS, or a local SSH tunnel to the remote VNC port.
 
 [providers.local]
 kind = "openai"
