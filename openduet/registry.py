@@ -84,16 +84,23 @@ class Registry:
             "INSERT OR REPLACE INTO connector_registry VALUES(?,?)", (name, json.dumps(asdict(config)))
         )
         self.runtime.config.connectors[name] = config
+        self.new_revision(name)
         disabled = self.store.preference("disabled_connectors", [])
         self.store.set_preference("disabled_connectors", [item for item in disabled if item != name])
         await self.runtime.tools.refresh()
         return {"id": name}
+
+    def new_revision(self, name):
+        values = self.store.preference("connector_revisions", {})
+        values[name] = uid()
+        self.store.set_preference("connector_revisions", values)
 
     async def disconnect(self, name):
         config = self.runtime.config.connectors.get(name)
         disabled = set(self.store.preference("disabled_connectors", []))
         disabled.add(name)
         self.store.set_preference("disabled_connectors", sorted(disabled))
+        self.new_revision(name)
         # Revoke locally before awaiting the remote provider. Already executing effects remain uncertain.
         self.runtime.attention.forget_connector(name)
         if config and config.credential_ref:
@@ -235,5 +242,6 @@ class Registry:
         self.runtime.vault.put(
             self.runtime.config.connectors[row["connector"]].credential_ref, json.dumps(token)
         )
+        self.new_revision(row["connector"])
         await self.runtime.tools.refresh()
         return {"connected": row["connector"]}

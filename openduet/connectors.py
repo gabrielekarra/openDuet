@@ -53,10 +53,12 @@ async def discover(config, private_headers=None):
     raise ValueError("Connector discovery exceeded ten pages")
 
 
-async def call(config, name, arguments, private_headers=None):
+async def call(config, name, arguments, private_headers=None, *, before_call=None):
     if name in config.excluded_tools:
         raise ValueError("Tool was excluded")
     # Opening a fresh session is safe; tools/call is made once and never retried on transport errors.
     async with session(config, private_headers) as client:
+        if before_call:
+            before_call()
         result = await client.call_tool(name, arguments)
         return result.model_dump(mode="json", exclude_none=True)

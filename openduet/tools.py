@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
 from collections.abc import Awaitable, Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from jsonschema import Draft202012Validator
 
@@ -24,6 +25,10 @@ def schema(properties, required=None):
 STRING = {"type": "string", "maxLength": 100000}
 
 
+class StaleToolBinding(ValueError):
+    """Rejected before a side effect because its prepared target changed."""
+
+
 @dataclass
 class Tool:
     name: str
@@ -34,6 +39,7 @@ class Tool:
     connector: str = ""
     remote_name: str = ""
     risk: str = ""
+    context: str = ""
 
     def needs_approval(self, arguments):
         if self.name == "create_artifact" and arguments.get("refresh"):
@@ -429,6 +435,51 @@ class Tools:
     def enabled(self, name):
         return name not in self.store.preference("disabled_connectors", [])
 
+    def connection_context(self, name):
+        config = self.config.connectors.get(name)
+        values = asdict(config) if config else None
+        if config:
+            # Credential environment references can change accounts without a
+            # different URL; include only their digest in the private binding.
+            values["environment_digest"] = hashlib.sha256(
+                json.dumps(
+                    {
+                        key: os.environ.get(key, "")
+                        for key in [*config.env_names, *config.header_env.values()]
+                    },
+                    sort_keys=True,
+                ).encode()
+            ).hexdigest()
+        elif hasattr(self, "runtime"):
+            values = self.runtime.mail.listing().get(name)
+        revision = self.store.preference("connector_revisions", {}).get(name, "")
+        return hashlib.sha256(json.dumps([name, values, revision], sort_keys=True).encode()).hexdigest()
+
+    def fingerprint(self, tool):
+        context = self.connection_context(tool.connector) if tool.connector else ""
+        if tool.context and tool.context != context:
+            raise StaleToolBinding("The connection changed; refresh tools and prepare a new action")
+        return hashlib.sha256(
+            json.dumps(
+                [tool.spec(), tool.approval, tool.risk, tool.remote_name, context], sort_keys=True
+            ).encode()
+        ).hexdigest()
+
+    def check_binding(self, call):
+        tool = self.get(call["name"], json.loads(call["arguments"]))
+        stored = self.store.rows("SELECT fingerprint FROM call_bindings WHERE call=?", (call["id"],))
+        if not stored or stored[0]["fingerprint"] != self.fingerprint(tool):
+            raise StaleToolBinding("The tool or account changed; prepare a fresh action for review")
+        return tool
+
+    @staticmethod
+    def replay_safe(tool, arguments):
+        return (
+            tool.risk == "read"
+            or tool.name in {"search_context", "mac_apps", "mac_observe", "load_skill"}
+            or (tool.name == "browser" and arguments.get("action") in {"open", "read"})
+        )
+
     async def refresh(self):
         self.catalog = {n: t for n, t in self.catalog.items() if not t.connector}
         self.errors.clear()
@@ -444,19 +495,23 @@ class Tools:
                     suffix = hashlib.sha256((name + ":" + remote.name).encode()).hexdigest()[:12]
                     tool_name = "mcp_" + re.sub(r"[^a-zA-Z0-9_]", "_", name)[:20] + "_" + suffix
 
-                    async def invoke(arguments, task, connector=name, tool=remote.name):
-                        if not self.enabled(connector):
-                            raise ValueError("Connector access was revoked")
+                    context = self.connection_context(name)
+
+                    def guard(connector=name, expected=context):
+                        if not self.enabled(connector) or self.connection_context(connector) != expected:
+                            raise StaleToolBinding("Connector access or account changed before execution")
+
+                    async def invoke(arguments, task, connector=name, tool=remote.name, guard=guard):
+                        guard()
                         cfg = self.config.connectors[connector]
                         headers = (
                             await self.runtime.registry.auth_headers(cfg) if hasattr(self, "runtime") else {}
                         )
-                        if not self.enabled(connector):
-                            raise ValueError("Connector access was revoked")
+                        guard()
                         return (
-                            await connectors.call(cfg, tool, arguments, headers)
+                            await connectors.call(cfg, tool, arguments, headers, before_call=guard)
                             if headers
-                            else await connectors.call(cfg, tool, arguments)
+                            else await connectors.call(cfg, tool, arguments, before_call=guard)
                         )
 
                     Draft202012Validator.check_schema(remote.inputSchema)
@@ -475,6 +530,7 @@ class Tools:
                         name,
                         remote.name,
                         risk,
+                        context,
                     )
             except Exception:
                 # Nested SDK exceptions can contain auth headers. Keep diagnostics free of secrets.

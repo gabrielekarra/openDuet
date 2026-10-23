@@ -1,7 +1,10 @@
 """Disposable UI fixture. No real model, user data or external accounts are used."""
 
+import asyncio
 import json
 import os
+from email.parser import BytesParser
+from email.policy import default
 from pathlib import Path
 
 import httpx
@@ -22,6 +25,13 @@ class PreviewProvider:
                 {"role": "assistant", "content": "The preview draft is ready. Review it in Make."}, 30, 20
             )
         request = messages[-1].get("content", "")
+        if os.environ.get("OPENDUET_PREVIEW_PAUSE_ONCE") and "restart acceptance" in request:
+            barrier = config.data_dir / ".restart-barrier"
+            if not barrier.exists():
+                barrier.write_text(
+                    "Model request waiting; the process-restart check will terminate this child"
+                )
+                await asyncio.Event().wait()
         if "remember" in request.lower():
             name, args = "remember", {"content": "I prefer morning meetings. UI test fixture."}
         else:
@@ -59,11 +69,21 @@ deliveries = []
 
 def telegram_transport(request):
     method = request.url.path.rsplit("/", 1)[-1]
-    payload = (
-        json.loads(request.content)
-        if request.headers.get("content-type", "").startswith("application/json")
-        else {"file": True}
-    )
+    content_type = request.headers.get("content-type", "")
+    if content_type.startswith("application/json"):
+        payload = json.loads(request.content)
+    else:
+        message = BytesParser(policy=default).parsebytes(
+            ("Content-Type: " + content_type + "\r\nMIME-Version: 1.0\r\n\r\n").encode() + request.content
+        )
+        payload = {}
+        for part in message.iter_parts():
+            if part.get_filename():
+                payload["file"] = True
+            else:
+                key = part.get_param("name", header="content-disposition")
+                value = part.get_payload(decode=True).decode()
+                payload[key] = int(value) if key in {"chat_id", "message_thread_id"} else value
     if method != "getUpdates":
         deliveries.append({"method": method, "payload": payload})
     if method == "getMe":

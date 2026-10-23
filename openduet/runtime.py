@@ -20,7 +20,7 @@ from .providers import Provider
 from .registry import Registry
 from .store import uid
 from .telegram import Telegram
-from .tools import Tools
+from .tools import StaleToolBinding, Tools
 from .vault import Vault
 from .wallet import Wallet
 
@@ -224,17 +224,24 @@ class Runtime:
                 raise ValueError("Model reused a tool call id for a different action")
             if not found:
                 status, result = "approved", None
+                binding, replay_safe = None, False
                 try:
                     args = json.loads(args_text)
                     tool = self.tools.get(name, args)
+                    binding = self.tools.fingerprint(tool)
+                    replay_safe = self.tools.replay_safe(tool, args)
                     if tool.needs_approval(args):
                         status = "pending"
                 except Exception:
                     status, result = "failed", json.dumps({"error": "Unknown tool or invalid arguments"})
-                self.store.execute(
-                    "INSERT INTO calls VALUES(?,?,?,?,?,?,?,?)",
-                    (uid(), task["id"], call["id"], name, args_text, status, result, time.time()),
-                )
+                ident = uid()
+                with self.store.db() as db:
+                    db.execute(
+                        "INSERT INTO calls VALUES(?,?,?,?,?,?,?,?)",
+                        (ident, task["id"], call["id"], name, args_text, status, result, time.time()),
+                    )
+                    if binding:
+                        db.execute("INSERT INTO call_bindings VALUES(?,?,?)", (ident, binding, replay_safe))
                 found = self.store.rows(
                     "SELECT * FROM calls WHERE task=? AND call_id=?", (task["id"], call["id"])
                 )
@@ -250,11 +257,11 @@ class Runtime:
             if record["status"] == "approved":
                 # Revalidate availability and schema after approval, before any side effect.
                 try:
-                    self.tools.get(name, json.loads(record["arguments"]))
+                    self.tools.check_binding(record)
                 except Exception:
                     self.store.execute(
                         "UPDATE calls SET status='denied',result=? WHERE id=?",
-                        ('{"error":"Tool unavailable; access may have been revoked"}', record["id"]),
+                        ('{"error":"Tool or account changed; prepare a fresh action"}', record["id"]),
                     )
                     continue
                 self.store.execute("UPDATE calls SET status='executing' WHERE id=?", (record["id"],))
@@ -264,6 +271,14 @@ class Runtime:
                     )
                     self.store.execute(
                         "UPDATE calls SET status='succeeded',result=? WHERE id=?", (result, record["id"])
+                    )
+                except StaleToolBinding:
+                    self.store.execute(
+                        "UPDATE calls SET status='denied',result=? WHERE id=?",
+                        (
+                            '{"error":"Connection changed before execution; prepare a fresh action"}',
+                            record["id"],
+                        ),
                     )
                 except asyncio.CancelledError:
                     self.store.execute("UPDATE calls SET status='uncertain' WHERE id=?", (record["id"],))

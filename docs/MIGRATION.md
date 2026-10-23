@@ -12,6 +12,13 @@ Settings as check-ins; their scheduler remains active. New model-proposed
 schedules require confirmation. Remove old `[computers.*]` VNC configuration
 and `remote_session_seconds`; enable Mac access in Settings instead.
 
+New runtime builds bind prepared calls to the connection, account revision,
+tool schema and risk policy. Pending approvals from older builds without that
+binding must be prepared again. Changing a connection/account invalidates its
+old approvals. After a restart, safe interrupted work resumes automatically;
+explicitly read-only calls may be repeated. Calls that could already have made
+an external change remain blocked for outcome review.
+
 Native data formats are not silently imported. Stop the old native app first,
 keep its data directory backed up, and export the memories/documents you want
 to bring across. Use the console import/export endpoints for portable memory

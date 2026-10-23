@@ -11,6 +11,8 @@ from .store import uid
 def preview(call, tool=None):
     arguments = json.loads(call["arguments"])
     label = tool.remote_name if tool and tool.remote_name else call["name"]
+    if tool and tool.connector:
+        label = tool.connector + "/" + label
     name = label.lower()
     kind = next(
         (
@@ -62,8 +64,9 @@ class Approvals:
         if action == "approve":
             if call["created"] < time.time() - 86400:
                 raise ValueError("Approval expired; prepare a fresh action")
-            self.runtime.tools.get(call["name"], json.loads(call["arguments"]))
+            self.runtime.tools.check_binding(call)
         if action == "edit":
+            self.runtime.tools.check_binding(call)
             arguments = json.loads(call["arguments"])
             if not isinstance(edited, dict) or set(edited) - set(arguments):
                 raise ValueError("Edit only fields from the displayed payload")
@@ -91,6 +94,10 @@ class Approvals:
                         None,
                         time.time(),
                     ),
+                )
+                db.execute(
+                    "INSERT INTO call_bindings SELECT ?,fingerprint,replay_safe FROM call_bindings WHERE call=?",
+                    (replacement, ident),
                 )
                 task = self.store.task(call["task"])
                 history = json.loads(task["history"])

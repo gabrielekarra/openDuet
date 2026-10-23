@@ -36,6 +36,8 @@ class Store:
                     id TEXT PRIMARY KEY, task TEXT NOT NULL, call_id TEXT NOT NULL, name TEXT NOT NULL,
                     arguments TEXT NOT NULL, status TEXT NOT NULL, result TEXT,
                     created REAL NOT NULL, UNIQUE(task, call_id));
+                CREATE TABLE IF NOT EXISTS call_bindings(
+                    call TEXT PRIMARY KEY, fingerprint TEXT NOT NULL, replay_safe INTEGER NOT NULL);
                 CREATE TABLE IF NOT EXISTS memories(id TEXT PRIMARY KEY, content TEXT NOT NULL, created REAL);
                 CREATE VIRTUAL TABLE IF NOT EXISTS memory_search USING fts5(id UNINDEXED, content);
                 CREATE TABLE IF NOT EXISTS artifacts(
@@ -126,12 +128,20 @@ class Store:
         )
 
     def recover(self):
-        # An effect might have happened without its receipt being committed. Never replay automatically.
-        self.execute("UPDATE calls SET status='uncertain' WHERE status='executing'")
-        self.execute(
-            "UPDATE tasks SET status='interrupted', error='Service restarted; review before resuming' "
-            "WHERE status='running'"
-        )
+        with self.db() as db:
+            # Only calls explicitly recorded as read-only may be repeated. A
+            # missing legacy binding supplies no evidence that replay is safe.
+            db.execute(
+                "UPDATE calls SET status='approved' WHERE status='executing' AND id IN "
+                "(SELECT call FROM call_bindings WHERE replay_safe=1)"
+            )
+            db.execute("UPDATE calls SET status='uncertain' WHERE status='executing'")
+            db.execute(
+                "UPDATE tasks SET status='blocked',error='An action has an uncertain outcome; inspect its service' "
+                "WHERE status IN ('running','queued','awaiting_approval') AND id IN "
+                "(SELECT task FROM calls WHERE status='uncertain')"
+            )
+            db.execute("UPDATE tasks SET status='queued',error='' WHERE status='running'")
 
     def search(self, query, memory=False):
         if not memory and not self.preference("search_chats", True):
@@ -221,6 +231,11 @@ class Store:
                 "DELETE FROM message_search WHERE id IN (SELECT id FROM messages WHERE channel=?)", (channel,)
             )
             db.execute("DELETE FROM messages WHERE channel=?", (channel,))
+            db.execute(
+                "DELETE FROM call_bindings WHERE call IN "
+                "(SELECT id FROM calls WHERE task IN (SELECT id FROM tasks WHERE channel=?))",
+                (channel,),
+            )
             db.execute("DELETE FROM calls WHERE task IN (SELECT id FROM tasks WHERE channel=?)", (channel,))
             db.execute(
                 "DELETE FROM artifacts WHERE task IN (SELECT id FROM tasks WHERE channel=?)", (channel,)
