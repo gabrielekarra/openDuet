@@ -8,7 +8,7 @@ import json
 import secrets
 import time
 from dataclasses import asdict
-from urllib.parse import urlencode, urlsplit
+from urllib.parse import parse_qsl, urlencode, urlsplit
 
 import httpx
 
@@ -28,6 +28,12 @@ def endpoint(value):
         )
     ):
         raise ValueError("Use HTTPS without credentials (loopback HTTP is allowed for local MCP servers)")
+    if any(
+        key.lower()
+        in {"token", "access_token", "api_key", "apikey", "key", "authorization", "password", "secret"}
+        for key, _ in parse_qsl(parsed.query)
+    ):
+        raise ValueError("Put credentials in the private bearer-token field, not in the server URL")
     return value
 
 

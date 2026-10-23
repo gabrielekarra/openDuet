@@ -10,6 +10,8 @@ from dataclasses import asdict, replace
 
 import httpx
 
+from .providers import trust_environment
+
 
 def fingerprint(config):
     return hashlib.sha256(json.dumps(asdict(config), sort_keys=True).encode()).hexdigest()
@@ -105,7 +107,7 @@ async def available_models(config, *, transport=None):
         if config.kind == "anthropic":
             headers = {"x-api-key": key, "anthropic-version": "2023-06-01"}
     async with httpx.AsyncClient(
-        timeout=10, transport=transport, trust_env=config.base_url.startswith("https://")
+        timeout=10, transport=transport, trust_env=trust_environment(config.base_url)
     ) as client:
         response = await client.get(config.base_url.rstrip("/") + endpoint, headers=headers)
         if response.is_error:

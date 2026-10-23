@@ -126,7 +126,8 @@ def record(raw, metadata, alias, validity, number):
         stamp = parsedate_to_datetime(str(message.get("Date", ""))).timestamp()
     except (TypeError, ValueError, OverflowError):
         stamp = time.time()
-    sender = getaddresses([str(message.get("From", ""))])[0][1] if message.get("From") else ""
+    addresses = getaddresses([str(message.get("From", ""))])
+    sender = addresses[0][1] if addresses else ""
     mid = str(message.get("Message-ID", ""))[:500]
     return {
         "id": f"{alias}:{validity}:{number}",

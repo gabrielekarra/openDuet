@@ -23,6 +23,8 @@ async def main():
                     base_url=os.environ.get("OPENDUET_TEST_MODEL_URL", "http://127.0.0.1:11434"),
                     model=os.environ.get("OPENDUET_TEST_MODEL", "qwen3.5:4b"),
                     max_tokens=2048,
+                    context_window=16384,
+                    temperature=0.2,
                 )
             },
             max_turns=8,
@@ -44,6 +46,12 @@ async def main():
                 assert len(files) == 1 and files[0]["format"] == "md", files
                 path = config.data_dir / "artifacts" / files[0]["filename"]
                 assert path.is_file() and len(path.read_text()) > 40
+                text = path.read_text().lower()
+                assert (
+                    "model" in text
+                    and "telegram" in text
+                    and ("permission" in text or "accessibility" in text)
+                ), text
                 results.append(
                     {
                         "protocol": "native" if native else "text",

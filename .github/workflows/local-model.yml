@@ -24,3 +24,4 @@ jobs:
         with:
           name: local-model-acceptance
           path: .runtime/local-model-*.json
+          include-hidden-files: true

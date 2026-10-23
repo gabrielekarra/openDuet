@@ -36,7 +36,7 @@ export async function refresh(force=true){
     document.documentElement.lang=localStorage.getItem('language')||(navigator.language.startsWith('it')?'it':'en');
     document.querySelectorAll('.brand .glasses,.mobile-brand .glasses').forEach(mark=>mark.classList.toggle('working',data.tasks.some(task=>task.status==='running')));
     document.querySelector('#login').hidden=true;document.querySelector('#workspace').hidden=false;
-    if(!force && (document.activeElement?.closest('form') || document.querySelector('dialog[open]')))return;
+    if(!force && (document.activeElement?.closest('form') || document.querySelector('dialog[open]') || document.querySelector('[aria-busy="true"]')))return;
     navigation();document.querySelector('#content').innerHTML=views[state.view].render();views[state.view].bind(()=>refresh(true));
     document.title=labels()[state.view]+' · OpenDuet';
     if(!source){source=new EventSource('/api/stream');source.addEventListener('change',()=>refresh(false));}

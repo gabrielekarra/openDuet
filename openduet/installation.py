@@ -58,7 +58,7 @@ def setup(directory=None):
     if not token_path.exists():
         private_write(token_path, secrets.token_hex(32), exclusive=True)
     if not config_path.exists():
-        text = f'data_dir = {json.dumps(str(root))}\ntoken_file = {json.dumps(str(token_path))}\nhost = "127.0.0.1"\nport = 8765\nkev_url = "http://127.0.0.1:8768"\n'
+        text = f'data_dir = {json.dumps(str(root))}\ntoken_file = {json.dumps(str(token_path))}\nhost = "127.0.0.1"\nport = 8765\nkev_url = "http://127.0.0.1:8768"\n[providers.local]\nkind = "ollama"\nbase_url = "http://127.0.0.1:11434"\nmodel = "qwen3.5:4b"\ncontext_window = 16384\nmax_tokens = 2048\ntemperature = 0.2\n'
         private_write(config_path, text, exclusive=True)
     config = Config.load(config_path)
     if not config.token_file:

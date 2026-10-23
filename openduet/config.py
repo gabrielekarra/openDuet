@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+import hashlib
 import os
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlsplit
+
+
+def provider_binding(name):
+    return "OPENDUET_PROVIDER_" + hashlib.sha256(name.encode()).hexdigest()[:24].upper()
 
 
 @dataclass
@@ -16,13 +21,31 @@ class ProviderConfig:
     tools: bool = True
     max_tokens: int = 4096
     vision: bool = False
+    temperature: float | None = None
     thinking: bool = False
     context_window: int = 8192
 
     def __post_init__(self):
         url = urlsplit(self.base_url)
-        if url.scheme not in {"http", "https"} or not url.hostname or url.username or url.password:
-            raise ValueError("Provider requires an HTTP(S) URL without embedded credentials")
+        if (
+            url.scheme not in {"http", "https"}
+            or not url.hostname
+            or url.username
+            or url.password
+            or url.query
+            or url.fragment
+        ):
+            raise ValueError(
+                "Provider requires an HTTP(S) base URL without embedded credentials, query or fragment"
+            )
+        if (
+            not 1 <= self.max_tokens <= 65536
+            or not 2048 <= self.context_window <= 1048576
+            or self.max_tokens >= self.context_window
+        ):
+            raise ValueError("Choose a valid context window larger than the maximum response tokens")
+        if self.temperature is not None and not 0 <= self.temperature <= 2:
+            raise ValueError("Temperature must be between 0 and 2")
         if self.kind not in {"openai", "anthropic", "ollama"}:
             raise ValueError("Provider kind must be openai, anthropic or ollama")
 

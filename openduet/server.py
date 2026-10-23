@@ -271,6 +271,9 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
                     "base_url": p.base_url,
                     "tools": p.tools,
                     "vision": p.vision,
+                    "thinking": p.thinking,
+                    "max_tokens": p.max_tokens,
+                    "context_window": p.context_window,
                 }
                 for n, p in config.providers.items()
             },

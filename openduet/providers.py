@@ -6,14 +6,26 @@ Endpoints and credential bindings come only from operator configuration.
 
 from __future__ import annotations
 
+import ipaddress
 import json
 import os
 import uuid
 from dataclasses import dataclass
+from urllib.parse import urlsplit
 
 import httpx
 
 from .config import ProviderConfig
+
+
+def trust_environment(url):
+    host = urlsplit(url).hostname or ""
+    if host in {"localhost", "host.docker.internal"} or "." not in host or host.endswith(".local"):
+        return False
+    try:
+        return not ipaddress.ip_address(host).is_private
+    except ValueError:
+        return True
 
 
 @dataclass
@@ -56,7 +68,11 @@ class Provider:
             payload.update(
                 stream=False,
                 think=c.thinking,
-                options={"num_predict": c.max_tokens, "num_ctx": c.context_window},
+                options={
+                    "num_predict": c.max_tokens,
+                    "num_ctx": c.context_window,
+                    "temperature": 0.2 if c.temperature is None else c.temperature,
+                },
             )
             history = []
             for original in messages:
@@ -90,7 +106,8 @@ class Provider:
             timeout=180,
             transport=self.transport,
             follow_redirects=False,
-            trust_env=c.base_url.startswith("https://"),
+            trust_env=trust_environment(c.base_url),
+            verify=httpx.create_ssl_context(trust_env=True),
         ) as client:
             async with client.stream(
                 "POST", c.base_url.rstrip("/") + endpoint, json=payload, headers=headers

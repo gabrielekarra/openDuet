@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import os
 import time
@@ -18,7 +17,7 @@ from pydantic import BaseModel, Field
 from . import catalog
 from .approvals import preview
 from .attachments import ingest
-from .config import ProviderConfig
+from .config import ProviderConfig, provider_binding
 from .diagnostics import readiness
 
 
@@ -279,13 +278,24 @@ def install(app, runtime, signature):
         make_default = body.pop("default", False)
         config = ProviderConfig(**body)
         if key:
-            environment_name = "OPENDUET_PROVIDER_" + hashlib.sha256(name.encode()).hexdigest()[:24].upper()
+            environment_name = provider_binding(name)
             runtime.vault.put("provider:" + name, key)
             os.environ[environment_name] = key
             config.api_key_env = environment_name
         elif not clear_key and name in runtime.config.providers:
             config.api_key_env = runtime.config.providers[name].api_key_env
         if clear_key:
+            old = runtime.config.providers.get(name)
+            if (
+                old
+                and old.api_key_env.startswith("OPENDUET_PROVIDER_")
+                and not any(
+                    value.api_key_env == old.api_key_env
+                    for key, value in runtime.config.providers.items()
+                    if key != name
+                )
+            ):
+                os.environ.pop(old.api_key_env, None)
             runtime.vault.remove("provider:" + name)
             config.api_key_env = ""
         runtime.config.providers[name] = config
