@@ -1,18 +1,88 @@
-name: Python distribution
+name: Publish verified release
 on:
-  push:
-    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      revision:
+        description: Source commit with all five CI checks passing
+        required: true
+        default: main
+      tag:
+        description: Version tag matching pyproject.toml (for example v0.4.0rc1)
+        required: true
+        default: v0.4.0rc1
 permissions:
-  contents: read
+  contents: write
+  checks: read
+concurrency:
+  group: release-${{ inputs.tag }}
+  cancel-in-progress: false
 jobs:
-  package:
+  publish:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.revision }}
+          persist-credentials: false
       - uses: astral-sh/setup-uv@v6
-      - run: uv build
+      - name: Validate version and require successful source checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          gh api "repos/$GITHUB_REPOSITORY/commits/$SOURCE_SHA/check-runs" > /tmp/source-checks.json
+          python - <<'PY'
+          import json, os, re, tomllib
+          from pathlib import Path
+          version=tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          assert re.fullmatch(r'v[0-9]+\.[0-9]+\.[0-9]+(?:rc[0-9]+)?',os.environ['RELEASE_TAG'])
+          assert os.environ['RELEASE_TAG']=='v'+version, 'Tag must match the built distribution'
+          required={'Portable workspace and policy','Portable Mac bridge imports and contracts','Native Office recalculation and previews','Specialist research','Isolated Docker computer and hostile-page fixture'}
+          checks=json.loads(Path('/tmp/source-checks.json').read_text())['check_runs']
+          latest={}
+          for item in sorted(checks,key=lambda item:item['id']): latest[item['name']]=item
+          assert all(name in latest and latest[name]['conclusion']=='success' for name in required), 'All five source CI checks must pass before publishing'
+          PY
+      - name: Build distributions
+        run: uv build --locked
+      - name: Test an isolated installation of the wheel
+        run: |
+          uv venv /tmp/openduet-wheel-check
+          uv pip install --python /tmp/openduet-wheel-check/bin/python dist/*.whl
+          cd /tmp
+          /tmp/openduet-wheel-check/bin/openduet --version
+          /tmp/openduet-wheel-check/bin/python "$GITHUB_WORKSPACE/scripts/check_installation.py"
+      - name: Prepare checksums and release notes
+        run: |
+          cd dist
+          sha256sum ./*.whl ./*.tar.gz > SHA256SUMS
+          cd ..
+          python - <<'PY'
+          import os, subprocess, tomllib
+          from pathlib import Path
+          version=tomllib.loads(Path('pyproject.toml').read_text())['project']['version']
+          tag=os.environ['RELEASE_TAG'];repo=os.environ['GITHUB_REPOSITORY'];sha=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip()
+          root=f'https://github.com/{repo}/blob/{tag}'
+          changes=Path('CHANGELOG.md').read_text().split('## '+version,1)[1].split('\n## ',1)[0].strip()
+          notes=f'Install OpenDuet with the [Mac quickstart]({root}/docs/QUICKSTART-MAC.md) or [guida in italiano]({root}/docs/QUICKSTART-MAC.it.md).\n\n'+changes
+          notes+=f'\n\nAll five source CI checks passed. The attached wheel was installed in an isolated environment and exercised against an actual server before publication. Source: `{sha}`.\n\n[Measured results and live-device/account boundaries]({root}/docs/VALIDATION.md). Your own Mac still needs Accessibility/Screen Recording grants and real Telegram/account acceptance. Full Claude Duet equivalence is not asserted.\n\nVerify downloads with `SHA256SUMS`. Third-party notices are retained in the distributions.\n'
+          Path('/tmp/release-notes.md').write_text(notes)
+          PY
       - uses: actions/upload-artifact@v4
         with:
-          name: openduet-python-distribution
+          name: release-distributions
           path: dist/*
+      - name: Publish immutable release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          SOURCE_SHA="$(git rev-parse HEAD)"
+          set --
+          case "$RELEASE_TAG" in *rc*) set -- --prerelease --latest=false ;; esac
+          gh release create "$RELEASE_TAG" dist/*.whl dist/*.tar.gz dist/SHA256SUMS --target "$SOURCE_SHA" --title "OpenDuet $RELEASE_TAG" --notes-file /tmp/release-notes.md "$@"
+          gh release download "$RELEASE_TAG" --dir /tmp/openduet-release-download
+          cd /tmp/openduet-release-download
+          sha256sum --check SHA256SUMS
