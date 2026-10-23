@@ -17,6 +17,7 @@ class ProviderConfig:
     max_tokens: int = 4096
     vision: bool = False
     thinking: bool = False
+    context_window: int = 8192
 
     def __post_init__(self):
         url = urlsplit(self.base_url)

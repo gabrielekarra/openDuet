@@ -69,6 +69,11 @@ class Registry:
         }
         config = ConnectorConfig(**allowed)
         config.credential_ref = "connector:" + name
+        bearer = values.get("bearer_token", "")
+        if bearer:
+            if not isinstance(bearer, str) or len(bearer) > 8192 or any(c in bearer for c in "\r\n"):
+                raise ValueError("Invalid bearer token")
+            self.runtime.vault.put(config.credential_ref, json.dumps({"access_token": bearer}))
         self.store.execute(
             "INSERT OR REPLACE INTO connector_registry VALUES(?,?)", (name, json.dumps(asdict(config)))
         )

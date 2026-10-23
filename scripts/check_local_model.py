@@ -67,6 +67,21 @@ async def main():
             assert runtime.store.task(task)["status"] == "ready"
             assert len(runtime.store.rows("SELECT * FROM memories")) == 1
             results.append({"approval": "exactly one memory after approval"})
+        except Exception:
+            output = Path(".runtime/local-model-failure.json")
+            output.parent.mkdir(exist_ok=True)
+            output.write_text(
+                json.dumps(
+                    {
+                        "results": results,
+                        "tasks": runtime.store.rows("SELECT id,request,status,history,error FROM tasks"),
+                        "calls": runtime.store.rows("SELECT name,arguments,status,result FROM calls"),
+                    },
+                    indent=2,
+                )
+                + "\n"
+            )
+            raise
         finally:
             await runtime.close()
     output = Path(".runtime/local-model-acceptance.json")

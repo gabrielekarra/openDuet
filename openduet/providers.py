@@ -53,7 +53,11 @@ class Provider:
         elif c.kind == "ollama":
             endpoint = "/api/chat"
             payload.pop("max_tokens")
-            payload.update(stream=False, think=c.thinking, options={"num_predict": c.max_tokens})
+            payload.update(
+                stream=False,
+                think=c.thinking,
+                options={"num_predict": c.max_tokens, "num_ctx": c.context_window},
+            )
             history = []
             for original in messages:
                 message = dict(original)
@@ -132,7 +136,7 @@ class Provider:
             incoming, outgoing = usage.get("prompt_tokens", 0), usage.get("completion_tokens", 0)
         message = {k: v for k, v in message.items() if k in {"role", "content", "tool_calls"}}
         message["role"] = "assistant"
-        if not c.tools:
+        if not message.get("tool_calls"):
             self._parse_text_tools(message)
         # Use a conservative character estimate when servers omit usage accounting.
         return Reply(

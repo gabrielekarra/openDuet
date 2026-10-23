@@ -75,6 +75,9 @@ class Runtime:
         self.mac = MacHost(self)
         self.telegram = Telegram(self)
         self.attention = Attention(self)
+        from .mail_accounts import MailAccounts
+
+        self.mail = MailAccounts(self)
         self.registry = Registry(self)
         self.make = Make(self)
         self.wallet = Wallet(self)
@@ -381,6 +384,30 @@ class Runtime:
                 history.append(message)
                 self.checkpoint(ident, history, turns)
                 if not message.get("tool_calls"):
+                    from .delivery import PREFIX, missing_artifact
+
+                    missing = missing_artifact(self, task)
+                    if missing:
+                        corrections = sum(
+                            item.get("role") == "user" and str(item.get("content", "")).startswith(PREFIX)
+                            for item in history
+                        )
+                        if corrections >= 2:
+                            self.store.status(
+                                ident,
+                                "blocked",
+                                "The model did not create the requested file. Try another model or resume with a revised request.",
+                            )
+                            return
+                        history.append(
+                            {
+                                "role": "user",
+                                "content": PREFIX
+                                + f"No {missing} file exists for this task. Your previous reply did not create it. Call create_artifact with the requested format {missing} and the actual content, wait for its receipt, then give the final answer. Do not invent download links or claim the file exists before the tool succeeds.",
+                            }
+                        )
+                        self.checkpoint(ident, history, turns)
+                        continue
                     content = self.sources.validate(
                         ident,
                         self.redact(message.get("content") or "No response produced. Review this task."),

@@ -203,10 +203,11 @@ class Attention:
     def configure(self, values):
         if set(values) - set(DEFAULTS):
             raise ValueError("Unknown proactivity preference")
+        connected = set(self.runtime.config.connectors) | set(self.runtime.mail.listing())
         merged = self.preferences() | values
         if "poll_seconds" in values:
             merged["connector_cadence"] = merged["connector_cadence"] | {
-                name: values["poll_seconds"] for name in self.runtime.config.connectors
+                name: values["poll_seconds"] for name in connected
             }
         ZoneInfo(merged["timezone"])
         for key in ("brief_time", "report_time", "working_start", "working_end", "quiet_start", "quiet_end"):
@@ -218,9 +219,7 @@ class Attention:
         if not 0 <= merged["travel_minutes"] <= 240 or not 1 <= merged["retention_days"] <= 365:
             raise ValueError("Invalid travel buffer or retention")
         if not 60 <= merged["poll_seconds"] <= 86400 or any(
-            name not in self.runtime.config.connectors
-            or not isinstance(seconds, int)
-            or not 60 <= seconds <= 86400
+            name not in connected or not isinstance(seconds, int) or not 60 <= seconds <= 86400
             for name, seconds in merged["connector_cadence"].items()
         ):
             raise ValueError("Connector cadence must name a connected server and use 60–86400 seconds")
@@ -987,6 +986,7 @@ class Attention:
         await self.runtime.mac.tick()
         await self.runtime.wallet.tick()
         await self.poll_connectors()
+        await self.runtime.mail.poll()
         stamp = now if now is not None else time.time()
         busy = 0
         for event in self.current_calendar():
@@ -1013,7 +1013,7 @@ class Attention:
             await self.prepare(json.loads(item["data"]))
         await self.followups(now)
         config = self.runtime.telegram.settings()
-        if config.get("paired") and self.runtime.config.connectors:
+        if config.get("paired") and (self.runtime.config.connectors or self.runtime.mail.listing()):
             await self.brief(now=now)
             if self.preferences()["report_enabled"]:
                 await self.brief(evening=True, now=now)

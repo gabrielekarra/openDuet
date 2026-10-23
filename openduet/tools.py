@@ -480,6 +480,9 @@ class Tools:
                 # Nested SDK exceptions can contain auth headers. Keep diagnostics free of secrets.
                 self.errors[name] = "Discovery failed; check transport and credential bindings on the server"
 
+        if hasattr(self, "runtime") and hasattr(self.runtime, "mail"):
+            self.catalog.update({tool.name: tool for tool in self.runtime.mail.tools()})
+
     def get(self, name, arguments):
         tool = self.catalog.get(name)
         if tool is None or (tool.connector and not self.enabled(tool.connector)):

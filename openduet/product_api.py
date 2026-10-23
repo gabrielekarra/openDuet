@@ -56,6 +56,7 @@ def install(app, runtime, signature):
             ),
             "mac": runtime.mac.health(),
             "readiness": readiness(runtime),
+            "mail_accounts": runtime.mail.listing(),
             "wallet": runtime.wallet.settings(),
             "purchases": store.rows(
                 "SELECT id,task,merchant,amount,currency,expires,status,created FROM purchases ORDER BY created DESC LIMIT 100"
@@ -237,6 +238,34 @@ def install(app, runtime, signature):
         from cryptography.fernet import Fernet
 
         runtime.vault.rotate(Fernet.generate_key())
+        return {"ok": True}
+
+    @app.get("/api/connectors/{name}/tools")
+    async def connector_tools(name: str):
+        if name not in runtime.config.connectors:
+            raise HTTPException(404, "Connection not found")
+        return runtime.redact_data(
+            {
+                "tools": [
+                    {
+                        "name": tool.remote_name,
+                        "description": tool.description,
+                        "read_only": tool.risk == "read",
+                        "parameters": tool.parameters,
+                    }
+                    for tool in runtime.tools.catalog.values()
+                    if tool.connector == name
+                ]
+            }
+        )
+
+    @app.post("/api/mail-accounts")
+    async def add_mail(request: Request):
+        return await runtime.mail.add(await request.json())
+
+    @app.delete("/api/mail-accounts/{name}")
+    async def disconnect_mail(name: str):
+        await runtime.mail.disconnect(name)
         return {"ok": True}
 
     @app.post("/api/models")

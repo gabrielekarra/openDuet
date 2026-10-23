@@ -16,11 +16,11 @@ jobs:
             if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
             sleep 1
           done
-          docker exec openduet-model ollama pull qwen3.5:4b
+          docker exec openduet-model ollama pull qwen3.5:4b > /tmp/ollama-pull.log 2>&1
       - name: Actual model creates deliverables and waits for approval
         run: uv run --no-sync python scripts/check_local_model.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: local-model-acceptance
-          path: .runtime/local-model-acceptance.json
+          path: .runtime/local-model-*.json
