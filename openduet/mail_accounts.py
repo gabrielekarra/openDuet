@@ -178,6 +178,29 @@ class MailAccounts:
             raise
         return client
 
+    @staticmethod
+    def smtp_connection(config, credentials):
+        context = ssl.create_default_context()
+        if config.get("smtp_mode", "implicit_tls") == "starttls":
+            sender = smtplib.SMTP(config["smtp_host"], config["smtp_port"], timeout=20)
+            try:
+                sender.ehlo()
+                sender.starttls(context=context)  # mandatory; never authenticate on a plaintext connection
+                sender.ehlo()
+            except BaseException:
+                sender.close()
+                raise
+        else:
+            sender = smtplib.SMTP_SSL(
+                config["smtp_host"], config["smtp_port"], context=context, timeout=20
+            )
+        try:
+            sender.login(credentials["username"], credentials["password"])
+        except BaseException:
+            sender.close()
+            raise
+        return sender
+
     def validate(self, config, credentials):
         client = self.connection(config, credentials)
         try:
@@ -189,10 +212,7 @@ class MailAccounts:
         finally:
             client.logout()
         if config["smtp_host"]:
-            with smtplib.SMTP_SSL(
-                config["smtp_host"], config["smtp_port"], context=ssl.create_default_context(), timeout=20
-            ) as sender:
-                sender.login(credentials["username"], credentials["password"])
+            with self.smtp_connection(config, credentials) as sender:
                 sender.noop()
 
     async def add(self, values):
@@ -202,6 +222,7 @@ class MailAccounts:
             "imap_port",
             "smtp_host",
             "smtp_port",
+            "smtp_mode",
             "inbox",
             "sent",
             "username",
@@ -220,6 +241,7 @@ class MailAccounts:
                 "label": "Mail",
                 "imap_host": "",
                 "smtp_host": "",
+                "smtp_mode": "implicit_tls",
                 "inbox": "INBOX",
                 "sent": "",
             }.items()
@@ -234,11 +256,13 @@ class MailAccounts:
         )
         if any(not 1 <= config[key] <= 65535 for key in ("imap_port", "smtp_port")):
             raise ValueError("Invalid TLS mail port")
+        if config["smtp_mode"] not in {"implicit_tls", "starttls"}:
+            raise ValueError("Choose implicit TLS or mandatory STARTTLS for SMTP")
         try:
             await asyncio.to_thread(self.validate, config, credentials)
         except Exception:
             raise ValueError(
-                "Could not verify this TLS mail account. Check hostnames, mailbox names and the provider app password. SMTP must support implicit TLS, usually port 465."
+                "Could not verify this TLS mail account. Check hostnames, mailbox names and the provider app password. SMTP usually uses implicit TLS on 465 or mandatory STARTTLS on 587."
             ) from None
         name = "email_" + uid()[:12]
         self.runtime.vault.put("mail:" + name, json.dumps(credentials))
@@ -363,10 +387,7 @@ class MailAccounts:
         if arguments.get("in_reply_to"):
             message["In-Reply-To"] = arguments["in_reply_to"]
         message.set_content(arguments["body"])
-        with smtplib.SMTP_SSL(
-            config["smtp_host"], config["smtp_port"], context=ssl.create_default_context(), timeout=20
-        ) as sender:
-            sender.login(credentials["username"], credentials["password"])
+        with self.smtp_connection(config, credentials) as sender:
             rejected = sender.send_message(message)
             if rejected:
                 raise ValueError("SMTP rejected the recipient")

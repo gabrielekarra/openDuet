@@ -59,6 +59,7 @@ async def mail_server(tmp_path, monkeypatch):
     monkeypatch.setattr(ssl, "create_default_context", trusted)
     sent = []
     commands = []
+    smtp_commands = []
 
     async def imap(reader, writer):
         writer.write(b"* OK OpenDuet fixture ready\r\n")
@@ -108,15 +109,27 @@ async def mail_server(tmp_path, monkeypatch):
             writer.close()
             await writer.wait_closed()
 
-    async def smtp(reader, writer):
+    async def smtp(reader, writer, allow_starttls=True):
         writer.write(b"220 fixture\r\n")
         await writer.drain()
         try:
             while line := await reader.readline():
                 command = line.decode().split()[0].upper()
+                encrypted = writer.get_extra_info("ssl_object") is not None
+                smtp_commands.append((command, encrypted))
                 if command == "EHLO":
-                    reply = b"250-fixture\r\n250-AUTH PLAIN\r\n250 SIZE 100000\r\n"
+                    reply = (
+                        b"250-fixture\r\n"
+                        + (b"250-STARTTLS\r\n" if allow_starttls and not encrypted else b"")
+                        + b"250-AUTH PLAIN\r\n250 SIZE 100000\r\n"
+                    )
+                elif command == "STARTTLS" and allow_starttls:
+                    writer.write(b"220 Begin TLS\r\n")
+                    await writer.drain()
+                    await writer.start_tls(context, ssl_handshake_timeout=5)
+                    continue
                 elif command == "AUTH":
+                    assert encrypted, "Credentials must never be sent before TLS"
                     reply = b"235 Authenticated\r\n"
                 elif command in {"MAIL", "RCPT", "NOOP", "RSET"}:
                     reply = b"250 OK\r\n"
@@ -144,19 +157,31 @@ async def mail_server(tmp_path, monkeypatch):
 
     imap_server = await asyncio.start_server(imap, "127.0.0.1", 0, ssl=context)
     smtp_server = await asyncio.start_server(smtp, "127.0.0.1", 0, ssl=context)
+    starttls_server = await asyncio.start_server(smtp, "127.0.0.1", 0)
+    stripped_server = await asyncio.start_server(
+        lambda reader, writer: smtp(reader, writer, False), "127.0.0.1", 0
+    )
     yield {
         "imap": imap_server.sockets[0].getsockname()[1],
         "smtp": smtp_server.sockets[0].getsockname()[1],
+        "starttls": starttls_server.sockets[0].getsockname()[1],
+        "stripped": stripped_server.sockets[0].getsockname()[1],
         "sent": sent,
         "commands": commands,
+        "smtp_commands": smtp_commands,
     }
     imap_server.close()
     smtp_server.close()
+    starttls_server.close()
+    stripped_server.close()
     await imap_server.wait_closed()
     await smtp_server.wait_closed()
+    await starttls_server.wait_closed()
+    await stripped_server.wait_closed()
 
 
-async def test_direct_mail_real_tls_poll_dedup_reviewed_send_and_disconnect(tmp_path, mail_server):
+@pytest.mark.parametrize("transport", ["implicit_tls", "starttls"])
+async def test_direct_mail_real_tls_poll_dedup_reviewed_send_and_disconnect(tmp_path, mail_server, transport):
     runtime = Runtime(Config(data_dir=tmp_path / "workspace"), Store(tmp_path / "workspace"))
     account = await runtime.mail.add(
         {
@@ -166,7 +191,8 @@ async def test_direct_mail_real_tls_poll_dedup_reviewed_send_and_disconnect(tmp_
             "imap_host": "127.0.0.1",
             "imap_port": mail_server["imap"],
             "smtp_host": "127.0.0.1",
-            "smtp_port": mail_server["smtp"],
+            "smtp_port": mail_server["starttls" if transport == "starttls" else "smtp"],
+            "smtp_mode": transport,
             "inbox": "INBOX",
             "sent": "Sent",
         }
@@ -214,6 +240,25 @@ async def test_direct_mail_real_tls_poll_dedup_reviewed_send_and_disconnect(tmp_
         runtime.tools.get(tool, payload)
     assert runtime.store.rows("SELECT * FROM connector_events") == []
     assert name not in runtime.mail.listing()
+    await runtime.close()
+
+
+async def test_missing_starttls_refuses_credentials_before_authentication(tmp_path, mail_server):
+    runtime = Runtime(Config(data_dir=tmp_path / "workspace"), Store(tmp_path / "workspace"))
+    with pytest.raises(ValueError, match="Could not verify"):
+        await runtime.mail.add(
+            {
+                "username": "owner@example.test",
+                "password": "fixture-app-password-not-a-real-secret",
+                "imap_host": "127.0.0.1",
+                "imap_port": mail_server["imap"],
+                "smtp_host": "127.0.0.1",
+                "smtp_port": mail_server["stripped"],
+                "smtp_mode": "starttls",
+            }
+        )
+    assert not any(command == "AUTH" for command, _ in mail_server["smtp_commands"])
+    assert not runtime.mail.listing()
     await runtime.close()
 
 

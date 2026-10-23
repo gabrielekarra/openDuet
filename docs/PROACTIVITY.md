@@ -1,6 +1,8 @@
 # Proactivity and learning
 
-Connect an MCP server and configure a **read-only** poll tool in Connections.
+Connect email directly with a provider app password, or connect an MCP server
+and configure a **read-only** poll tool in Connections. See
+[account setup](CONNECTORS.md).
 Polling stores versioned events, durable pagination cursors and content hashes.
 Unchanged records do not create new events; changed calendar records retain an
 edit event. Gmail, Microsoft mail, calendar and Slack wire fields have
@@ -29,6 +31,11 @@ Delivered urgent items are not repeated as new items in the morning brief.
 When Kev is missing, unavailable or invalid, the fallback is brief-only; the
 ordinary LLM does not silently replace the per-event judge. Work-model tokens
 and Kev decisions have separate counters.
+
+Urgent interruption requires a confident binary answer to whether attention is
+needed now. The probability of one exact 1–5 urgency rating is not used as the
+probability that a message is time-critical. Both question wording and labelled
+evaluation corpora are fingerprinted in real benchmark reports.
 
 Sent messages can establish commitments only after a typed promise decision.
 Dates are parsed deterministically in English/Italian relative to the sent

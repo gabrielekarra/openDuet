@@ -85,6 +85,8 @@ only for OAuth callbacks, payment authorization webhooks or the optional Mini Ap
   declarative dashboards and sandboxed web prototypes.
 - Curated connector directory, MCP discovery, OAuth with PKCE, declarative
   Agent Skills/plugins and business workflow recipes.
+- Direct TLS email with app-password setup, read-only polling and optional
+  exact-payload approved sends, including iCloud STARTTLS.
 - Encrypted secret storage, optional dedicated password managers and optional
   purchase-scoped Stripe Issuing cards for eligible issuer accounts.
 
