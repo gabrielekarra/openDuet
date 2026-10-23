@@ -11,6 +11,41 @@ from .adapter import decisions_from_logits, record_for
 from .models import manifest, verify
 
 
+def quantize_cpu(model):
+    """Quantize linears one at a time so a second fp32 backbone never resides.
+
+    The remaining parameters/buffers become fp32, as required by the CPU
+    dynamic-linear kernel. Integer position/index buffers retain their types.
+    This changes only the work inside the backbone; the pointer head stays fp32.
+    """
+    import warnings
+
+    import torch
+    from torch import nn
+    from torch.ao.quantization import quantize_dynamic
+
+    def convert(module):
+        for name, child in list(module.named_children()):
+            if isinstance(child, nn.Linear):
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", DeprecationWarning)
+                    packed = quantize_dynamic(
+                        nn.Sequential(child.float()), {nn.Linear}, dtype=torch.qint8, inplace=True
+                    )[0]
+                setattr(module, name, packed)
+            else:
+                convert(child)
+        for parameter in module.parameters(recurse=False):
+            if parameter.is_floating_point():
+                parameter.data = parameter.data.float()
+        for name, buffer in module.named_buffers(recurse=False):
+            if buffer.is_floating_point():
+                setattr(module, name, buffer.float())
+
+    convert(model)
+    return model
+
+
 class TorchBackend:
     def __init__(self, device="cpu"):
         import torch
@@ -24,14 +59,22 @@ class TorchBackend:
         metadata = torch.load(checkpoint / "head.pt", map_location="cpu", weights_only=True)
         self.tokenizer = AutoTokenizer.from_pretrained(checkpoint, local_files_only=True)
         dtype_name = os.environ.get("OPENDUET_KEV_DTYPE", "float32")
-        if dtype_name not in {"float32", "bfloat16", "float16"} or (
+        if dtype_name not in {"float32", "bfloat16", "float16", "int8"} or (
             dtype_name == "float16" and device == "cpu"
         ):
-            raise ValueError("Use float32/bfloat16, or float16 on CUDA")
+            raise ValueError("Use float32/bfloat16, int8 on CPU, or float16 on CUDA")
+        if dtype_name == "int8" and device != "cpu":
+            raise ValueError("Dynamic INT8 is a CPU backend")
         self.model = DecisionModel(
-            str(base), self.tokenizer, device, head_dim=metadata["head_dim"], dtype=getattr(torch, dtype_name)
+            str(base),
+            self.tokenizer,
+            device,
+            head_dim=metadata["head_dim"],
+            dtype=torch.bfloat16 if dtype_name == "int8" else getattr(torch, dtype_name),
         )
         self.model.lm = PeftModel.from_pretrained(self.model.lm, checkpoint, local_files_only=True)
+        if dtype_name == "int8":
+            self.model.lm = quantize_cpu(self.model.lm.merge_and_unload(safe_merge=True))
         self.model.head.load_state_dict(metadata["head"], strict=True)
         self.model.head.temperature = float(metadata.get("temperature", 1))
         if not np.isfinite(self.model.head.temperature) or self.model.head.temperature <= 0:

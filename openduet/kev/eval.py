@@ -86,6 +86,8 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
                 calibrators=[None] * len(batch),
             )
         latencies.append((time.perf_counter() - started) * 1000)
+        if backend != "fixture":
+            print(f"Evaluated {len(results) + 1}/{len(cases)} cases in {latencies[-1]:.0f} ms", flush=True)
         outcome = policy({"kind": case["kind"]}, {a.name: a for a in answers}, 0.65, case.get("context", {}))
         results.append(
             {
