@@ -19,6 +19,9 @@ def main():
 
 def _main():
     parser = argparse.ArgumentParser(description="OpenDuet self-hosted assistant")
+    from importlib.metadata import version
+
+    parser.add_argument("--version", action="version", version="OpenDuet " + version("openduet"))
     parser.add_argument("--config", type=Path, help="Path to openduet.toml")
     commands = parser.add_subparsers(dest="command")
     setup = commands.add_parser("setup", help="Create a private local installation")

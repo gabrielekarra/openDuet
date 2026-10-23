@@ -19,7 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 browser = ["playwright>=1.51,<2"]
 voice = ["faster-whisper>=1.1,<2"]
-kev = ["torch>=2.8,<3", "transformers>=5,<6", "peft>=0.18,<1"]
+kev = ["torch>=2.8,<3", "transformers>=5,<6", "peft>=0.18,<1", "optimum-quanto==0.2.7"]
 mlx = ["mlx-lm>=0.31.3,<0.32; sys_platform == 'darwin'", "torch>=2.8,<3", "transformers>=5,<6"]
 mac = ["pyobjc-framework-Quartz>=11; sys_platform == 'darwin'", "pyobjc-framework-Cocoa>=11; sys_platform == 'darwin'", "pyobjc-framework-ApplicationServices>=11; sys_platform == 'darwin'"]
 dev = ["pytest>=8,<10", "pytest-asyncio>=0.25,<2", "ruff>=0.11,<1"]

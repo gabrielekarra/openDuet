@@ -43,3 +43,5 @@ lock. There is no bundled noVNC, native driver, Kokoro/TTS or licensing worker i
 the current distribution; their historical materials remain under the native tag.
 The glasses assets originate in this repository's native predecessor and were
 preserved before its removal.
+
+CPU INT8 inference optionally uses [Optimum Quanto](https://github.com/huggingface/optimum-quanto), Apache-2.0. It is installed as a dependency; its source is not vendored. Model weights remain subject to the pinned model manifest licenses.

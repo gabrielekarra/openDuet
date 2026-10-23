@@ -11,39 +11,37 @@ from .adapter import decisions_from_logits, record_for
 from .models import manifest, verify
 
 
-def quantize_cpu(model):
-    """Quantize linears one at a time so a second fp32 backbone never resides.
+def load_int8_model(base, tokenizer, head_dim):
+    """Stream weights into quantized layers instead of materializing two backbones.
 
-    The remaining parameters/buffers become fp32, as required by the CPU
-    dynamic-linear kernel. Integer position/index buffers retain their types.
-    This changes only the work inside the backbone; the pointer head stays fp32.
+    Reuse Kev's encoder, cache and pointer readout unchanged. Only the backbone
+    loader differs from upstream's constructor. LoRA stays in fp32 and is applied
+    by PEFT over the frozen QLinear weights; the pointer head stays fp32 too.
     """
-    import warnings
-
     import torch
-    from torch import nn
-    from torch.ao.quantization import quantize_dynamic
+    from transformers import AutoModelForCausalLM, QuantoConfig
 
-    def convert(module):
-        for name, child in list(module.named_children()):
-            if isinstance(child, nn.Linear):
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore", DeprecationWarning)
-                    packed = quantize_dynamic(
-                        nn.Sequential(child.float()), {nn.Linear}, dtype=torch.qint8, inplace=True
-                    )[0]
-                setattr(module, name, packed)
-            else:
-                convert(child)
-        for parameter in module.parameters(recurse=False):
-            if parameter.is_floating_point():
-                parameter.data = parameter.data.float()
-        for name, buffer in module.named_buffers(recurse=False):
-            if buffer.is_floating_point():
-                setattr(module, name, buffer.float())
+    from .vendor.kev.model import DecisionModel, PointerHead, is_hybrid, pad_id
 
-    convert(model)
-    return model
+    class QuantizedDecisionModel(DecisionModel):
+        def __init__(self):
+            torch.nn.Module.__init__(self)
+            foundation = AutoModelForCausalLM.from_pretrained(
+                str(base),
+                dtype=torch.float32,
+                attn_implementation="eager",
+                quantization_config=QuantoConfig(weights="int8"),
+                device_map={"": "cpu"},
+                local_files_only=True,
+            )
+            self.lm = foundation.model
+            self.pad_id = pad_id(tokenizer)
+            self.hybrid = is_hybrid(self.lm.config)
+            self.option_isolation = False
+            self.head = PointerHead(self.lm.config.hidden_size, dp=head_dim)
+            self.device = "cpu"
+
+    return QuantizedDecisionModel()
 
 
 class TorchBackend:
@@ -65,16 +63,18 @@ class TorchBackend:
             raise ValueError("Use float32/bfloat16, int8 on CPU, or float16 on CUDA")
         if dtype_name == "int8" and device != "cpu":
             raise ValueError("Dynamic INT8 is a CPU backend")
-        self.model = DecisionModel(
-            str(base),
-            self.tokenizer,
-            device,
-            head_dim=metadata["head_dim"],
-            dtype=torch.bfloat16 if dtype_name == "int8" else getattr(torch, dtype_name),
+        self.model = (
+            load_int8_model(base, self.tokenizer, metadata["head_dim"])
+            if dtype_name == "int8"
+            else DecisionModel(
+                str(base),
+                self.tokenizer,
+                device,
+                head_dim=metadata["head_dim"],
+                dtype=getattr(torch, dtype_name),
+            )
         )
         self.model.lm = PeftModel.from_pretrained(self.model.lm, checkpoint, local_files_only=True)
-        if dtype_name == "int8":
-            self.model.lm = quantize_cpu(self.model.lm.merge_and_unload(safe_merge=True))
         self.model.head.load_state_dict(metadata["head"], strict=True)
         self.model.head.temperature = float(metadata.get("temperature", 1))
         if not np.isfinite(self.model.head.temperature) or self.model.head.temperature <= 0:

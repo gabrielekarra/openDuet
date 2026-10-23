@@ -65,6 +65,13 @@ jobs:
       - run: uv run --no-sync python -c 'import AppKit, ApplicationServices, Quartz'
       - run: uv run --no-sync pytest tests/runtime/test_delivery_and_make.py tests/runtime/test_product.py tests/runtime/test_kev_contracts.py tests/runtime/test_onboarding.py -q
       - run: uv run --no-sync python scripts/check_installation.py
+      - run: uv run --no-sync python scripts/check_mac_service.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-service-acceptance
+          path: .runtime/mac-service-acceptance.json
+          include-hidden-files: true
   office:
     name: Native Office recalculation and previews
     runs-on: ubuntu-latest
