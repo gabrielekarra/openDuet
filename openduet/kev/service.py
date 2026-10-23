@@ -30,8 +30,8 @@ def create_service(backend_name=None):
     state = {
         "ready": False,
         "backend": name,
-        "device": device,
-        "dtype": os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
+        "device": "metal" if name == "mlx" else device,
+        "dtype": "8bit/fp32-head" if name == "mlx" else os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
         "latency_ms": None,
         "model": next(
             (

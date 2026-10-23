@@ -8,8 +8,10 @@ uv tool install --python 3.12 'openduet[mac,mlx] @ git+https://github.com/gabrie
 openduet setup --background --open
 ```
 
-On an Intel Mac, use `openduet[mac,kev]` instead. The work model is your choice:
-install a compatible model in Ollama or LM Studio, or use a hosted API.
+On an Intel Mac, use `openduet[mac,kev]` instead. The work model is your choice. The generated profile uses native Ollama with
+`qwen3.5:4b`, a 16,384-token context, 2,048-token responses and temperature 0.2.
+Install [Ollama](https://ollama.com/download) and run `ollama pull qwen3.5:4b`,
+or choose a different local model, LM Studio or hosted API in Settings.
 OpenDuet does not download either work-model or Kev weights without your action.
 
 Setup creates a private installation under

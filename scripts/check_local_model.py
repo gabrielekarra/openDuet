@@ -3,8 +3,11 @@
 import asyncio
 import json
 import os
+import platform
 import tempfile
 from pathlib import Path
+
+import httpx
 
 from openduet.config import Config, ProviderConfig
 from openduet.diagnostics import model_probe
@@ -31,6 +34,10 @@ async def main():
         )
         runtime = Runtime(config, Store(config.data_dir))
         try:
+            async with httpx.AsyncClient(base_url=config.providers["local"].base_url, trust_env=False) as client:
+                version = (await client.get("/api/version")).json()["version"]
+                models = (await client.get("/api/tags")).json()["models"]
+                resolved = next(item for item in models if item["name"] == config.providers["local"].model)
             probe = await model_probe(runtime, "local")
             assert probe["ok"] and probe["tools"], probe
             for native in (True, False):
@@ -95,7 +102,18 @@ async def main():
     output = Path(".runtime/local-model-acceptance.json")
     output.parent.mkdir(exist_ok=True)
     output.write_text(
-        json.dumps({"model": config.providers["local"].model, "results": results, "passed": True}, indent=2)
+        json.dumps(
+            {
+                "model": config.providers["local"].model,
+                "model_digest": resolved["digest"],
+                "model_details": resolved.get("details", {}),
+                "ollama_version": version,
+                "platform": platform.platform(),
+                "profile": {"context_window": 16384, "max_tokens": 2048, "temperature": 0.2},
+                "results": results,
+                "passed": True,
+            }, indent=2
+        )
         + "\n"
     )
     print(output.read_text())

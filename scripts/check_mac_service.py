@@ -57,12 +57,17 @@ def main():
                 ).stdout.decode()
                 process = int(re.search(r"\bpid = (\d+)", data)[1])
                 os.kill(process, signal.SIGTERM)
-                time.sleep(1)
+                restarted = process
+                for _ in range(120):
+                    result = subprocess.run(
+                        ["/bin/launchctl", "print", domain + "/" + LABEL], capture_output=True
+                    )
+                    match = re.search(rb"\bpid = (\d+)", result.stdout)
+                    if match and int(match[1]) != process:
+                        restarted = int(match[1])
+                        break
+                    time.sleep(0.25)
                 wait_ready()
-                data = subprocess.run(
-                    ["/bin/launchctl", "print", domain + "/" + LABEL], capture_output=True, check=True
-                ).stdout.decode()
-                restarted = int(re.search(r"\bpid = (\d+)", data)[1])
                 assert process != restarted
                 assert client.get("/api/state").status_code == 200, (
                     "Private token/session must survive a service restart"
