@@ -8,7 +8,8 @@
       "asks_user": false,
       "message_type": "newsletter",
       "deadline_mentioned": false,
-      "needs": "none"
+      "needs": "none",
+      "time_critical": false
     },
     "action": "ignore",
     "language": "en",
@@ -23,7 +24,8 @@
       "asks_user": false,
       "message_type": "newsletter",
       "deadline_mentioned": false,
-      "needs": "none"
+      "needs": "none",
+      "time_critical": false
     },
     "action": "ignore",
     "language": "en",
@@ -39,7 +41,8 @@
       "asks_user": true,
       "message_type": "request",
       "deadline_mentioned": true,
-      "needs": "reply"
+      "needs": "reply",
+      "time_critical": true
     },
     "action": "interrupt",
     "language": "en",
@@ -54,7 +57,8 @@
       "asks_user": true,
       "message_type": "question",
       "deadline_mentioned": false,
-      "needs": "review"
+      "needs": "review",
+      "time_critical": false
     },
     "action": "prepare",
     "language": "it",
@@ -69,7 +73,8 @@
       "asks_user": true,
       "message_type": "request",
       "deadline_mentioned": true,
-      "needs": "review"
+      "needs": "review",
+      "time_critical": true
     },
     "action": "notify_silent",
     "language": "en",
@@ -87,7 +92,8 @@
       "asks_user": false,
       "message_type": "receipt",
       "deadline_mentioned": false,
-      "needs": "none"
+      "needs": "none",
+      "time_critical": false
     },
     "action": "ignore",
     "language": "it",
@@ -102,7 +108,8 @@
       "asks_user": false,
       "message_type": "personal",
       "deadline_mentioned": false,
-      "needs": "none"
+      "needs": "none",
+      "time_critical": false
     },
     "action": "brief",
     "language": "en",
@@ -115,7 +122,8 @@
     "answers": {
       "urgency": 4,
       "conflict": true,
-      "prepare": true
+      "prepare": true,
+      "time_critical": true
     },
     "action": "interrupt",
     "language": "en",
@@ -128,7 +136,8 @@
     "answers": {
       "urgency": 2,
       "conflict": false,
-      "prepare": true
+      "prepare": true,
+      "time_critical": false
     },
     "action": "prepare",
     "language": "it",
@@ -141,7 +150,8 @@
     "answers": {
       "urgency": 4,
       "material": true,
-      "relationship_risk": 5
+      "relationship_risk": 5,
+      "time_critical": true
     },
     "action": "interrupt",
     "language": "en",
@@ -154,7 +164,8 @@
     "answers": {
       "urgency": 1,
       "material": false,
-      "relationship_risk": 1
+      "relationship_risk": 1,
+      "time_critical": false
     },
     "action": "brief",
     "language": "en",
@@ -169,7 +180,8 @@
       "asks_user": true,
       "message_type": "question",
       "deadline_mentioned": false,
-      "needs": "review"
+      "needs": "review",
+      "time_critical": false
     },
     "action": "prepare",
     "language": "it",

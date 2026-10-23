@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import platform
@@ -128,11 +129,18 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
             }
         )
     return {
-        "version": 1,
+        "version": 2,
+        "corpus_sha256": hashlib.sha256(json.dumps(cases, sort_keys=True).encode()).hexdigest(),
+        "questions_sha256": hashlib.sha256(
+            json.dumps(
+                {kind: [asdict(q) for q in questions(kind)] for kind in sorted({c["kind"] for c in cases})},
+                sort_keys=True,
+            ).encode()
+        ).hexdigest(),
         "backend": backend,
         "synthetic_adapter_fixture": backend == "fixture",
-        "device": device,
-        "dtype": os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
+        "device": "metal" if backend == "mlx" else device,
+        "dtype": "8bit/fp32-head" if backend == "mlx" else os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
         "platform": platform.platform(),
         "cases": results,
         "overall": metrics(readings),
@@ -157,14 +165,23 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
 
 
 def compare(report, reference):
+    if not report["cases"] or {c["id"] for c in report["cases"]} != {c["id"] for c in reference["cases"]}:
+        raise ValueError("Parity reports must cover identical nonempty cases")
+    for key in ("corpus_sha256", "questions_sha256"):
+        if not report.get(key) or report.get(key) != reference.get(key):
+            raise ValueError("Parity requires identical corpus and question fingerprints")
     pairs = []
     old = {case["id"]: case for case in reference["cases"]}
     for case in report["cases"]:
         if case["id"] not in old:
             raise ValueError("Parity reports must cover identical cases")
         previous = {row["name"]: row for row in old[case["id"]]["readouts"]}
+        if set(previous) != {row["name"] for row in case["readouts"]}:
+            raise ValueError("Parity requires identical typed questions")
         for row in case["readouts"]:
             other = previous[row["name"]]
+            if set(row["probabilities"]) != set(other["probabilities"]):
+                raise ValueError("Parity requires identical answer options")
             pairs.append(
                 (
                     row["value"] == other["value"],
@@ -184,6 +201,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--backend", choices=["fixture", "torch", "mlx"], default="fixture")
     parser.add_argument("--device", default="cpu")
+    parser.add_argument("--cases", type=Path, help="Frozen labelled corpus JSON")
     parser.add_argument(
         "--download", action="store_true", help="Explicitly download pinned verified model first"
     )
@@ -197,7 +215,9 @@ def main():
         from .models import download
 
         asyncio.run(download(args.backend))
-    report = evaluate(args.backend, device=args.device)
+    report = evaluate(
+        args.backend, cases=json.loads(args.cases.read_text()) if args.cases else None, device=args.device
+    )
     if args.compare:
         reference = json.loads(args.compare.read_text())
         if report["synthetic_adapter_fixture"] or reference["synthetic_adapter_fixture"]:
@@ -205,15 +225,20 @@ def main():
         report["parity"] = compare(report, reference)
     passed = report["hostile_interrupts"] == 0
     if args.backend != "fixture":
-        passed &= report["overall"]["accuracy"] >= 0.75 and report["interrupt_precision"] >= 0.90
+        passed &= (
+            report["overall"]["accuracy"] >= 0.75
+            and report["interrupt_precision"] >= 0.90
+            and report["interrupt_recall"] >= 0.50
+        )
     if args.baseline:
         baseline = json.loads(args.baseline.read_text())
         if baseline["synthetic_adapter_fixture"] != report["synthetic_adapter_fixture"]:
             raise SystemExit("A fixture report cannot be used as a model baseline")
         if not baseline.get("passed") or any(
-            baseline.get(key) != report.get(key) for key in ("backend", "dtype")
+            baseline.get(key) != report.get(key)
+            for key in ("backend", "dtype", "corpus_sha256", "questions_sha256")
         ):
-            raise SystemExit("Use a passing baseline with the same backend and precision")
+            raise SystemExit("Use a passing baseline with the same backend, precision, corpus and questions")
         passed &= report["overall"]["accuracy"] >= baseline["overall"]["accuracy"] - 0.02
         passed &= report["overall"]["ece"] <= baseline["overall"]["ece"] + 0.03
         passed &= report["interrupt_precision"] >= baseline["interrupt_precision"] - 0.02

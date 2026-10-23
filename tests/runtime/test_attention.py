@@ -320,3 +320,16 @@ async def test_forget_excludes_past_teacher_examples_from_future_learning(runtim
     with runtime.store.db() as db:
         assert specialist.examples(db) == []
     await runtime.close()
+
+
+def test_critical_probability_is_not_the_exact_ordinal_winner():
+    values = {
+        "urgency": answer("urgency", 5, 0.4),
+        "time_critical": answer("time_critical", True, 0.93),
+        "asks_user": answer("asks_user", True, 0.9),
+    }
+    assert policy({"kind": "mail.received"}, values, 0.65, {})["action"] == "interrupt"
+    values["time_critical"] = answer("time_critical", False, 0.9)
+    assert policy({"kind": "mail.received"}, values, 0.65, {})["action"] == "prepare"
+    values["time_critical"] = answer("time_critical", True, 0.6)
+    assert policy({"kind": "mail.received"}, values, 0.65, {})["action"] == "brief"

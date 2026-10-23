@@ -13,29 +13,61 @@ permissions:
   contents: read
 jobs:
   benchmark:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {backend: torch, runner: ubuntu-latest, extra: kev}
+          - {backend: mlx, runner: macos-15, extra: mlx}
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 120
     env:
-      OPENDUET_KEV_BACKEND: torch
+      OPENDUET_KEV_BACKEND: ${{ matrix.backend }}
       OPENDUET_KEV_DEVICE: cpu
       OPENDUET_KEV_DTYPE: ${{ inputs.dtype || 'bfloat16' }}
       OPENDUET_KEV_MODELS: ${{ github.workspace }}/.runtime/kev-models
     steps:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
-      - run: uv sync --locked --extra kev
-      - uses: actions/cache@v4
-        with:
-          path: .runtime/kev-models
-          key: kev-pinned-${{ hashFiles('openduet/kev/manifest.json') }}
-      - name: Explicit verified download and CPU evaluation
+      - run: uv sync --locked --extra "${{ matrix.extra }}"
+      - name: Explicit verified download and model evaluation
         run: |
           set --
-          baseline="docs/benchmarks/kev-torch-${OPENDUET_KEV_DTYPE}-baseline.json"
+          baseline="docs/benchmarks/kev-${OPENDUET_KEV_BACKEND}-${OPENDUET_KEV_DTYPE}-baseline.json"
           if [ -f "$baseline" ]; then set -- --baseline "$baseline"; fi
-          uv run --no-sync openduet-kev-eval --backend torch --download --output docs/benchmarks/kev-torch "$@"
+          uv run --no-sync openduet-kev-eval --backend "$OPENDUET_KEV_BACKEND" --download --output "docs/benchmarks/kev-$OPENDUET_KEV_BACKEND" "$@"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: kev-torch-${{ github.run_id }}
-          path: docs/benchmarks/kev-torch.*
+          name: kev-${{ matrix.backend }}-${{ github.run_id }}
+          path: docs/benchmarks/kev-${{ matrix.backend }}.*
+  parity:
+    needs: benchmark
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: kev-*-${{ github.run_id }}
+          path: .runtime/parity
+          merge-multiple: true
+      - name: Require actual MLX and Torch readout parity
+        run: |
+          uv run --no-sync python - <<'PY'
+          import json
+          from pathlib import Path
+          from openduet.kev.eval import compare
+          root=Path('.runtime/parity')
+          result=compare(json.loads((root/'kev-torch.json').read_text()),json.loads((root/'kev-mlx.json').read_text()))
+          (root/'parity.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result))
+          if not result['passed']:raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kev-parity-${{ github.run_id }}
+          path: .runtime/parity/parity.json
