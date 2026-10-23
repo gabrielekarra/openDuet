@@ -47,10 +47,10 @@ jobs:
           assert all(name in latest and latest[name]['conclusion']=='success' for name in required), 'All five source CI checks must pass before publishing'
           PY
       - name: Build distributions
-        run: uv build --locked
+        run: uv build --python 3.12
       - name: Test an isolated installation of the wheel
         run: |
-          uv venv /tmp/openduet-wheel-check
+          uv venv --python 3.12 /tmp/openduet-wheel-check
           uv pip install --python /tmp/openduet-wheel-check/bin/python dist/*.whl
           cd /tmp
           /tmp/openduet-wheel-check/bin/openduet --version
