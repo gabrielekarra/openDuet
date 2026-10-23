@@ -37,6 +37,27 @@ class MacHost:
     def enabled(self):
         return sys.platform == "darwin" and self.store.preference("mac_enabled", False)
 
+    def health(self):
+        result = {
+            "platform": sys.platform,
+            "enabled": self.enabled,
+            "accessibility": False,
+            "screen_recording": False,
+        }
+        if sys.platform != "darwin":
+            return result
+        try:
+            from ApplicationServices import AXIsProcessTrusted
+            from Quartz import CGPreflightScreenCaptureAccess
+
+            result.update(
+                accessibility=bool(AXIsProcessTrusted()),
+                screen_recording=bool(CGPreflightScreenCaptureAccess()),
+            )
+        except ImportError:
+            result["error"] = "Install the mac extra: uv sync --extra mac"
+        return result
+
     def check(self):
         if not self.enabled:
             raise ValueError("Enable Mac access in Settings on the Mac running OpenDuet")

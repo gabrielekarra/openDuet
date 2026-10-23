@@ -36,11 +36,13 @@ jobs:
           baseline="docs/benchmarks/kev-${OPENDUET_KEV_BACKEND}-${OPENDUET_KEV_DTYPE}-baseline.json"
           if [ -f "$baseline" ]; then set -- --baseline "$baseline"; fi
           uv run --no-sync openduet-kev-eval --backend "$OPENDUET_KEV_BACKEND" --download --output "docs/benchmarks/kev-$OPENDUET_KEV_BACKEND" "$@"
+      - name: Frozen additional EN/IT acceptance cases
+        run: uv run --no-sync openduet-kev-eval --backend "$OPENDUET_KEV_BACKEND" --cases openduet/kev/acceptance-cases.json --output "docs/benchmarks/kev-$OPENDUET_KEV_BACKEND-acceptance"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: kev-${{ matrix.backend }}-${{ github.run_id }}
-          path: docs/benchmarks/kev-${{ matrix.backend }}.*
+          path: docs/benchmarks/kev-${{ matrix.backend }}*
   parity:
     needs: benchmark
     if: always()

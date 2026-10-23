@@ -15,6 +15,11 @@ app, inspect its controls, interact with it after approval, or send a screenshot
 on Telegram. The Mac must be awake and OpenDuet running. No screen-sharing server
 is needed. A separate isolated browser handles websites without a connector.
 
+## Install on your Mac
+
+[Mac quickstart](docs/QUICKSTART-MAC.md) installs a private background service,
+opens a one-use local sign-in and guides Telegram, model verification and Mac permissions.
+
 ## Run locally
 
 Python 3.12+ and [uv](https://docs.astral.sh/uv/) are required.

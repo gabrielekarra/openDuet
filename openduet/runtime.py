@@ -56,6 +56,8 @@ class Runtime:
         self.stop = asyncio.Event()
         self.current: tuple[str, asyncio.Task] | None = None
         self.private_values: set[str] = set()
+        if config.token_file:
+            self.private_values.add(config.token())
         self.vault = Vault(store, config.data_dir)
         from .config import ProviderConfig
 

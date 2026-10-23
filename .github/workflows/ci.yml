@@ -63,7 +63,8 @@ jobs:
       - uses: astral-sh/setup-uv@v6
       - run: uv sync --locked --extra dev --extra mac
       - run: uv run --no-sync python -c 'import AppKit, ApplicationServices, Quartz'
-      - run: uv run --no-sync pytest tests/runtime/test_delivery_and_make.py tests/runtime/test_product.py tests/runtime/test_kev_contracts.py -q
+      - run: uv run --no-sync pytest tests/runtime/test_delivery_and_make.py tests/runtime/test_product.py tests/runtime/test_kev_contracts.py tests/runtime/test_onboarding.py -q
+      - run: uv run --no-sync python scripts/check_installation.py
   office:
     name: Native Office recalculation and previews
     runs-on: ubuntu-latest

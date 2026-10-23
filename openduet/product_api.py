@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import time
@@ -18,6 +19,7 @@ from . import catalog
 from .approvals import preview
 from .attachments import ingest
 from .config import ProviderConfig
+from .diagnostics import readiness
 
 
 class BotToken(BaseModel):
@@ -52,7 +54,8 @@ def install(app, runtime, signature):
             "suggestions": store.rows(
                 "SELECT task,content FROM events WHERE kind='suggest_connector' ORDER BY id DESC LIMIT 100"
             ),
-            "mac": {"enabled": runtime.mac.enabled, "platform": os.sys.platform},
+            "mac": runtime.mac.health(),
+            "readiness": readiness(runtime),
             "wallet": runtime.wallet.settings(),
             "purchases": store.rows(
                 "SELECT id,task,merchant,amount,currency,expires,status,created FROM purchases ORDER BY created DESC LIMIT 100"
@@ -243,14 +246,23 @@ def install(app, runtime, signature):
         if not name or not name.replace("-", "").replace("_", "").isalnum():
             raise ValueError("Invalid model name")
         key = body.pop("api_key", "")
+        clear_key = body.pop("clear_api_key", False)
         make_default = body.pop("default", False)
         config = ProviderConfig(**body)
         if key:
-            environment_name = "OPENDUET_PROVIDER_" + name.upper().replace("-", "_")
+            environment_name = "OPENDUET_PROVIDER_" + hashlib.sha256(name.encode()).hexdigest()[:24].upper()
             runtime.vault.put("provider:" + name, key)
             os.environ[environment_name] = key
             config.api_key_env = environment_name
+        elif not clear_key and name in runtime.config.providers:
+            config.api_key_env = runtime.config.providers[name].api_key_env
+        if clear_key:
+            runtime.vault.remove("provider:" + name)
+            config.api_key_env = ""
         runtime.config.providers[name] = config
+        checks = store.preference("provider_checks", {})
+        checks.pop(name, None)
+        store.set_preference("provider_checks", checks)
         store.set_preference(
             "model_configs", {key: asdict(value) for key, value in runtime.config.providers.items()}
         )
@@ -258,6 +270,24 @@ def install(app, runtime, signature):
             runtime.config.default_provider = name
             store.set_preference("default_provider", name)
         return {"model": name}
+
+    @app.post("/api/models/{name}/test")
+    async def test_model(name: str):
+        from .diagnostics import model_probe
+
+        return await model_probe(runtime, name)
+
+    @app.get("/api/models/{name}/available")
+    async def list_models(name: str):
+        from .diagnostics import available_models
+
+        try:
+            return {"models": await available_models(runtime.config.providers[name])}
+        except (httpx.HTTPError, ValueError):
+            raise HTTPException(
+                400,
+                "Could not list models. Check the server URL and credentials, or enter its model id manually.",
+            ) from None
 
     @app.post("/api/voice")
     async def voice(request: Request):

@@ -96,7 +96,7 @@ services:
     init: true
   ollama:
     profiles: [ollama]
-    image: ollama/ollama:0.13.5
+    image: ollama/ollama:0.40.9
     restart: unless-stopped
     volumes: ["ollama-models:/root/.ollama"]
     networks: [outbound]

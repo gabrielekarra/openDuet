@@ -68,5 +68,7 @@ const miniapp=telegramHash.get('tgWebAppData');
 document.documentElement.dataset.miniapp=String(Boolean(miniapp));
 if(miniapp){try{const colors=JSON.parse(telegramHash.get('tgWebAppThemeParams')||'{}');for(const [field,variable] of Object.entries({bg_color:'--bg',secondary_bg_color:'--surface',text_color:'--ink',hint_color:'--muted',button_color:'--accent',button_text_color:'--accent-text'})){if(/^#[0-9a-f]{6}$/i.test(colors[field]||''))document.documentElement.style.setProperty(variable,colors[field]);}}catch{}}
 
+const setupCode=telegramHash.get('setup');
+if(setupCode){history.replaceState(null,'',location.pathname+location.search);try{await api('/api/local-session',{code:setupCode});}catch(error){toast(error.message);}}
 if(miniapp){try{await api('/api/telegram/session',{init_data:miniapp});state.view=new URLSearchParams(location.search).get('view')==='make'?'make':'tasks';}catch(error){toast(error.message);}}
 await refresh();

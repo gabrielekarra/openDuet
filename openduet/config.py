@@ -16,6 +16,7 @@ class ProviderConfig:
     tools: bool = True
     max_tokens: int = 4096
     vision: bool = False
+    thinking: bool = False
 
     def __post_init__(self):
         url = urlsplit(self.base_url)
@@ -60,6 +61,7 @@ class ConnectorConfig:
 @dataclass
 class Config:
     data_dir: Path = field(default_factory=lambda: Path(".runtime/openduet"))
+    token_file: str = ""
     host: str = "127.0.0.1"
     port: int = 8765
     default_provider: str = "local"
@@ -120,6 +122,10 @@ class Config:
 
     def token(self) -> str:
         token = os.environ.get("OPENDUET_TOKEN", "")
+        if not token and self.token_file:
+            from .installation import read_private
+
+            token = read_private(Path(self.token_file).expanduser()).strip()
         if len(token) < 24:
             raise ValueError("Set OPENDUET_TOKEN to a random secret of at least 24 characters")
         return token

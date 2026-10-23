@@ -53,7 +53,7 @@ class Provider:
         elif c.kind == "ollama":
             endpoint = "/api/chat"
             payload.pop("max_tokens")
-            payload.update(stream=False, options={"num_predict": c.max_tokens})
+            payload.update(stream=False, think=c.thinking, options={"num_predict": c.max_tokens})
             history = []
             for original in messages:
                 message = dict(original)
@@ -82,7 +82,12 @@ class Provider:
                     ]
                 history.append(message)
             payload["messages"] = history
-        async with httpx.AsyncClient(timeout=180, transport=self.transport, follow_redirects=False) as client:
+        async with httpx.AsyncClient(
+            timeout=180,
+            transport=self.transport,
+            follow_redirects=False,
+            trust_env=c.base_url.startswith("https://"),
+        ) as client:
             async with client.stream(
                 "POST", c.base_url.rstrip("/") + endpoint, json=payload, headers=headers
             ) as response:

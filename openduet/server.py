@@ -133,6 +133,7 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
                 return JSONResponse({"detail": "Cross-origin access denied"}, status_code=403)
             if request.url.path not in {
                 "/api/login",
+                "/api/local-session",
                 "/api/telegram/session",
                 "/api/connectors/oauth/callback",
                 "/api/wallet/webhook",
@@ -197,15 +198,7 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             raise HTTPException(400, "Unknown provider")
         return name
 
-    @app.post("/api/login")
-    async def login(body: Login, request: Request):
-        address = request.client.host if request.client else "unknown"
-        attempts = [t for t in login_attempts.get(address, []) if t > time.time() - 60]
-        if len(attempts) >= 5:
-            raise HTTPException(429, "Too many attempts; wait a minute")
-        login_attempts[address] = attempts + [time.time()]
-        if not hmac.compare_digest(body.token, token):
-            raise HTTPException(401, "Incorrect access token")
+    def signed_in_response(request):
         expiry = str(int(time.time() + 12 * 3600))
         result = JSONResponse({"ok": True})
         result.set_cookie(
@@ -216,6 +209,37 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
             secure=request.url.scheme == "https",
             max_age=12 * 3600,
         )
+        return result
+
+    @app.post("/api/local-session")
+    async def local_session(request: Request):
+        from .installation import consume_local_login
+
+        if (
+            not config.token_file
+            or not request.client
+            or request.client.host not in {"127.0.0.1", "::1"}
+            or request.url.hostname not in {"127.0.0.1", "localhost", "::1"}
+        ):
+            raise HTTPException(403, "Local sign-in is available only on the computer running OpenDuet")
+        body = await request.json()
+        code = body.get("code", "")
+        if not isinstance(code, str) or not 32 <= len(code) <= 128 or not consume_local_login(config, code):
+            raise HTTPException(
+                401, "This local sign-in link expired or was already used. Run openduet open again."
+            )
+        return signed_in_response(request)
+
+    @app.post("/api/login")
+    async def login(body: Login, request: Request):
+        address = request.client.host if request.client else "unknown"
+        attempts = [t for t in login_attempts.get(address, []) if t > time.time() - 60]
+        if len(attempts) >= 5:
+            raise HTTPException(429, "Too many attempts; wait a minute")
+        login_attempts[address] = attempts + [time.time()]
+        if not hmac.compare_digest(body.token, token):
+            raise HTTPException(401, "Incorrect access token")
+        result = signed_in_response(request)
         login_attempts.pop(address, None)
         return result
 

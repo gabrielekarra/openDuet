@@ -1,0 +1,26 @@
+name: Real local model acceptance
+on: {workflow_dispatch: {}}
+permissions: {contents: read}
+jobs:
+  local-model:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: Start the pinned local Ollama runtime
+        run: |
+          docker run -d --name openduet-model -p 127.0.0.1:11434:11434 ollama/ollama:0.40.9
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://127.0.0.1:11434/api/tags >/dev/null; then break; fi
+            sleep 1
+          done
+          docker exec openduet-model ollama pull qwen3.5:4b
+      - name: Actual model creates deliverables and waits for approval
+        run: uv run --no-sync python scripts/check_local_model.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: local-model-acceptance
+          path: .runtime/local-model-acceptance.json
