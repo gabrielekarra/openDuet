@@ -1,4 +1,4 @@
-name: Publish verified release
+name: Build verified distribution
 on:
   workflow_dispatch:
     inputs:
@@ -10,6 +10,10 @@ on:
         description: Version tag matching pyproject.toml (for example v0.4.0rc1)
         required: true
         default: v0.4.0rc1
+      publish:
+        description: Also publish a GitHub Release (requires release-write permission)
+        type: boolean
+        default: false
 permissions:
   contents: write
   checks: read
@@ -76,6 +80,7 @@ jobs:
           name: release-distributions
           path: dist/*
       - name: Publish immutable release assets
+        if: inputs.publish
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

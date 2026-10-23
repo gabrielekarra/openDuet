@@ -6,7 +6,9 @@ Real models, Chromium, LibreOffice, TLS mail transports and macOS launchd are
 identified separately below. The [CI workflow](../.github/workflows/ci.yml)
 repeats the runtime, Mac, Office, research, console and isolated-computer checks.
 [All five jobs passed after the mail changes](https://github.com/gabrielekarra/openDuet/actions/runs/39945162320).
-The release page records the final packaging commit and CI run.
+The distribution workflow records its source commit, isolated-installation check
+and checksummed downloadable artifacts. GitHub Release publication currently
+returns 403 for the connected integration; source-archive installation remains public.
 
 | Check | Observed result |
 | --- | --- |

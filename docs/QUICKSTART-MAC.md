@@ -1,14 +1,15 @@
 # OpenDuet on your Mac
 
 [Guida in italiano](QUICKSTART-MAC.it.md). This guide installs release candidate
-**0.4.0rc1** from its published wheel. The matching source and checksums are in
-the [release](https://github.com/gabrielekarra/openDuet/releases/tag/v0.4.0rc1).
+**0.4.0rc1** from its public, versioned source archive. Git is not required.
+Verified wheels, source distributions and checksums are also available as
+artifacts of the [distribution workflow](https://github.com/gabrielekarra/openDuet/actions/workflows/release.yml); artifact downloads require GitHub sign-in.
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
 On an Apple-silicon Mac, install OpenDuet and its local Kev backend:
 
 ```sh
-uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/releases/download/v0.4.0rc1/openduet-0.4.0rc1-py3-none-any.whl'
+uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/archive/refs/tags/v0.4.0rc1.tar.gz'
 openduet setup --background --open
 ```
 

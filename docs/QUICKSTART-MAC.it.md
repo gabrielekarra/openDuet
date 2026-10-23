@@ -7,7 +7,7 @@ Installa [uv](https://docs.astral.sh/uv/getting-started/installation/). Su un Ma
 con chip Apple Silicon esegui:
 
 ```sh
-uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/releases/download/v0.4.0rc1/openduet-0.4.0rc1-py3-none-any.whl'
+uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/archive/refs/tags/v0.4.0rc1.tar.gz'
 openduet setup --background --open
 ```
 
