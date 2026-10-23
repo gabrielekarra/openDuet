@@ -5,9 +5,11 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import platform
 import resource
 import statistics
+import subprocess
 import time
 from dataclasses import asdict
 from pathlib import Path
@@ -17,6 +19,42 @@ import numpy as np
 from ..attention import policy, questions
 from .adapter import decisions_from_logits, record_for
 from .backends import torch_dtype
+
+
+def hardware_report(backend):
+    from importlib.metadata import PackageNotFoundError, version
+
+    result = {"machine": platform.machine(), "cpu_count": os.cpu_count(), "versions": {}}
+    for package in ("torch", "transformers", "optimum-quanto", "mlx", "mlx-lm"):
+        try:
+            result["versions"][package] = version(package)
+        except PackageNotFoundError:
+            pass
+    if platform.system() == "Darwin":
+        result["physical_memory_bytes"] = int(
+            subprocess.check_output(["/usr/sbin/sysctl", "-n", "hw.memsize"])
+        )
+    elif platform.system() == "Linux":
+        result["physical_memory_bytes"] = os.sysconf("SC_PHYS_PAGES") * os.sysconf("SC_PAGE_SIZE")
+        limit = Path("/sys/fs/cgroup/memory.max")
+        if limit.exists() and (value := limit.read_text().strip()).isdigit():
+            result["cgroup_memory_limit_bytes"] = int(value)
+    if backend == "mlx":
+        import mlx.core as mx
+
+        mx.synchronize()
+        result["metal"] = {
+            "peak_bytes": mx.get_peak_memory(),
+            "active_bytes": mx.get_active_memory(),
+            "cache_bytes": mx.get_cache_memory(),
+        }
+    elif backend == "torch":
+        import torch
+
+        result["torch_threads"] = torch.get_num_threads()
+        if torch.cuda.is_available():
+            result["cuda_peak_allocated_bytes"] = torch.cuda.max_memory_allocated()
+    return result
 
 
 def metrics(rows):
@@ -144,6 +182,7 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
         "device": "metal" if backend == "mlx" else device,
         "dtype": "8bit/fp32-head" if backend == "mlx" else torch_dtype(device),
         "platform": platform.platform(),
+        "hardware": hardware_report(backend) if backend != "fixture" else {},
         "cases": results,
         "overall": metrics(readings),
         "per_question": {
