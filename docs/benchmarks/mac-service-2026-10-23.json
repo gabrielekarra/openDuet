@@ -1,0 +1,12 @@
+{
+  "gui_session": true,
+  "passed": true,
+  "restarted": true,
+  "session_persisted": true,
+  "provenance": {
+    "workflow": "https://github.com/gabrielekarra/openDuet/actions/runs/39943043522",
+    "commit": "9419e8f5b391064db8be78a9753abf7fbbcba8d3",
+    "collected_at": "2026-10-23",
+    "note": "Actual macOS GUI launchd service, restart and session persistence. This does not grant or exercise the owner Mac Accessibility or Screen Recording permissions."
+  }
+}

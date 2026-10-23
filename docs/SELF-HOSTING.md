@@ -21,11 +21,13 @@ For another private model container, add it to the workspace outbound network.
 
 Compose includes a separate Kev CPU service. Its weights are
 not downloaded at startup: start the verified download explicitly from
-Proactivity. CPU fp32 inference needs substantially more RAM than the weight
-files. Measure RAM and throughput on the target machine; no hardware budget has
-been validated yet. BF16 serving is an
-explicit `OPENDUET_KEV_DTYPE=bfloat16` option and needs separate evaluation.
-The MLX backend is for Apple silicon outside Linux Docker. See [Kev](kev/README.md).
+Proactivity. CPU defaults to qualified INT8 weights with FP32 activations,
+LoRA and pointer head. The real CPU runner peaked at 14.48 GiB RSS, including
+loading/quantization, and 41.3 s median per event. Allow at least 16 GiB available
+for Kev, plus your work model, workspace and OS. `OPENDUET_KEV_DTYPE` can explicitly
+select a different precision; that needs its own evaluation. The MLX backend is
+for Apple silicon outside Linux Docker and measured 4.75 s median on its runner;
+total Metal memory still needs target-device measurement. See [Kev](kev/README.md).
 Without Kev, OpenDuet stays in brief-only mode.
 
 ## Access and HTTPS

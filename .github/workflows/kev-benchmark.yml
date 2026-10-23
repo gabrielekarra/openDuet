@@ -8,7 +8,7 @@ on:
         description: Torch inference dtype (results are recorded separately)
         type: choice
         options: [bfloat16, float32, int8]
-        default: bfloat16
+        default: int8
 permissions:
   contents: read
 jobs:
@@ -24,7 +24,7 @@ jobs:
     env:
       OPENDUET_KEV_BACKEND: ${{ matrix.backend }}
       OPENDUET_KEV_DEVICE: cpu
-      OPENDUET_KEV_DTYPE: ${{ inputs.dtype || 'bfloat16' }}
+      OPENDUET_KEV_DTYPE: ${{ inputs.dtype || 'int8' }}
       OPENDUET_KEV_MODELS: ${{ github.workspace }}/.runtime/kev-models
     steps:
       - uses: actions/checkout@v4
@@ -40,11 +40,19 @@ jobs:
       - name: Real model evaluation
         run: |
           set --
-          baseline="docs/benchmarks/kev-${OPENDUET_KEV_BACKEND}-${OPENDUET_KEV_DTYPE}-baseline.json"
+          precision="$OPENDUET_KEV_DTYPE"
+          if [ "$OPENDUET_KEV_BACKEND" = mlx ]; then precision=8bit; fi
+          baseline="docs/benchmarks/kev-${OPENDUET_KEV_BACKEND}-${precision}-baseline.json"
           if [ -f "$baseline" ]; then set -- --baseline "$baseline"; fi
           uv run --no-sync openduet-kev-eval --backend "$OPENDUET_KEV_BACKEND" --output "docs/benchmarks/kev-$OPENDUET_KEV_BACKEND" "$@"
       - name: Frozen additional EN/IT acceptance cases
-        run: uv run --no-sync openduet-kev-eval --backend "$OPENDUET_KEV_BACKEND" --cases openduet/kev/acceptance-cases.json --output "docs/benchmarks/kev-$OPENDUET_KEV_BACKEND-acceptance"
+        run: |
+          set --
+          precision="$OPENDUET_KEV_DTYPE"
+          if [ "$OPENDUET_KEV_BACKEND" = mlx ]; then precision=8bit; fi
+          baseline="docs/benchmarks/kev-${OPENDUET_KEV_BACKEND}-${precision}-acceptance-baseline.json"
+          if [ -f "$baseline" ]; then set -- --baseline "$baseline"; fi
+          uv run --no-sync openduet-kev-eval --backend "$OPENDUET_KEV_BACKEND" --cases openduet/kev/acceptance-cases.json --output "docs/benchmarks/kev-$OPENDUET_KEV_BACKEND-acceptance" "$@"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

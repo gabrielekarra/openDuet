@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import platform
 import resource
 import statistics
@@ -17,6 +16,7 @@ import numpy as np
 
 from ..attention import policy, questions
 from .adapter import decisions_from_logits, record_for
+from .backends import torch_dtype
 
 
 def metrics(rows):
@@ -142,7 +142,7 @@ def evaluate(backend="fixture", cases=None, device="cpu"):
         "backend": backend,
         "synthetic_adapter_fixture": backend == "fixture",
         "device": "metal" if backend == "mlx" else device,
-        "dtype": "8bit/fp32-head" if backend == "mlx" else os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
+        "dtype": "8bit/fp32-head" if backend == "mlx" else torch_dtype(device),
         "platform": platform.platform(),
         "cases": results,
         "overall": metrics(readings),

@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
 from . import models
+from .backends import torch_dtype
 from .schema import Bool, Choice, Score
 
 
@@ -31,7 +32,7 @@ def create_service(backend_name=None):
         "ready": False,
         "backend": name,
         "device": "metal" if name == "mlx" else device,
-        "dtype": "8bit/fp32-head" if name == "mlx" else os.environ.get("OPENDUET_KEV_DTYPE", "float32"),
+        "dtype": "8bit/fp32-head" if name == "mlx" else torch_dtype(device),
         "latency_ms": None,
         "model": next(
             (

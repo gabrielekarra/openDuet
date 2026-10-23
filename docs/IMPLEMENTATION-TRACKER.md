@@ -1,9 +1,9 @@
 # Issue implementation and acceptance
 
 Scope: the 39 open issues #4–#44, excluding the already closed #17 and #22.
-This tracker describes the 0.3.0 implementation. **Delivered** means code and
+This tracker describes the 0.4.0rc1 release candidate. **Delivered** means code and
 repeatable checks exist; it does not certify untested third-party accounts or
-hardware. The product remains a developer preview. Exact commands and results
+hardware. The product is installable as a private Mac login service or self-hosted server. Exact commands and results
 are in [VALIDATION.md](VALIDATION.md).
 
 The owner's later instruction overrides the removal of on-demand Mac access
@@ -34,21 +34,21 @@ the native source before deletion.
 | #21 | Removed native hotkey/overlay/virtual-Mac/demonstration stack and VNC | Portable approved Mac bridge retained by owner instruction |
 | #23 | Removed Apple-native Mail/Messages/Reminders/Contacts/Shortcuts and iMessage automation | Delivered |
 | #24 | Removed native Qwen text engine and obsolete engine evaluations | Portable work-model adapters and Kev backends retained |
-| #25 | Removed BobbApp and bobbd after portable port; preserved final native tag | Actual Mac permissions/app interaction still needs device acceptance |
+| #25 | Removed BobbApp and bobbd after portable port; preserved final native tag | Actual Mac GUI launchd restart/session acceptance passes; owner Mac permissions/app interaction still needs device acceptance |
 | #26 | Removed license server, signing tooling and native checks | MIT runtime; third-party licenses retained |
 | #27 | Removed free-form Routines UI; built-in brief/report and approved check-ins remain | Delivered |
 | #28 | Removed spoken responses/TTS; bounded local voice input remains | Real Whisper model/audio quality not evaluated |
 | #29 | Removed obsolete pitch/demo/video/docs; relocated relevant Kev history with explicit historical labels | Delivered |
-| #30 | Typed Kev/event/policy/learning engine separate from selected work LLM | Real CPU seed evaluation failed the quality gate; semantic calibration/parity is not qualified |
+| #30 | Typed Kev/event/policy/learning engine separate from selected work LLM | Real Torch INT8 and MLX pass seed/additional quality gates and real parity; personal-account utility still needs labels |
 | #31 | Owner-paired durable Telegram loop, shared tasks, artifacts, approvals, media and optional Mini App | Real BotFather account/network delivery still needs live acceptance |
-| #32 | Separate Torch/MLX service, pinned checksums, explicit downloads, health and brief-only fallback | CPU service startup and real BF16 inference checked; quality gate failed, MLX/Torch parity remains pending |
-| #33 | Durable normalized events/cursors/dedup/edits; Gmail/M365/calendar/Slack/finance contracts | Reviewed MCP polling tools and real account scopes required |
+| #32 | Separate Torch/MLX service, pinned checksums, explicit downloads, health and brief-only fallback | Actual CPU INT8/MLX inference, both corpora and parity pass; CPU measured 14.48 GiB peak RSS and 41.3 s median |
+| #33 | Direct TLS IMAP/SMTP accounts, durable normalized events/cursors/dedup/edits; Gmail/M365/calendar/Slack/finance MCP contracts | Reviewed MCP polling tools and real account scopes required |
 | #34 | Deterministic ignore/brief/prepare/silent/interrupt policy and stored readouts | Policy branches pass without a loaded model |
 | #35 | Feedback floors, sender mute/undo, exact reply labels, held-out specialist gate and forget | Synthetic learning tests pass; personal utility requires user labels |
 | #36 | Sourced commitments, working-day quiet follow-ups, calendar/travel conflicts, deduplicated/snoozable prep | Friday promise and call/flight fixtures pass; external moves stay approved |
 | #37 | Stored-data explanations, /why, /quiet, decision feedback and task decision links | No explanation LLM call required |
-| #38 | EN/IT typed benchmark, JSON/MD metrics, fake PR checks, real weekly/manual workflow and parity comparator | Fixture and failed real CPU reports committed; workflow and metrics verified. Approved passing baseline/MLX parity remain pending |
-| #39 | BotFather guide, encrypted validation/pairing/rotation/disconnect, second-account denial | Browser fixture passes; two-minute live onboarding not measured |
+| #38 | EN/IT typed benchmark, JSON/MD metrics, fake PR checks, real weekly/manual workflow and parity comparator | Passing real seed/additional baselines and actual MLX/Torch parity committed; historical failures retained; small samples do not establish real-account calibration |
+| #39 | Guided setup/readiness, BotFather guide, encrypted validation/pairing/rotation/disconnect, second-account denial | Browser fixture passes; two-minute live onboarding not measured |
 | #40 | Durable inbox/offset/outbox, rate/backoff, escaping/splitting, topic routing and uncertain delivery review | Restart/429/owner boundary fixtures pass |
 | #41 | Inline approval/edit/defer/expiry/receipt and quick replies; deferred Review buttons in /tasks/brief | Single-execution and deferred-review fixtures pass |
 | #42 | Bounded voice/photos/files, local transcript before task, opt-in vision and document delivery/revisions | Disposable transports pass; actual voice/model quality unmeasured |

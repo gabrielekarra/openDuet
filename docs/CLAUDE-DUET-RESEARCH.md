@@ -52,9 +52,9 @@ acceptance are recorded separately in [the tracker](IMPLEMENTATION-TRACKER.md).
 | Main conversation and channels | Telegram plus shared web Chat, memory/search and tasks | One paired owner; native mobile apps are replaced by Telegram |
 | Tasks, approvals and prepared work | Exact payload previews, edit/defer/expiry, progress and receipts | Owner completes tasks; uncertain effects require verification |
 | Morning brief and evening report | Local timezone/DST scheduler and selected cited work | Requires connected sources; no duplicate new urgent items |
-| Proactive attention | Separate Kev Bool/Score/Choice readouts, deterministic host policy, reversible personal learning | Missing Kev means brief-only; real parity/performance needs evaluation |
+| Proactive attention | Separate Kev Bool/Score/Choice readouts, deterministic host policy, reversible personal learning | Missing Kev means brief-only; real backend parity passes, personal usefulness needs account labels |
 | Follow-ups and preparation | Sent-message commitments, waiting-thread drafts, calendar/travel facts and prep tasks | External sends/moves remain approval-gated |
-| Connections | Curated 17-service directory, dynamic MCP registry, OAuth PKCE/DCR and encrypted refresh tokens | Account/provider scopes and server capabilities apply; listings are not all official endpoints |
+| Connections | Direct TLS mail plus curated 17-service directory, dynamic MCP registry, OAuth PKCE/DCR and encrypted refresh tokens | Account/provider scopes and server capabilities apply; listings are not all official endpoints |
 | Plugins and skills | On-demand Agent Skills, static Claude-layout bundles, approved pinned Git/local sources | Executable hooks rejected; accounts/schedules are not auto-authorized |
 | Make and financial work | Versioned DOCX/PDF/XLSX/PPTX, live formulas, native Office checks and notes/previews | Results require review; no accounting/legal certification |
 | Dashboards and prototypes | Declarative local-time refreshed dashboards with PNG delivery; separate opaque sandbox origin for webapps | Static prototypes cannot access workspace APIs/credentials or the network |
@@ -76,8 +76,10 @@ Lighthouse accessibility audits and exact validation commands are linked in the
 acceptance tracker.
 
 Synthetic Kev fixtures prove adapter/policy contracts, not semantic accuracy.
-Real Torch evaluation has a separate scheduled/manual workflow; MLX/Torch
-parity, hardware RAM/latency, actual Mac app controls/permissions, live Telegram
-and real issuer/provider accounts must have their own acceptance evidence.
+Actual Torch INT8 and MLX runs pass both labelled corpora and backend parity;
+[reports](benchmarks/README.md) record measured RAM/latency and conservative recall.
+Real local Qwen tools and Mac launchd restart have separate acceptance reports.
+Actual owner Mac app controls/permissions, live Telegram and real issuer/provider
+accounts still require their own acceptance evidence.
 OpenDuet does not claim access to Anthropic's private implementation or accounts,
 its proprietary payment partner APIs, or unverified full behavioral equivalence.

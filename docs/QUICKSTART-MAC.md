@@ -1,10 +1,14 @@
 # OpenDuet on your Mac
 
+[Guida in italiano](QUICKSTART-MAC.it.md). This guide installs release candidate
+**0.4.0rc1** from its published wheel. The matching source and checksums are in
+the [release](https://github.com/gabrielekarra/openDuet/releases/tag/v0.4.0rc1).
+
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) first.
 On an Apple-silicon Mac, install OpenDuet and its local Kev backend:
 
 ```sh
-uv tool install --python 3.12 'openduet[mac,mlx] @ git+https://github.com/gabrielekarra/openDuet.git'
+uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/releases/download/v0.4.0rc1/openduet-0.4.0rc1-py3-none-any.whl'
 openduet setup --background --open
 ```
 
@@ -52,7 +56,8 @@ prints credentials. The local sign-in endpoint accepts only loopback clients
 and hosts; remote console access still requires the normal workspace token or
 an already authenticated session.
 
-For upgrades, stop the services, run `uv tool upgrade openduet`, then run
+For upgrades, stop the services, select the new release and run its install
+command with `uv tool install --force`, then run
 `openduet setup --background --open` again to refresh interpreter paths. Back up
 the installation before upgrading. The workspace database, vault key, attachments
 and artifacts must be backed up together. See [Mac control](REMOTE-ACCESS.md) and

@@ -1,0 +1,11 @@
+{
+  "label_agreement": 1,
+  "max_probability_delta": 0.019351358453341794,
+  "passed": true,
+  "provenance": {
+    "workflow": "https://github.com/gabrielekarra/openDuet/actions/runs/39933339239",
+    "commit": "e5282f8651245fd2d2dd9f6a732484eafc4577d7",
+    "collected_at": "2026-10-23",
+    "note": "Actual paired backend reports, identical corpus and questions; no synthetic logits."
+  }
+}

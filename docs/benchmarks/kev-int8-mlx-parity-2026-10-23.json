@@ -1,0 +1,19 @@
+{
+  "seed": {
+    "label_agreement": 0.984375,
+    "max_probability_delta": 0.022286028258124757,
+    "passed": true
+  },
+  "-acceptance": {
+    "label_agreement": 1,
+    "max_probability_delta": 0.031924861903284196,
+    "passed": true
+  },
+  "passed": true,
+  "provenance": {
+    "workflow": "https://github.com/gabrielekarra/openDuet/actions/runs/39943044430",
+    "commit": "9419e8f5b391064db8be78a9753abf7fbbcba8d3",
+    "collected_at": "2026-10-23",
+    "note": "Actual seed and acceptance readouts from independently executed Torch INT8 and MLX 8-bit backends; identical corpus and question fingerprints."
+  }
+}

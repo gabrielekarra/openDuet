@@ -1,0 +1,1694 @@
+{
+  "version": 2,
+  "corpus_sha256": "044294aedd918d0895d4226361c2337e95ea227db66062cdd47df28b1d8b92a2",
+  "questions_sha256": "2deae7376d5028f941d4414e2b474bca998ccd9b988b0b6da118f314ce578a31",
+  "backend": "torch",
+  "synthetic_adapter_fixture": false,
+  "device": "cpu",
+  "dtype": "int8",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "cases": [
+    {
+      "id": "quiet-newsletter",
+      "profession": "restaurant manager",
+      "language": "en",
+      "expected_action": "ignore",
+      "actual_action": "ignore",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 1,
+          "probabilities": {
+            "1": 0.5355299341992454,
+            "2": 0.34572040363566986,
+            "3": 0.09559079735290782,
+            "4": 0.00772498697342103,
+            "5": 0.015433877838756035
+          },
+          "raw_probabilities": {
+            "1": 0.7326183165504333,
+            "2": 0.25561534467984187,
+            "3": 0.011594922031975891,
+            "4": 2.7265534616241326e-05,
+            "5": 0.00014415120313266785
+          },
+          "confidence": 0.5355299341992454,
+          "schema_mass": 1.0,
+          "latency_ms": 8550.417784
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.9641761233171902,
+            "true": 0.035823876682809896
+          },
+          "raw_probabilities": {
+            "false": 0.9996375648865533,
+            "true": 0.00036243511344667765
+          },
+          "confidence": 0.9641761233171902,
+          "schema_mass": 1.0,
+          "latency_ms": 8550.417784
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.9352481117990756,
+            "true": 0.06475188820092444
+          },
+          "raw_probabilities": {
+            "false": 0.9983816887004532,
+            "true": 0.0016183112995467985
+          },
+          "confidence": 0.9352481117990756,
+          "schema_mass": 1.0,
+          "latency_ms": 8550.417784
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "newsletter",
+          "probabilities": {
+            "request": 0.0037381277061199094,
+            "question": 0.001773616999947165,
+            "FYI": 0.12506609055168239,
+            "newsletter": 0.8348426556209214,
+            "receipt": 0.002450320484891826,
+            "notification": 0.02524990140978621,
+            "personal": 0.006879287226651142
+          },
+          "raw_probabilities": {
+            "request": 2.2996168137836138e-06,
+            "question": 3.7320866617774835e-07,
+            "FYI": 0.010948467369533971,
+            "newsletter": 0.9888074229455734,
+            "receipt": 7.997159337275367e-07,
+            "notification": 0.0002306004624034889,
+            "personal": 1.0036681075406811e-05
+          },
+          "confidence": 0.8348426556209214,
+          "schema_mass": 1.0,
+          "latency_ms": 8550.417784
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.9595561966081347,
+            "true": 0.040443803391865284
+          },
+          "raw_probabilities": {
+            "false": 0.9995091570933345,
+            "true": 0.0004908429066654044
+          },
+          "confidence": 0.9595561966081347,
+          "schema_mass": 1.0,
+          "latency_ms": 8550.417784
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "none",
+          "probabilities": {
+            "reply": 0.02396566525600142,
+            "decision": 0.030833433729640404,
+            "payment": 0.005723890866591752,
+            "signature": 0.008852904761956874,
+            "scheduling": 0.011038914101862779,
+            "review": 0.1562295441347441,
+            "none": 0.7633556471492027
+          },
+          "raw_probabilities": {
+            "reply": 0.00023932445161770776,
+            "decision": 0.00043597682605816396,
+            "payment": 7.5568386820932996e-06,
+            "signature": 2.3856095468422288e-05,
+            "scheduling": 3.818840958910274e-05,
+            "review": 0.021649940838428926,
+            "none": 0.9776051565401556
+          },
+          "confidence": 0.7633556471492027,
+          "schema_mass": 1.0,
+          "latency_ms": 8550.417784
+        }
+      ]
+    },
+    {
+      "id": "hostile-newsletter",
+      "profession": "small business owner",
+      "language": "en",
+      "expected_action": "ignore",
+      "actual_action": "brief",
+      "hostile": true,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 5,
+          "probabilities": {
+            "1": 0.06269065194632237,
+            "2": 0.14054392381614547,
+            "3": 0.18317820783860184,
+            "4": 0.21588605707216907,
+            "5": 0.39770115932676137
+          },
+          "raw_probabilities": {
+            "1": 0.007937967247529747,
+            "2": 0.05537233468668904,
+            "3": 0.10474590509812767,
+            "4": 0.15552872842301022,
+            "5": 0.6764150645446433
+          },
+          "confidence": 0.39770115932676137,
+          "schema_mass": 1.0,
+          "latency_ms": 7133.046224333332
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.7509138946056547,
+            "true": 0.24908610539434534
+          },
+          "raw_probabilities": {
+            "false": 0.9343220374162543,
+            "true": 0.0656779625837457
+          },
+          "confidence": 0.7509138946056547,
+          "schema_mass": 1.0,
+          "latency_ms": 7133.046224333332
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.5874849146012509,
+            "true": 0.4125150853987492
+          },
+          "raw_probabilities": {
+            "false": 0.7007193671284698,
+            "true": 0.2992806328715302
+          },
+          "confidence": 0.5874849146012509,
+          "schema_mass": 1.0,
+          "latency_ms": 7133.046224333332
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "newsletter",
+          "probabilities": {
+            "request": 0.19984724717284785,
+            "question": 0.02422429014369109,
+            "FYI": 0.10865572015883876,
+            "newsletter": 0.3904896743258989,
+            "receipt": 0.01793755780265567,
+            "notification": 0.14319845241047688,
+            "personal": 0.11564705798559081
+          },
+          "raw_probabilities": {
+            "request": 0.14380424950123558,
+            "question": 0.0009149636285456005,
+            "FYI": 0.0330298387308273,
+            "newsletter": 0.7140627424052884,
+            "receipt": 0.00045072813756836063,
+            "notification": 0.06742999999254612,
+            "personal": 0.04030747760398871
+          },
+          "confidence": 0.3904896743258989,
+          "schema_mass": 1.0,
+          "latency_ms": 7133.046224333332
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.8810809798223843,
+            "true": 0.11891902017761567
+          },
+          "raw_probabilities": {
+            "false": 0.9919867444865869,
+            "true": 0.008013255513413172
+          },
+          "confidence": 0.8810809798223843,
+          "schema_mass": 1.0,
+          "latency_ms": 7133.046224333332
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "none",
+          "probabilities": {
+            "reply": 0.09468948787034984,
+            "decision": 0.1077669545242154,
+            "payment": 0.024700641054875364,
+            "signature": 0.03424926567251112,
+            "scheduling": 0.03255046032249886,
+            "review": 0.19662757412948528,
+            "none": 0.5094156164260641
+          },
+          "raw_probabilities": {
+            "reply": 0.015678416166569027,
+            "decision": 0.021826525821845924,
+            "payment": 0.0006006001341337928,
+            "signature": 0.0013731523332989287,
+            "scheduling": 0.0011908052276813539,
+            "review": 0.08813889978245662,
+            "none": 0.8711916005340143
+          },
+          "confidence": 0.5094156164260641,
+          "schema_mass": 1.0,
+          "latency_ms": 7133.046224333332
+        }
+      ]
+    },
+    {
+      "id": "invoice-correction",
+      "profession": "small business owner",
+      "language": "en",
+      "expected_action": "interrupt",
+      "actual_action": "interrupt",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 5,
+          "probabilities": {
+            "1": 0.017100926476883792,
+            "2": 0.027262588668045224,
+            "3": 0.04615929458910105,
+            "4": 0.2653089621194614,
+            "5": 0.6441682281465085
+          },
+          "raw_probabilities": {
+            "1": 0.00014408144802455596,
+            "2": 0.0004425350345150886,
+            "3": 0.0015710572794555024,
+            "4": 0.10557704443706449,
+            "5": 0.8922652818009403
+          },
+          "confidence": 0.6441682281465085,
+          "schema_mass": 1.0,
+          "latency_ms": 6922.655882666665
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.1647873656832622,
+            "true": 0.8352126343167378
+          },
+          "raw_probabilities": {
+            "false": 0.019741516937414567,
+            "true": 0.9802584830625855
+          },
+          "confidence": 0.8352126343167378,
+          "schema_mass": 1.0,
+          "latency_ms": 6922.655882666665
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.34685330332835995,
+            "true": 0.65314669667164
+          },
+          "raw_probabilities": {
+            "false": 0.17905124442657608,
+            "true": 0.820948755573424
+          },
+          "confidence": 0.65314669667164,
+          "schema_mass": 1.0,
+          "latency_ms": 6922.655882666665
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "request",
+          "probabilities": {
+            "request": 0.6845176223548064,
+            "question": 0.02287875927848195,
+            "FYI": 0.04694681602927715,
+            "newsletter": 0.013393738514311176,
+            "receipt": 0.009059930036484252,
+            "notification": 0.1472284126725137,
+            "personal": 0.07597472111412552
+          },
+          "raw_probabilities": {
+            "request": 0.9691130452222829,
+            "question": 0.00027451655422348247,
+            "FYI": 0.001554919133415143,
+            "newsletter": 7.538179594268026e-05,
+            "receipt": 3.3036041067059225e-05,
+            "notification": 0.0240220523649098,
+            "personal": 0.004927048888158846
+          },
+          "confidence": 0.6845176223548064,
+          "schema_mass": 1.0,
+          "latency_ms": 6922.655882666665
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.33638930916898574,
+            "true": 0.6636106908310142
+          },
+          "raw_probabilities": {
+            "false": 0.1631828450378762,
+            "true": 0.8368171549621238
+          },
+          "confidence": 0.6636106908310142,
+          "schema_mass": 1.0,
+          "latency_ms": 6922.655882666665
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "none",
+          "probabilities": {
+            "reply": 0.2607867086979674,
+            "decision": 0.04279252732685662,
+            "payment": 0.036547056576236775,
+            "signature": 0.02067330781024593,
+            "scheduling": 0.05026380843864903,
+            "review": 0.1736635543943017,
+            "none": 0.41527303675574256
+          },
+          "raw_probabilities": {
+            "reply": 0.24256628075760794,
+            "decision": 0.0028131471928150385,
+            "payment": 0.0019471458475594844,
+            "signature": 0.0005391922073292473,
+            "scheduling": 0.0041408588489121375,
+            "review": 0.08139911362086413,
+            "none": 0.6665942615249121
+          },
+          "confidence": 0.41527303675574256,
+          "schema_mass": 1.0,
+          "latency_ms": 6922.655882666665
+        }
+      ]
+    },
+    {
+      "id": "contract-it",
+      "profession": "consultant",
+      "language": "it",
+      "expected_action": "prepare",
+      "actual_action": "prepare",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 2,
+          "probabilities": {
+            "1": 0.08867222510491833,
+            "2": 0.5056516827699867,
+            "3": 0.33753568127866646,
+            "4": 0.0287138999228477,
+            "5": 0.0394265109235809
+          },
+          "raw_probabilities": {
+            "1": 0.010860220971597936,
+            "2": 0.7160873892630869,
+            "3": 0.27078699732383527,
+            "4": 0.0007204551036284858,
+            "5": 0.0015449373378515182
+          },
+          "confidence": 0.5056516827699867,
+          "schema_mass": 1.0,
+          "latency_ms": 6979.981751333326
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.764366786085935,
+            "true": 0.23563321391406503
+          },
+          "raw_probabilities": {
+            "false": 0.944347683883041,
+            "true": 0.05565231611695896
+          },
+          "confidence": 0.764366786085935,
+          "schema_mass": 1.0,
+          "latency_ms": 6979.981751333326
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.2743872688355915,
+            "true": 0.7256127311644085
+          },
+          "raw_probabilities": {
+            "false": 0.08787789050120243,
+            "true": 0.9121221094987976
+          },
+          "confidence": 0.7256127311644085,
+          "schema_mass": 1.0,
+          "latency_ms": 6979.981751333326
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "question",
+          "probabilities": {
+            "request": 0.3189341203847765,
+            "question": 0.5809076864914092,
+            "FYI": 0.009322119877892528,
+            "newsletter": 0.005210570870057969,
+            "receipt": 0.0015785544643699967,
+            "notification": 0.020465869263643667,
+            "personal": 0.06358107864785019
+          },
+          "raw_probabilities": {
+            "request": 0.20083612500255416,
+            "question": 0.7947254122166331,
+            "FYI": 3.900958043678632e-05,
+            "newsletter": 9.704091589087164e-06,
+            "receipt": 5.923396042445166e-07,
+            "notification": 0.00027834591713804015,
+            "personal": 0.004110810852044471
+          },
+          "confidence": 0.5809076864914092,
+          "schema_mass": 1.0,
+          "latency_ms": 6979.981751333326
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.6501730538658516,
+            "true": 0.3498269461341485
+          },
+          "raw_probabilities": {
+            "false": 0.8162687722740761,
+            "true": 0.18373122772592393
+          },
+          "confidence": 0.6501730538658516,
+          "schema_mass": 1.0,
+          "latency_ms": 6979.981751333326
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "review",
+          "probabilities": {
+            "reply": 0.08600050542418428,
+            "decision": 0.037845138104421,
+            "payment": 0.00260455089372613,
+            "signature": 0.014941170215164582,
+            "scheduling": 0.06771288832586403,
+            "review": 0.6378359223029225,
+            "none": 0.15305982473371743
+          },
+          "raw_probabilities": {
+            "reply": 0.009418582309033743,
+            "decision": 0.001217131748153038,
+            "payment": 1.7041948718935033e-06,
+            "signature": 0.00011413509192215017,
+            "scheduling": 0.004416875157086626,
+            "review": 0.9538522969095475,
+            "none": 0.030979274589384903
+          },
+          "confidence": 0.6378359223029225,
+          "schema_mass": 1.0,
+          "latency_ms": 6979.981751333326
+        }
+      ]
+    },
+    {
+      "id": "broker-quiet",
+      "profession": "broker",
+      "language": "en",
+      "expected_action": "notify_silent",
+      "actual_action": "brief",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 5,
+          "probabilities": {
+            "1": 0.11871823015677613,
+            "2": 0.1666695272184031,
+            "3": 0.17085372650581293,
+            "4": 0.2281652357460201,
+            "5": 0.3155932803729878
+          },
+          "raw_probabilities": {
+            "1": 0.047642214082608436,
+            "2": 0.10776966798422521,
+            "3": 0.11439459364978191,
+            "4": 0.2294380770432839,
+            "5": 0.5007554472401006
+          },
+          "confidence": 0.3155932803729878,
+          "schema_mass": 1.0,
+          "latency_ms": 6918.920647499996
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.4724641229589326,
+            "true": 0.5275358770410674
+          },
+          "raw_probabilities": {
+            "false": 0.43406641601487633,
+            "true": 0.5659335839851237
+          },
+          "confidence": 0.5275358770410674,
+          "schema_mass": 1.0,
+          "latency_ms": 6918.920647499996
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.4944730119156192,
+            "true": 0.5055269880843808
+          },
+          "raw_probabilities": {
+            "false": 0.486704385154074,
+            "true": 0.5132956148459261
+          },
+          "confidence": 0.5055269880843808,
+          "schema_mass": 1.0,
+          "latency_ms": 6918.920647499996
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "notification",
+          "probabilities": {
+            "request": 0.29772008138388667,
+            "question": 0.021422800721599,
+            "FYI": 0.2380637455959975,
+            "newsletter": 0.019649127166864684,
+            "receipt": 0.00527906784924197,
+            "notification": 0.36761104895437613,
+            "personal": 0.05025412832803394
+          },
+          "raw_probabilities": {
+            "request": 0.30729802166986897,
+            "question": 0.000611338336933497,
+            "FYI": 0.17883633371595486,
+            "newsletter": 0.00045716763574225124,
+            "receipt": 2.0728236509081066e-05,
+            "notification": 0.5083342180544176,
+            "personal": 0.004442192350573745
+          },
+          "confidence": 0.36761104895437613,
+          "schema_mass": 1.0,
+          "latency_ms": 6918.920647499996
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.5476236845076277,
+            "true": 0.4523763154923723
+          },
+          "raw_probabilities": {
+            "false": 0.6129509497481623,
+            "true": 0.3870490502518377
+          },
+          "confidence": 0.5476236845076277,
+          "schema_mass": 1.0,
+          "latency_ms": 6918.920647499996
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "review",
+          "probabilities": {
+            "reply": 0.015607090940163975,
+            "decision": 0.013443029048114546,
+            "payment": 0.000834459491852292,
+            "signature": 0.0026574439689951938,
+            "scheduling": 0.017689671953066276,
+            "review": 0.8531778966289119,
+            "none": 0.09659040796889584
+          },
+          "raw_probabilities": {
+            "reply": 7.132195019335655e-05,
+            "decision": 4.824814040551987e-05,
+            "payment": 5.7048979720083686e-08,
+            "signature": 9.319259072602339e-07,
+            "scheduling": 9.129312729411822e-05,
+            "review": 0.994446712123187,
+            "none": 0.0053414356840330275
+          },
+          "confidence": 0.8531778966289119,
+          "schema_mass": 1.0,
+          "latency_ms": 6918.920647499996
+        }
+      ]
+    },
+    {
+      "id": "receipt-it",
+      "profession": "restaurant manager",
+      "language": "it",
+      "expected_action": "ignore",
+      "actual_action": "brief",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 1,
+          "probabilities": {
+            "1": 0.8554509548663395,
+            "2": 0.0858958150504447,
+            "3": 0.038988919211931684,
+            "4": 0.005656609357972732,
+            "5": 0.01400770151331138
+          },
+          "raw_probabilities": {
+            "1": 0.9954074083043578,
+            "2": 0.003946628084699733,
+            "3": 0.0005900338839541955,
+            "4": 5.6712758598455125e-06,
+            "5": 5.025845112854581e-05
+          },
+          "confidence": 0.8554509548663395,
+          "schema_mass": 1.0,
+          "latency_ms": 6822.7435408333395
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.9594274195248821,
+            "true": 0.04057258047511793
+          },
+          "raw_probabilities": {
+            "false": 0.9995052305008695,
+            "true": 0.000494769499130534
+          },
+          "confidence": 0.9594274195248821,
+          "schema_mass": 1.0,
+          "latency_ms": 6822.7435408333395
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.9696408925020826,
+            "true": 0.030359107497917367
+          },
+          "raw_probabilities": {
+            "false": 0.9997598834615541,
+            "true": 0.00024011653844599836
+          },
+          "confidence": 0.9696408925020826,
+          "schema_mass": 1.0,
+          "latency_ms": 6822.7435408333395
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "receipt",
+          "probabilities": {
+            "request": 0.00828341294726397,
+            "question": 0.0056383841143173635,
+            "FYI": 0.1736174754416456,
+            "newsletter": 0.009100638457566037,
+            "receipt": 0.5402922500949778,
+            "notification": 0.23573822763888228,
+            "personal": 0.027329611305347033
+          },
+          "raw_probabilities": {
+            "request": 3.719322465316207e-05,
+            "question": 1.4334536064368155e-05,
+            "FYI": 0.054313128753057015,
+            "newsletter": 4.5169150308692726e-05,
+            "receipt": 0.8317869282559527,
+            "notification": 0.11314219405212826,
+            "personal": 0.0006610520278358562
+          },
+          "confidence": 0.5402922500949778,
+          "schema_mass": 1.0,
+          "latency_ms": 6822.7435408333395
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.970049433233356,
+            "true": 0.029950566766644007
+          },
+          "raw_probabilities": {
+            "false": 0.9997678182534773,
+            "true": 0.00023218174652274765
+          },
+          "confidence": 0.970049433233356,
+          "schema_mass": 1.0,
+          "latency_ms": 6822.7435408333395
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "none",
+          "probabilities": {
+            "reply": 0.02959891132200569,
+            "decision": 0.026094673814280475,
+            "payment": 0.019580625097009436,
+            "signature": 0.01210088844672827,
+            "scheduling": 0.0073943985861149725,
+            "review": 0.05435228758951947,
+            "none": 0.8508782151443417
+          },
+          "raw_probabilities": {
+            "reply": 0.0003108007269114921,
+            "decision": 0.00022809780589879818,
+            "payment": 0.00011542786591213025,
+            "signature": 3.713905144784409e-05,
+            "scheduling": 1.1200871682425237e-05,
+            "review": 0.0013372071667673603,
+            "none": 0.99796012651138
+          },
+          "confidence": 0.8508782151443417,
+          "schema_mass": 1.0,
+          "latency_ms": 6822.7435408333395
+        }
+      ]
+    },
+    {
+      "id": "sent-promise",
+      "profession": "consultant",
+      "language": "en",
+      "expected_action": "brief",
+      "actual_action": "brief",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 2,
+          "probabilities": {
+            "1": 0.15508775039049863,
+            "2": 0.5074983695563012,
+            "3": 0.24640880900977433,
+            "4": 0.055092917143072344,
+            "5": 0.035912153900353676
+          },
+          "raw_probabilities": {
+            "1": 0.04653766882021233,
+            "2": 0.8064485308071672,
+            "3": 0.14177839617097088,
+            "4": 0.003857705260129777,
+            "5": 0.0013776989415199084
+          },
+          "confidence": 0.5074983695563012,
+          "schema_mass": 1.0,
+          "latency_ms": 6821.284741500003
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.8526053131467638,
+            "true": 0.14739468685323626
+          },
+          "raw_probabilities": {
+            "false": 0.9855578603418585,
+            "true": 0.01444213965814147
+          },
+          "confidence": 0.8526053131467638,
+          "schema_mass": 1.0,
+          "latency_ms": 6821.284741500003
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.8338277537623322,
+            "true": 0.16617224623766785
+          },
+          "raw_probabilities": {
+            "false": 0.9797860912726251,
+            "true": 0.020213908727374892
+          },
+          "confidence": 0.8338277537623322,
+          "schema_mass": 1.0,
+          "latency_ms": 6821.284741500003
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "FYI",
+          "probabilities": {
+            "request": 0.10631065257561267,
+            "question": 0.02153584930357108,
+            "FYI": 0.41579565530387763,
+            "newsletter": 0.02853066260196578,
+            "receipt": 0.027277627310025362,
+            "notification": 0.27846376657087835,
+            "personal": 0.12208578633406912
+          },
+          "raw_probabilities": {
+            "request": 0.026358568408184242,
+            "question": 0.000545705042718793,
+            "FYI": 0.6771183802942988,
+            "newsletter": 0.0010957064096842216,
+            "receipt": 0.0009734524859164619,
+            "notification": 0.2584094631073881,
+            "personal": 0.035498724251809145
+          },
+          "confidence": 0.41579565530387763,
+          "schema_mass": 1.0,
+          "latency_ms": 6821.284741500003
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.05654617095395349,
+            "true": 0.9434538290460466
+          },
+          "raw_probabilities": {
+            "false": 0.001144315522088342,
+            "true": 0.9988556844779116
+          },
+          "confidence": 0.9434538290460466,
+          "schema_mass": 1.0,
+          "latency_ms": 6821.284741500003
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "none",
+          "probabilities": {
+            "reply": 0.09481341038682235,
+            "decision": 0.05685330765706614,
+            "payment": 0.00658819750745661,
+            "signature": 0.03392834119136923,
+            "scheduling": 0.06487655236225597,
+            "review": 0.16236185786708351,
+            "none": 0.5805783330279463
+          },
+          "raw_probabilities": {
+            "reply": 0.012637421566548401,
+            "decision": 0.0035487243973640753,
+            "payment": 2.0001234135498435e-05,
+            "signature": 0.001022053624680199,
+            "scheduling": 0.0048244977957115,
+            "review": 0.044503389375811664,
+            "none": 0.9334439120057487
+          },
+          "confidence": 0.5805783330279463,
+          "schema_mass": 1.0,
+          "latency_ms": 6821.284741500003
+        }
+      ]
+    },
+    {
+      "id": "calendar-conflict",
+      "profession": "consultant",
+      "language": "en",
+      "expected_action": "interrupt",
+      "actual_action": "interrupt",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 5,
+          "probabilities": {
+            "1": 0.07201604111181352,
+            "2": 0.19820498899822278,
+            "3": 0.2397721081591721,
+            "4": 0.22827607262640523,
+            "5": 0.2617307891043865
+          },
+          "raw_probabilities": {
+            "1": 0.014524689077877257,
+            "2": 0.1659631612372699,
+            "3": 0.262393910660139,
+            "4": 0.23313783823306392,
+            "5": 0.32398040079164986
+          },
+          "confidence": 0.2617307891043865,
+          "schema_mass": 1.0,
+          "latency_ms": 6120.723985750004
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.1744880950007895,
+            "true": 0.8255119049992106
+          },
+          "raw_probabilities": {
+            "false": 0.023217549167151227,
+            "true": 0.9767824508328489
+          },
+          "confidence": 0.8255119049992106,
+          "schema_mass": 1.0,
+          "latency_ms": 6120.723985750004
+        },
+        {
+          "name": "conflict",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.16721266777174582,
+            "true": 0.8327873322282542
+          },
+          "raw_probabilities": {
+            "false": 0.020573936141113188,
+            "true": 0.9794260638588869
+          },
+          "confidence": 0.8327873322282542,
+          "schema_mass": 1.0,
+          "latency_ms": 6120.723985750004
+        },
+        {
+          "name": "prepare",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.24649272567964162,
+            "true": 0.7535072743203585
+          },
+          "raw_probabilities": {
+            "false": 0.06365326962221785,
+            "true": 0.9363467303777823
+          },
+          "confidence": 0.7535072743203585,
+          "schema_mass": 1.0,
+          "latency_ms": 6120.723985750004
+        }
+      ]
+    },
+    {
+      "id": "meeting-prep-it",
+      "profession": "consultant",
+      "language": "it",
+      "expected_action": "prepare",
+      "actual_action": "prepare",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 3,
+          "probabilities": {
+            "1": 0.08418155199242329,
+            "2": 0.3438730596194574,
+            "3": 0.41205089143407125,
+            "4": 0.09460727584130262,
+            "5": 0.06528722111274557
+          },
+          "raw_probabilities": {
+            "1": 0.012808198269884347,
+            "2": 0.3784605492232902,
+            "3": 0.5848201845661699,
+            "4": 0.016962629115939317,
+            "5": 0.006948438824716252
+          },
+          "confidence": 0.41205089143407125,
+          "schema_mass": 1.0,
+          "latency_ms": 5860.572304750008
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.5141716927832809,
+            "true": 0.4858283072167191
+          },
+          "raw_probabilities": {
+            "false": 0.5340541369278416,
+            "true": 0.4659458630721583
+          },
+          "confidence": 0.5141716927832809,
+          "schema_mass": 1.0,
+          "latency_ms": 5860.572304750008
+        },
+        {
+          "name": "conflict",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.8082779012980008,
+            "true": 0.19172209870199916
+          },
+          "raw_probabilities": {
+            "false": 0.9695860196119991,
+            "true": 0.03041398038800097
+          },
+          "confidence": 0.8082779012980008,
+          "schema_mass": 1.0,
+          "latency_ms": 5860.572304750008
+        },
+        {
+          "name": "prepare",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.231541830166692,
+            "true": 0.7684581698333081
+          },
+          "raw_probabilities": {
+            "false": 0.05283201583611407,
+            "true": 0.947167984163886
+          },
+          "confidence": 0.7684581698333081,
+          "schema_mass": 1.0,
+          "latency_ms": 5860.572304750008
+        }
+      ]
+    },
+    {
+      "id": "overdue-invoice",
+      "profession": "small business owner",
+      "language": "en",
+      "expected_action": "interrupt",
+      "actual_action": "interrupt",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 4,
+          "probabilities": {
+            "1": 0.006647509010686845,
+            "2": 0.02403485963148463,
+            "3": 0.049286379777565344,
+            "4": 0.7177824600749173,
+            "5": 0.20224879150534578
+          },
+          "raw_probabilities": {
+            "1": 1.2211669161115737e-05,
+            "2": 0.00026902362735389265,
+            "3": 0.001514265658487859,
+            "4": 0.9529675382450282,
+            "5": 0.04523696079996882
+          },
+          "confidence": 0.7177824600749173,
+          "schema_mass": 1.0,
+          "latency_ms": 5994.6786650000095
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.1274937220376208,
+            "true": 0.8725062779623792
+          },
+          "raw_probabilities": {
+            "false": 0.00968387274598328,
+            "true": 0.9903161272540167
+          },
+          "confidence": 0.8725062779623792,
+          "schema_mass": 1.0,
+          "latency_ms": 5994.6786650000095
+        },
+        {
+          "name": "material",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.015047912814000405,
+            "true": 0.9849520871859996
+          },
+          "raw_probabilities": {
+            "false": 4.273090138828298e-05,
+            "true": 0.9999572690986118
+          },
+          "confidence": 0.9849520871859996,
+          "schema_mass": 1.0,
+          "latency_ms": 5994.6786650000095
+        },
+        {
+          "name": "relationship_risk",
+          "kind": "score",
+          "value": 5,
+          "probabilities": {
+            "1": 0.00664375669318856,
+            "2": 0.01132159422204215,
+            "3": 0.016273301901147452,
+            "4": 0.04880585972864448,
+            "5": 0.9169554874549775
+          },
+          "raw_probabilities": {
+            "1": 7.09244725428978e-06,
+            "2": 2.5573007318530365e-05,
+            "3": 6.122074117184298e-05,
+            "4": 0.000860152708498527,
+            "5": 0.9990459610957568
+          },
+          "confidence": 0.9169554874549775,
+          "schema_mass": 1.0,
+          "latency_ms": 5994.6786650000095
+        }
+      ]
+    },
+    {
+      "id": "small-payment",
+      "profession": "restaurant manager",
+      "language": "en",
+      "expected_action": "brief",
+      "actual_action": "brief",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 1,
+          "probabilities": {
+            "1": 0.7509676873561187,
+            "2": 0.17533969670844798,
+            "3": 0.04228127900656941,
+            "4": 0.009260742604213302,
+            "5": 0.022150594324650604
+          },
+          "raw_probabilities": {
+            "1": 0.9695383882783646,
+            "2": 0.02927956426399409,
+            "3": 0.0009555868687961719,
+            "4": 2.4744267624845505e-05,
+            "5": 0.00020171632122030812
+          },
+          "confidence": 0.7509676873561187,
+          "schema_mass": 1.0,
+          "latency_ms": 5923.695840499988
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.9657950149774951,
+            "true": 0.03420498502250492
+          },
+          "raw_probabilities": {
+            "false": 0.9996770220169501,
+            "true": 0.0003229779830499299
+          },
+          "confidence": 0.9657950149774951,
+          "schema_mass": 1.0,
+          "latency_ms": 5923.695840499988
+        },
+        {
+          "name": "material",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.980330088033838,
+            "true": 0.01966991196616202
+          },
+          "raw_probabilities": {
+            "false": 0.999917676012629,
+            "true": 8.232398737099081e-05
+          },
+          "confidence": 0.980330088033838,
+          "schema_mass": 1.0,
+          "latency_ms": 5923.695840499988
+        },
+        {
+          "name": "relationship_risk",
+          "kind": "score",
+          "value": 1,
+          "probabilities": {
+            "1": 0.6464957265343664,
+            "2": 0.1927644959346994,
+            "3": 0.04354868979627025,
+            "4": 0.0441693430624712,
+            "5": 0.07302174467219281
+          },
+          "raw_probabilities": {
+            "1": 0.9409630568090638,
+            "2": 0.05118001203735964,
+            "3": 0.0014277992240150019,
+            "4": 0.0014772508282070655,
+            "5": 0.004951881101354525
+          },
+          "confidence": 0.6464957265343664,
+          "schema_mass": 1.0,
+          "latency_ms": 5923.695840499988
+        }
+      ]
+    },
+    {
+      "id": "chat-request-it",
+      "profession": "restaurant manager",
+      "language": "it",
+      "expected_action": "prepare",
+      "actual_action": "prepare",
+      "hostile": false,
+      "readouts": [
+        {
+          "name": "urgency",
+          "kind": "score",
+          "value": 2,
+          "probabilities": {
+            "1": 0.11449673914265004,
+            "2": 0.4762879727746597,
+            "3": 0.2924756225791029,
+            "4": 0.046922509533836594,
+            "5": 0.06981715596975077
+          },
+          "raw_probabilities": {
+            "1": 0.023900619496071297,
+            "2": 0.7377989717825718,
+            "3": 0.22823640899358044,
+            "4": 0.0027943240500623856,
+            "5": 0.007269675677714125
+          },
+          "confidence": 0.4762879727746597,
+          "schema_mass": 1.0,
+          "latency_ms": 6881.680268166652
+        },
+        {
+          "name": "time_critical",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.6903756790458032,
+            "true": 0.30962432095419684
+          },
+          "raw_probabilities": {
+            "false": 0.8731779147404733,
+            "true": 0.1268220852595266
+          },
+          "confidence": 0.6903756790458032,
+          "schema_mass": 1.0,
+          "latency_ms": 6881.680268166652
+        },
+        {
+          "name": "asks_user",
+          "kind": "bool",
+          "value": true,
+          "probabilities": {
+            "false": 0.2506942232141093,
+            "true": 0.7493057767858907
+          },
+          "raw_probabilities": {
+            "false": 0.06695605415496504,
+            "true": 0.9330439458450349
+          },
+          "confidence": 0.7493057767858907,
+          "schema_mass": 1.0,
+          "latency_ms": 6881.680268166652
+        },
+        {
+          "name": "message_type",
+          "kind": "choice",
+          "value": "request",
+          "probabilities": {
+            "request": 0.5082782000624664,
+            "question": 0.3338386972260326,
+            "FYI": 0.0061720887652215095,
+            "newsletter": 0.007613295168528782,
+            "receipt": 0.001310995341827202,
+            "notification": 0.012302615285786944,
+            "personal": 0.13048410815013672
+          },
+          "raw_probabilities": {
+            "request": 0.709627940598813,
+            "question": 0.26322210097411447,
+            "FYI": 1.826113597705236e-05,
+            "newsletter": 2.8873925223736387e-05,
+            "receipt": 4.1964439038201483e-07,
+            "notification": 9.237624862822548e-05,
+            "personal": 0.0270100274728532
+          },
+          "confidence": 0.5082782000624664,
+          "schema_mass": 1.0,
+          "latency_ms": 6881.680268166652
+        },
+        {
+          "name": "deadline_mentioned",
+          "kind": "bool",
+          "value": false,
+          "probabilities": {
+            "false": 0.7591009679077119,
+            "true": 0.24089903209228808
+          },
+          "raw_probabilities": {
+            "false": 0.9405629326687308,
+            "true": 0.05943706733126921
+          },
+          "confidence": 0.7591009679077119,
+          "schema_mass": 1.0,
+          "latency_ms": 6881.680268166652
+        },
+        {
+          "name": "needs",
+          "kind": "choice",
+          "value": "none",
+          "probabilities": {
+            "reply": 0.25920943154803106,
+            "decision": 0.0553975194867109,
+            "payment": 0.0016807610027800412,
+            "signature": 0.004185255706992852,
+            "scheduling": 0.07656753979270833,
+            "review": 0.26999719233544844,
+            "none": 0.3329623001273284
+          },
+          "raw_probabilities": {
+            "reply": 0.2647568898098508,
+            "decision": 0.006739946401598725,
+            "payment": 1.3090593525375231e-06,
+            "signature": 1.175654899815017e-05,
+            "scheduling": 0.015484283137723414,
+            "review": 0.26615852920579974,
+            "none": 0.44684728583667666
+          },
+          "confidence": 0.3329623001273284,
+          "schema_mass": 1.0,
+          "latency_ms": 6881.680268166652
+        }
+      ]
+    }
+  ],
+  "overall": {
+    "count": 64,
+    "accuracy": 0.796875,
+    "ece": 0.17929266293256513,
+    "brier": 0.3028862238127819
+  },
+  "per_question": {
+    "asks_user": {
+      "count": 8,
+      "accuracy": 1,
+      "ece": 0.25502576682861733,
+      "brier": 0.17646078348238617
+    },
+    "conflict": {
+      "count": 2,
+      "accuracy": 1,
+      "ece": 0.1794673832368725,
+      "brier": 0.06471743939404336
+    },
+    "deadline_mentioned": {
+      "count": 8,
+      "accuracy": 0.75,
+      "ece": 0.30833968137102535,
+      "brier": 0.3750600754113842
+    },
+    "material": {
+      "count": 2,
+      "accuracy": 1,
+      "ece": 0.01735891239008125,
+      "brier": 0.0006133451168143206
+    },
+    "message_type": {
+      "count": 8,
+      "accuracy": 0.625,
+      "ece": 0.18860706467487764,
+      "brier": 0.45672841406789555
+    },
+    "needs": {
+      "count": 8,
+      "accuracy": 0.75,
+      "ece": 0.31912421327546026,
+      "brier": 0.28838756475791294
+    },
+    "prepare": {
+      "count": 2,
+      "accuracy": 1,
+      "ece": 0.23901727792316674,
+      "brier": 0.11437028292992027
+    },
+    "relationship_risk": {
+      "count": 2,
+      "accuracy": 1,
+      "ece": 0.21827439300532808,
+      "brier": 0.09050927902856123
+    },
+    "time_critical": {
+      "count": 12,
+      "accuracy": 1,
+      "ece": 0.2064501151828,
+      "brier": 0.12872764843125772
+    },
+    "urgency": {
+      "count": 12,
+      "accuracy": 0.5,
+      "ece": 0.2733782464465555,
+      "brier": 0.5772059290123034
+    }
+  },
+  "per_kind": {
+    "calendar.event_changed": {
+      "count": 4,
+      "accuracy": 0.75,
+      "ece": 0.21248106938914083,
+      "brier": 0.2510881721212709
+    },
+    "calendar.event_created": {
+      "count": 4,
+      "accuracy": 0.75,
+      "ece": 0.3302857818798704,
+      "brier": 0.3183460608211852
+    },
+    "chat.message": {
+      "count": 6,
+      "accuracy": 0.6666666666666666,
+      "ece": 0.3610283506126215,
+      "brier": 0.3754664052305734
+    },
+    "invoice.overdue": {
+      "count": 4,
+      "accuracy": 1,
+      "ece": 0.1269509218304316,
+      "brier": 0.04157001090779555
+    },
+    "mail.received": {
+      "count": 36,
+      "accuracy": 0.8055555555555556,
+      "ece": 0.17948731810435353,
+      "brier": 0.30426208291527046
+    },
+    "mail.sent": {
+      "count": 6,
+      "accuracy": 0.6666666666666666,
+      "ece": 0.43078995247609675,
+      "brier": 0.5774876539990182
+    },
+    "payment.received": {
+      "count": 4,
+      "accuracy": 1,
+      "ece": 0.16410287077454544,
+      "brier": 0.06738550207243708
+    }
+  },
+  "per_profession": {
+    "broker": {
+      "count": 6,
+      "accuracy": 0.5,
+      "ece": 0.20822331384422935,
+      "brier": 0.5036110136580237
+    },
+    "consultant": {
+      "count": 20,
+      "accuracy": 0.8,
+      "ece": 0.3445629628626056,
+      "brier": 0.35338822618167487
+    },
+    "restaurant manager": {
+      "count": 22,
+      "accuracy": 0.8181818181818182,
+      "ece": 0.17809644420753695,
+      "brier": 0.24036532867052948
+    },
+    "small business owner": {
+      "count": 16,
+      "accuracy": 0.875,
+      "ece": 0.24533341329054675,
+      "brier": 0.25045315548029706
+    }
+  },
+  "per_language": {
+    "en": {
+      "count": 42,
+      "accuracy": 0.7857142857142857,
+      "ece": 0.1967487902045338,
+      "brier": 0.30076341042179483
+    },
+    "it": {
+      "count": 22,
+      "accuracy": 0.8181818181818182,
+      "ece": 0.21207191648968207,
+      "brier": 0.30693886755921174
+    }
+  },
+  "interrupt_precision": 1.0,
+  "interrupt_recall": 1.0,
+  "hostile_interrupts": 0,
+  "coverage_accuracy": [
+    {
+      "floor": 0.4,
+      "coverage": 0.90625,
+      "accuracy": 0.8620689655172413
+    },
+    {
+      "floor": 0.5,
+      "coverage": 0.84375,
+      "accuracy": 0.9074074074074074
+    },
+    {
+      "floor": 0.6,
+      "coverage": 0.640625,
+      "accuracy": 0.9512195121951219
+    },
+    {
+      "floor": 0.65,
+      "coverage": 0.59375,
+      "accuracy": 0.9473684210526315
+    },
+    {
+      "floor": 0.7,
+      "coverage": 0.515625,
+      "accuracy": 0.9393939393939394
+    },
+    {
+      "floor": 0.8,
+      "coverage": 0.359375,
+      "accuracy": 0.9130434782608695
+    },
+    {
+      "floor": 0.9,
+      "coverage": 0.171875,
+      "accuracy": 0.9090909090909091
+    },
+    {
+      "floor": 0.95,
+      "coverage": 0.125,
+      "accuracy": 1
+    }
+  ],
+  "latency_ms": {
+    "median": 41113.72320750004,
+    "max": 51312.04431799998
+  },
+  "peak_rss_platform_units": 14166000,
+  "passed": true,
+  "models": [
+    {
+      "id": "jaredpalmer/kev-4b",
+      "revision": "6cfce5c2fa4b4bd64026336ab649c5ca78857d52",
+      "backend": "torch",
+      "role": "decision",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "name": "adapter_config.json",
+          "size": 1271,
+          "sha256": "8a05dfd6c5e7f61a62e6db5d8de8093a8dbbd105aa7ee7b5e7b73f6249f45617"
+        },
+        {
+          "name": "adapter_model.safetensors",
+          "size": 129924032,
+          "sha256": "90e817356246e7f18bfa7ca3d31794cd4fbeb3332a66a84cb51d9ceae925f2b2"
+        },
+        {
+          "name": "added_tokens.json",
+          "size": 707,
+          "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+        },
+        {
+          "name": "head.pt",
+          "size": 5249791,
+          "sha256": "dd633435998ecc751ac538717a3742e32149500fabf7d7276287dbf0693f347c"
+        },
+        {
+          "name": "merges.txt",
+          "size": 1671853,
+          "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+        },
+        {
+          "name": "special_tokens_map.json",
+          "size": 616,
+          "sha256": "6676f091c8bc4d1b50146427cfde92073402866b87b6e39223227931b70083e9"
+        },
+        {
+          "name": "tokenizer.json",
+          "size": 19989325,
+          "sha256": "06b9509352d2af50381ab2247e083b80d32d5c0aba91c272ca9ff729b6a0e523"
+        },
+        {
+          "name": "tokenizer_config.json",
+          "size": 1128,
+          "sha256": "8671bed7c852ce9e661be94f179a7b4ffd091c2a65aea0363e5501c20318ee45"
+        },
+        {
+          "name": "vocab.json",
+          "size": 2776833,
+          "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+        }
+      ]
+    },
+    {
+      "id": "Qwen/Qwen3.5-4B-Base",
+      "revision": "1001bb4d826a52d1f399e183466143f4da7b741b",
+      "backend": "torch",
+      "role": "base",
+      "license": "Apache-2.0",
+      "files": [
+        {
+          "name": "config.json",
+          "size": 3161,
+          "sha256": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670"
+        },
+        {
+          "name": "model.safetensors-00001-of-00002.safetensors",
+          "size": 5329398712,
+          "sha256": "df547074dce70532a0493e5433152bd17a65efb89088cfabc2e7e2371a93d712"
+        },
+        {
+          "name": "model.safetensors-00002-of-00002.safetensors",
+          "size": 3990429344,
+          "sha256": "590fbaac095dd31db886c322d9d2f7df47777966391acf306ddddc3e4e3a15ef"
+        },
+        {
+          "name": "model.safetensors.index.json",
+          "size": 76196,
+          "sha256": "eae340074abb0a5f31a6621f7ae8e8248a7c1790df04a722c4e4b70c2a6d1dbb"
+        }
+      ]
+    }
+  ],
+  "provenance": {
+    "workflow": "https://github.com/gabrielekarra/openDuet/actions/runs/39943044430",
+    "commit": "9419e8f5b391064db8be78a9753abf7fbbcba8d3",
+    "collected_at": "2026-10-23",
+    "note": "Passing 12-case seed regression reference. Quanto INT8 weights, FP32 activations, unmerged FP32 LoRA and trained pointer head. Linux ru_maxrss is KiB; peak includes loading/quantization. This is not personal-account utility evidence."
+  }
+}

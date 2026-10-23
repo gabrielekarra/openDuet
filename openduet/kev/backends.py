@@ -11,6 +11,10 @@ from .adapter import decisions_from_logits, record_for
 from .models import manifest, verify
 
 
+def torch_dtype(device="cpu"):
+    return os.environ.get("OPENDUET_KEV_DTYPE", "int8" if device == "cpu" else "float32")
+
+
 def load_int8_model(base, tokenizer, head_dim):
     """Stream weights into quantized layers instead of materializing two backbones.
 
@@ -56,13 +60,13 @@ class TorchBackend:
         checkpoint, base = verify(entries["decision"]), verify(entries["base"])
         metadata = torch.load(checkpoint / "head.pt", map_location="cpu", weights_only=True)
         self.tokenizer = AutoTokenizer.from_pretrained(checkpoint, local_files_only=True)
-        dtype_name = os.environ.get("OPENDUET_KEV_DTYPE", "float32")
+        dtype_name = torch_dtype(device)
         if dtype_name not in {"float32", "bfloat16", "float16", "int8"} or (
             dtype_name == "float16" and device == "cpu"
         ):
             raise ValueError("Use float32/bfloat16, int8 on CPU, or float16 on CUDA")
         if dtype_name == "int8" and device != "cpu":
-            raise ValueError("Dynamic INT8 is a CPU backend")
+            raise ValueError("INT8 weights are supported on CPU")
         self.model = (
             load_int8_model(base, self.tokenizer, metadata["head_dim"])
             if dtype_name == "int8"

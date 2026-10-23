@@ -1,5 +1,6 @@
 """Start a real private installation and exercise one-use local sign-in."""
 
+import json
 import os
 import socket
 import subprocess
@@ -51,6 +52,16 @@ def main():
                     assert product["readiness"]["model"]["tested"] is False
                     assert product["readiness"]["telegram"]["paired"] is False
                     assert "accessibility" in product["mac"]
+                    report = subprocess.run(
+                        [sys.executable, "-m", "openduet", "doctor", "--config", str(path)],
+                        capture_output=True,
+                        text=True,
+                        timeout=15,
+                        env={**os.environ, "OPENDUET_TOKEN": ""},
+                    )
+                    checked = json.loads(report.stdout)
+                    assert checked["service_running"] is True
+                    assert checked["mac"] == product["mac"]
             finally:
                 process.terminate()
                 process.wait(timeout=15)

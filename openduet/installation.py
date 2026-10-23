@@ -134,6 +134,12 @@ def service(config_path, action, *, launch_dir=None, run=subprocess.run):
                     },
                 )
             )
+    if action != "install" and (root / "org.openduet.kev.plist").exists() and not any(
+        label == "org.openduet.kev" for label, _, _ in targets
+    ):
+        # Existing services must remain stoppable/removable after an upgrade
+        # removes an optional backend or switches to a remote Kev server.
+        targets.append(("org.openduet.kev", [], {}))
     outcomes = {}
     for label, arguments, environment in targets:
         plist = root / (label + ".plist")
@@ -176,7 +182,12 @@ def service(config_path, action, *, launch_dir=None, run=subprocess.run):
                 "macOS did not start the login service. Run this command as the signed-in desktop user; inspect the private logs in "
                 + str(logs)
             )
-    return {"service": LABEL, "action": action, "running": all(outcomes.values()), "services": outcomes}
+    return {
+        "service": LABEL,
+        "action": action,
+        "running": action in {"install", "start", "status"} and all(outcomes.values()),
+        "services": outcomes,
+    }
 
 
 def open_console(config, *, browser=True):

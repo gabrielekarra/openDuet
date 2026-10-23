@@ -43,6 +43,7 @@ class MacHost:
             "enabled": self.enabled,
             "accessibility": False,
             "screen_recording": False,
+            "python_executable": sys.executable,
         }
         if sys.platform != "darwin":
             return result

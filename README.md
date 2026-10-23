@@ -96,12 +96,17 @@ Details: [architecture](docs/ARCHITECTURE.md), [proactivity](docs/PROACTIVITY.md
 
 ## Validation and scope
 
-This is a developer preview. Automated tests use disposable bot/provider/issuer
+The current release is **0.4.0rc1**, with a [Mac installer guide](docs/QUICKSTART-MAC.it.md)
+and downloadable wheel/source in [Releases](https://github.com/gabrielekarra/openDuet/releases).
+Automated tests use disposable bot/provider/issuer
 transports; real Chromium and LibreOffice checks exercise their actual runtimes.
 See the [issue acceptance tracker](docs/IMPLEMENTATION-TRACKER.md) for evidence
 and outstanding live-account/hardware/model checks. The fixture Kev benchmark
 checks adapters and policy; it does not measure model accuracy. A separate
-scheduled/manual workflow runs the pinned real model.
+scheduled/manual workflow runs the pinned real model. Actual local-model work,
+Mac login-service recovery and passing CPU/MLX attention benchmarks are recorded
+in [validation](docs/VALIDATION.md), including memory, latency and remaining
+live-device/account checks.
 
 OpenDuet is independent of Anthropic. The [Claude Duet research](docs/CLAUDE-DUET-RESEARCH.md)
 links public sources and records capability differences, including proprietary

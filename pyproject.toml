@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openduet"
-version = "0.3.0"
+version = "0.4.0rc1"
 description = "An open source, self-hosted proactive assistant for local and remote language models"
 requires-python = ">=3.12"
 license = "MIT"

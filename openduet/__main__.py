@@ -56,16 +56,21 @@ def _main():
         elif args.command == "service":
             print(json.dumps(installation.service(path, args.action), indent=2))
         else:
-            from .diagnostics import model_probe, readiness
+            from .diagnostics import readiness, running_readiness
             from .runtime import Runtime
             from .store import Store
 
             async def check():
+                running = await running_readiness(config, check_model=args.check_model)
+                if running is not None:
+                    return running
                 runtime = Runtime(config, Store(config.data_dir))
                 try:
-                    if args.check_model:
-                        await model_probe(runtime, config.default_provider)
-                    return readiness(runtime)
+                    return readiness(runtime) | {
+                        "ready": False,
+                        "service_running": False,
+                        "error": "Start OpenDuet before checking model and service permissions. Permission flags below describe only this diagnostic process.",
+                    }
                 finally:
                     await runtime.close()
 

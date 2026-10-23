@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import os
 import plistlib
@@ -59,6 +60,25 @@ def test_world_readable_or_symlink_token_is_refused(tmp_path, monkeypatch):
     config.token_file = str(link)
     with pytest.raises(ValueError):
         config.token()
+
+
+def test_service_cleanup_includes_installed_backend_after_extra_is_removed(tmp_path, monkeypatch):
+    path, _ = installed(tmp_path, monkeypatch)
+    monkeypatch.setattr(installation.sys, "platform", "darwin")
+    monkeypatch.setattr(importlib.util, "find_spec", lambda _: None)
+    launch = tmp_path / "agents"
+    launch.mkdir()
+    kev = launch / "org.openduet.kev.plist"
+    kev.write_bytes(plistlib.dumps({"Label": "org.openduet.kev"}))
+    calls = []
+
+    def run(args, **kwargs):
+        calls.append(args)
+        return SimpleNamespace(returncode=0)
+
+    result = installation.service(path, "uninstall", launch_dir=launch, run=run)
+    assert not kev.exists() and not result["running"]
+    assert any(command[-1].endswith("/org.openduet.kev") for command in calls)
 
 
 def test_local_browser_link_is_atomic_one_use_and_does_not_reveal_workspace_token(tmp_path, monkeypatch):

@@ -13,6 +13,44 @@ import httpx
 from .providers import trust_environment
 
 
+async def running_readiness(config, *, check_model=False, transport=None):
+    """Ask the actual service: launchd and the diagnostic terminal can have different TCC grants."""
+    from urllib.parse import quote
+
+    async with httpx.AsyncClient(
+        base_url=f"http://127.0.0.1:{config.port}",
+        headers={"Authorization": "Bearer " + config.token()},
+        trust_env=False,
+        timeout=50,
+        transport=transport,
+    ) as client:
+        try:
+            response = await client.get("/api/product")
+        except httpx.HTTPError:
+            return None
+        if response.status_code != 200:
+            return {
+                "ready": False,
+                "service_running": True,
+                "error": "Could not authenticate to the local service. Check the configuration and port.",
+            }
+        try:
+            if check_model:
+                probe = await client.post(
+                    "/api/models/" + quote(config.default_provider, safe="") + "/test", json={}
+                )
+                probe.raise_for_status()
+                response = await client.get("/api/product")
+            response.raise_for_status()
+            return response.json()["readiness"] | {"service_running": True}
+        except (httpx.HTTPError, ValueError, KeyError, TypeError):
+            return {
+                "ready": False,
+                "service_running": True,
+                "error": "The local service did not complete its readiness check. Check its private logs and model connection.",
+            }
+
+
 def fingerprint(config):
     return hashlib.sha256(json.dumps(asdict(config), sort_keys=True).encode()).hexdigest()
 
