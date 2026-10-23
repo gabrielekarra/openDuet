@@ -37,7 +37,7 @@ jobs:
         if: matrix.backend == 'torch'
         run: |
           uv run --no-sync python -c 'import os,platform,torch; print(platform.processor(),os.cpu_count(),torch.get_num_threads()); print("BF16 acceleration:",getattr(torch.cpu,"_is_avx512_bf16_supported",lambda:False)())'
-          uv run --no-sync --with pytest python -m pytest tests/runtime/test_cpu_quantization.py -q
+          uv run --no-sync --with pytest python -m pytest tests/runtime/test_cpu_quantization.py tests/runtime/test_kev_admission.py -q
       - name: Download verified weights
         run: uv run --no-sync python -c 'import asyncio,os; from openduet.kev.models import download; asyncio.run(download(os.environ["OPENDUET_KEV_BACKEND"]))'
       - name: Real model evaluation

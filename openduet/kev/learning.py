@@ -1,4 +1,4 @@
-"""Adaptive quiet: what Bobb learns from how the user answers it.
+"""Adaptive quiet: what OpenDuet learns from how the user answers it.
 
 Two things, both small, both explainable in one sentence, both reversible by
 the user. That is deliberately less than the personal specialist in
@@ -7,18 +7,18 @@ rather than day thirty, and because a learning rule the user cannot read is
 one they cannot trust.
 
 1. **A personal floor per event kind.** If the user keeps dismissing
-   suggestions of one kind, Bobb asks for more confidence before it
+   suggestions of one kind, OpenDuet asks for more confidence before it
    speaks about that kind again; if they keep accepting, a little less. The
    approval rate is shrunk toward one half by a Beta(2, 2) prior, nothing
    moves before `MIN_EVIDENCE` explicit answers, and the result is clamped,
-   so a bad week cannot silence Bobb entirely or make it chatty.
+   so a bad week cannot silence OpenDuet entirely or make it chatty.
 
 2. **Muted senders.** Three explicit dismissals of suggestions about one
    sender, with no approval in between, mute that sender. The user sees the
-   rule in Mind and can undo it; undoing it restarts the count from zero
+   rule in Proactivity and can undo it; undoing it restarts the count from zero
    rather than re-muting on the next message from the old evidence.
 
-A suggestion that timed out on screen is weak evidence — the user may simply
+A suggestion that timed out without a response is weak evidence — the user may simply
 not have looked — so it counts a quarter of an explicit dismissal and never
 contributes to a mute.
 """

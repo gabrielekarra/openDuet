@@ -41,9 +41,10 @@ def validate_formula(value):
     return value
 
 
-def workbook(path, spec):
+def workbook(path, spec, sources=None):
     from openpyxl import Workbook
     from openpyxl.chart import LineChart, Reference
+    from openpyxl.comments import Comment
     from openpyxl.workbook.properties import CalcProperties
 
     book = Workbook()
@@ -68,6 +69,14 @@ def workbook(path, spec):
                     if isinstance(target.value, str) and target.value.startswith(("=", "+", "@")):
                         target.value = "'" + target.value
                 target.number_format = str(value.get("number_format", "General"))[:100]
+                if ids := value.get("source_ids"):
+                    rows = [(sources or {})[ident] for ident in ids]
+                    target.comment = Comment(
+                        "\n".join(f"[^{row['id']}] {row['url'] or row['tool']}" for row in rows),
+                        "OpenDuet sources",
+                    )
+                    if rows[0]["url"]:
+                        target.hyperlink = rows[0]["url"]
             elif isinstance(value, str) and value.startswith(("=", "+", "@")):
                 target.value = "'" + value
             else:
@@ -401,13 +410,35 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
     # Exports carry the same sources as the task. The host supplies these, not the model.
     from .citations import Sources
 
-    sources = Sources(store).listing(task)
+    citations = Sources(store)
+    citations.require(task, content)
+    sources = citations.listing(task)
+    lookup = {row["id"]: row for row in sources}
     source_lines = [f"[^{s['id']}]: {s['tool']} {s['url']}" for s in sources]
     spec = (
         json.loads(content)
         if content.lstrip().startswith("{") and format in {"dashboard", "webapp", "xlsx", "pptx", "docx"}
         else None
     )
+
+    def check_source_fields(value):
+        if isinstance(value, dict):
+            if "source_ids" in value:
+                ids = value["source_ids"]
+                if (
+                    not isinstance(ids, list)
+                    or len(ids) > 20
+                    or any(not isinstance(ident, str) or ident not in lookup for ident in ids)
+                ):
+                    raise ValueError("Artifact source_ids must refer to this task's retrieved sources")
+            for child in value.values():
+                check_source_fields(child)
+        elif isinstance(value, list):
+            for child in value:
+                check_source_fields(child)
+
+    if spec is not None:
+        check_source_fields(spec)
     metadata = {}
     if source_lines:
         if spec is not None and format in {"dashboard", "docx"}:
@@ -462,7 +493,7 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
                 target.write_text(str(data))
             metadata = {"preview_kind": "sandboxed", "preview_id": ident}
         elif format == "xlsx":
-            workbook(path, spec)
+            workbook(path, spec, lookup)
             metadata = recalculate(path)
         elif format == "pptx":
             metadata = presentation(path, spec, directory, store)

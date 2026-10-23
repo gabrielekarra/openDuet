@@ -1,5 +1,24 @@
 # Changes
 
+## 0.4.0rc2
+
+- Resume safe interrupted tasks automatically after a process restart. Bind
+  prepared actions to the reviewed tool schema, policy, endpoint and account;
+  changed or legacy unbound actions need a fresh review.
+- Connect confidential OAuth clients from the console, including private client
+  secrets, offline consent options and serialized rotating refresh tokens.
+  Replacing/disconnecting an account invalidates pending authorization and
+  prevents stale discovery or callbacks from restoring it.
+- Normalize paginated Gmail, Calendar, Slack, Stripe and Graph results. Preserve
+  cursors on MCP errors and prevent in-flight polls from restoring disconnected
+  data. Stripe invoice values retain their original currency units.
+- Give retrieved list records individual source references, reject unknown or
+  foreign-task export citations, and link sourced XLSX cells with comments.
+- Record actual MLX Metal allocator peaks, exposed hardware and library versions.
+  Preserve precision-specific parity results and failed benchmark evidence.
+- Verify console OAuth through actual HTTP MCP discovery and task execution;
+  expand crash, token, pagination, source and model-admission checks.
+
 ## 0.4.0rc1
 
 - Private Mac installation with `setup`, automatic login services, restart

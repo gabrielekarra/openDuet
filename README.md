@@ -96,7 +96,7 @@ Details: [architecture](docs/ARCHITECTURE.md), [proactivity](docs/PROACTIVITY.md
 
 ## Validation and scope
 
-The current release is **0.4.0rc1**, with a [Mac installer guide](docs/QUICKSTART-MAC.it.md)
+The current release is **0.4.0rc2**, with a [Mac installer guide](docs/QUICKSTART-MAC.it.md)
 and a public versioned source archive. Verified wheels and checksums are available
 in the [distribution workflow](https://github.com/gabrielekarra/openDuet/actions/workflows/release.yml).
 Automated tests use disposable bot/provider/issuer

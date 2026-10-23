@@ -110,6 +110,8 @@ class EventStore:
 
 
 def unpack(result):
+    if result.get("isError"):
+        raise ValueError("The connector reported a polling error")
     if result.get("structuredContent"):
         data = result["structuredContent"]
     else:
@@ -123,7 +125,22 @@ def unpack(result):
                     continue
     if isinstance(data, list):
         return data, None
-    for key in ("events", "messages", "items", "data", "results", "invoices"):
+    if not isinstance(data, dict):
+        raise ValueError("Event tool must return an object or array")
+    for key in ("events", "messages", "items", "data", "results", "invoices", "value"):
         if isinstance(data.get(key), list):
-            return data[key], data.get("next_cursor", data.get("cursor"))
+            records = data[key]
+            cursor = data.get("next_cursor", data.get("nextPageToken", data.get("@odata.nextLink")))
+            if cursor is None and isinstance(data.get("response_metadata"), dict):
+                cursor = data["response_metadata"].get("next_cursor")
+            if cursor is None and data.get("has_more") and records:
+                cursor = records[-1].get("id")
+            # A returned current cursor is not necessarily the next page.
+            if cursor is None and "cursor" in data and "has_more" not in data:
+                cursor = data["cursor"]
+            if len(records) > 200:
+                raise ValueError("Event pages must contain at most 200 records; reduce the page size")
+            if not all(isinstance(record, dict) for record in records):
+                raise ValueError("Event records must be objects")
+            return records, cursor or None
     return [], None

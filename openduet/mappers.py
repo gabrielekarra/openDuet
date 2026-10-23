@@ -23,6 +23,11 @@ def timestamp(value, fallback=None):
 
 
 def normalize(raw, kind, connector):
+    # Stripe webhooks wrap a resource. Use its identity so subsequent updates
+    # edit the same record; preserve the envelope as provenance.
+    envelope = None
+    if isinstance(raw.get("data"), dict) and isinstance(raw["data"].get("object"), dict):
+        envelope, raw = raw, raw["data"]["object"]
     item = dict(raw)
     payload = dict(raw.get("payload", raw))
     if isinstance(raw.get("payload"), dict) and isinstance(raw["payload"].get("headers"), list):
@@ -50,6 +55,18 @@ def normalize(raw, kind, connector):
         payload["labels"] = labels
     if "threadId" in raw:
         payload.setdefault("thread_id", raw["threadId"])
+        item.setdefault("links", ["https://mail.google.com/mail/u/0/#all/" + str(raw["threadId"])])
+    if raw.get("object") == "invoice":
+        item.setdefault("subject", "Invoice " + str(raw.get("number") or raw.get("id", "")))
+        item.setdefault("sender", raw.get("customer_email", ""))
+        item.setdefault("text", raw.get("description") or "")
+        item.setdefault("links", [raw["hosted_invoice_url"]] if raw.get("hosted_invoice_url") else [])
+        payload["amount_unit"] = "minor currency units (provider value; no conversion applied)"
+        payload["currency"] = raw.get("currency", "")
+        if envelope:
+            payload["provider_event"] = {
+                key: envelope[key] for key in ("id", "type", "created") if key in envelope
+            }
     if kind.startswith("calendar."):
         for field in ("start", "end"):
             if field in raw:

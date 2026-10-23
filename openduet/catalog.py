@@ -5,21 +5,21 @@ SERVICES = [
         "gmail",
         "Gmail",
         "mail",
-        "https://developers.google.com/gmail/api/auth/scopes",
+        "https://developers.google.com/workspace/guides/configure-mcp-servers",
         ["gmail.readonly", "gmail.send"],
     ),
     (
         "google-calendar",
         "Google Calendar",
         "calendar",
-        "https://developers.google.com/calendar/api/auth",
+        "https://developers.google.com/workspace/guides/configure-mcp-servers",
         ["calendar.readonly", "calendar.events"],
     ),
     (
         "google-drive",
         "Google Drive",
         "files",
-        "https://developers.google.com/drive/api/guides/api-specific-auth",
+        "https://developers.google.com/workspace/guides/configure-mcp-servers",
         ["drive.readonly", "drive.file"],
     ),
     ("slack", "Slack", "chat", "https://docs.slack.dev/ai/slack-mcp-server", ["search:read", "chat:write"]),
@@ -36,7 +36,7 @@ SERVICES = [
         "hubspot",
         "HubSpot",
         "crm",
-        "https://developers.hubspot.com/mcp",
+        "https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-the-remote-hubspot-mcp-server",
         ["crm.objects.contacts.read", "crm.objects.deals.read"],
     ),
     (
@@ -92,10 +92,19 @@ SERVICES = [
     ),
 ]
 OFFICIAL_MCP = {
+    "gmail": "https://gmailmcp.googleapis.com/mcp/v1",
+    "google-calendar": "https://calendarmcp.googleapis.com/mcp/v1",
+    "google-drive": "https://drivemcp.googleapis.com/mcp/v1",
+    "hubspot": "https://mcp.hubspot.com",
     "stripe": "https://mcp.stripe.com",
     "notion": "https://mcp.notion.com/mcp",
     "slack": "https://mcp.slack.com/mcp",
     "canva": "https://mcp.canva.com/mcp",
+}
+GOOGLE_SCOPES = {
+    "gmail": "https://www.googleapis.com/auth/gmail.readonly",
+    "google-calendar": "https://www.googleapis.com/auth/calendar.readonly",
+    "google-drive": "https://www.googleapis.com/auth/drive.readonly",
 }
 
 
@@ -108,6 +117,9 @@ def directory():
             "setup_url": url,
             "scopes": scopes,
             "url": OFFICIAL_MCP.get(key, ""),
+            "oauth": {"scope": GOOGLE_SCOPES[key], "access_type": "offline", "prompt": "consent"}
+            if key in GOOGLE_SCOPES
+            else {},
             "limits": "Use an operator-reviewed MCP server; provider account, scopes and regional availability apply.",
             "read_actions": ["list", "search", "get", "read"],
             "approval_actions": ["send", "create", "update", "pay", "sign", "delete", "publish"],

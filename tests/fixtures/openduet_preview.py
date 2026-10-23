@@ -21,6 +21,8 @@ class PreviewProvider:
 
     async def complete(self, messages, tools):
         if messages[-1]["role"] == "tool":
+            if messages[-1].get("name", "").startswith("mcp_oauth_fixture_"):
+                return Reply({"role": "assistant", "content": "Connected service verified."}, 20, 10)
             return Reply(
                 {"role": "assistant", "content": "The preview draft is ready. Review it in Make."}, 30, 20
             )
@@ -32,7 +34,19 @@ class PreviewProvider:
                     "Model request waiting; the process-restart check will terminate this child"
                 )
                 await asyncio.Event().wait()
-        if "remember" in request.lower():
+        if "read the connected fixture" in request.lower():
+            name = next(
+                tool["function"]["name"]
+                for tool in tools
+                if tool["function"]["description"].startswith("oauth-fixture/echo:")
+            )
+            args = {"text": "Verified UI OAuth task"}
+        elif "morning brief at 08:15" in request.lower():
+            name, args = (
+                "set_attention_preference",
+                {"preferences": {"brief_time": "08:15", "poll_seconds": 900}},
+            )
+        elif "remember" in request.lower():
             name, args = "remember", {"content": "I prefer morning meetings. UI test fixture."}
         else:
             name, args = (

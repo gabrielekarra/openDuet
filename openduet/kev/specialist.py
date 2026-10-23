@@ -1,6 +1,6 @@
 """Tier 0: the personal specialist, trained on the user's own server.
 
-VISION rules 3 and 5: Bobb learns by watching, and the decision that
+VISION rules 3 and 5: OpenDuet learns by watching, and the decision that
 runs on every event should be tiny and fast. This module fits, from one
 user's own audit trail, a small model of one question — *would this person
 want to be told about this message?* — and lets it answer alone in the
@@ -13,13 +13,12 @@ tens of answers a week. A logistic model over hashed words, senders and
 circumstances is what fits well from tens to hundreds of examples, uses NumPy for bounded local training and decision scoring. The transformer stays
 the path for when there is enough data to feed it.
 
-Labels, in order of trust (docs/SPECIALIST.md):
+Labels, in order of trust (docs/kev/SPECIALIST.md):
 
 * **the user**: approve (1) and dismiss (0) on a card; a card that simply
   timed out is a weak 0;
 * **implicit**: you started a reply to that message within three days (1,
-  uncensored — it labels messages Bobb stayed quiet on too); you opened
-  it and left within a few seconds still unread (weak 0);
+  uncensored — it labels messages OpenDuet stayed quiet on too); the connected app reports it read or archived (weak 0);
 * **the teacher**: the resident model's own verdict, weakly, so the
   specialist starts from the general model's judgement and is pulled away
   from it by the person.

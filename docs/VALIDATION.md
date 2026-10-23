@@ -1,6 +1,6 @@
 # Validation record — 23 October 2026
 
-Verification for the OpenDuet **0.4.0rc1** release candidate. Disposable
+Verification for the OpenDuet **0.4.0rc2** release candidate. Disposable
 Telegram/provider/issuer transports contain no user accounts or private data.
 Real models, Chromium, LibreOffice, TLS mail transports and macOS launchd are
 identified separately below. The [CI workflow](../.github/workflows/ci.yml)
@@ -12,14 +12,18 @@ returns 403 for the connected integration; source-archive installation remains p
 
 | Check | Observed result |
 | --- | --- |
-| Runtime/policy/transport/integration tests | **154 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
+| Runtime/policy/transport/integration tests | **180 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
 | Separate specialist research package | **87 passed**, repeated in CI |
 | Ruff E4/E7/E9/F/I/UP | Passed |
+| Restart recovery | Actual SIGKILL → same database/session → automatic safe task completion → exactly one document to the original chat/topic |
+| OAuth/account boundaries | PKCE, single-use/expired state, confidential post/basic clients, rotating refresh serialization, stale callback/discovery/revocation and replacement credentials |
+| Event ingestion | Actual HTTP MCP provider-shaped Gmail/Calendar/Slack/Stripe pages; read state, calendar edits, dedup, terminal cursors, error preservation and disconnect race |
+| Source provenance | Per-record URLs/excerpts; unknown and foreign-task export citations refused; XLSX numeric cell link/comment validated |
 | Real local work LLM | Ollama 0.40.9 + Qwen3.5:4b, native and text tools; actual deliverable and exactly-once approved memory; [report](benchmarks/local-model-2026-10-23.json) |
 | Private installation | Fresh wheel installed outside the repository; server, private token file, one-use browser login and service readiness passed |
 | Actual macOS login service | GUI launchd install → terminate process → automatic restart → persistent session → uninstall; [report](benchmarks/mac-service-2026-10-23.json) |
 | Direct email | Actual loopback TLS IMAP + implicit-TLS/STARTTLS SMTP, certificate/hostname verification; read-only dedup, exact approved send and disconnect passed; missing STARTTLS refused before AUTH |
-| Chromium console | Pair bot → Telegram task → shared Make file → approval passed |
+| Chromium console | Pair bot → Telegram task → shared Make file → approval → confidential OAuth → real HTTP MCP discovery/tool task → mail/calendar → chat/UI brief preferences → disconnect |
 | Responsive UI | Seven views at 375/1280 px, light/dark; 28 screenshots in CI artifact |
 | Lighthouse 13.5.0 | Telegram **100**, Tasks **100**, no failing audits |
 | Real Chromium prototype | Runnable JS; opaque storage; parent credentials, workspace API and network inaccessible |
@@ -85,3 +89,5 @@ sandbox/webhook, password-manager accounts, Whisper audio quality and paid VPS
 provisioning require those environments. Their fixtures do not certify live
 acceptance. The [issue tracker](IMPLEMENTATION-TRACKER.md) records these boundaries.
 No full behavioral equivalence to Claude Duet or live payment acceptance is asserted.
+
+The latest real MLX hardware run exposed 7 GiB physical RAM and measured a 4.52 GiB Metal allocator peak. [Measurements and provenance](benchmarks/kev-mlx-acceptance-metal-2026-10-23.md) preserve the exact boundary; Metal bytes must not be added to process RSS.

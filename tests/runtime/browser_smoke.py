@@ -8,6 +8,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from playwright.async_api import async_playwright, expect
 
+from tests.fixtures.mcp_process import loopback_server
+
 
 async def main():
     output = Path(".runtime/screenshots/console")
@@ -74,6 +76,76 @@ async def main():
         await page.get_by_text("I prefer morning meetings. UI test fixture.", exact=True).wait_for(
             timeout=15000
         )
+        with loopback_server() as origin:
+            await page.locator("#navigation [data-view=connections]").click()
+            form = page.locator("#connector-form")
+            await form.locator("[name=name]").fill("oauth-fixture")
+            await form.locator("[name=url]").fill(origin + "/oauth/mcp")
+            await form.locator("button").click()
+            await page.locator('[data-oauth="oauth-fixture"]').click()
+            await page.locator("#oauth-form [name=client_id]").fill("fixture-confidential")
+            await page.locator("#oauth-form [name=client_secret]").fill("fixture-private-client")
+            await page.locator("#oauth-form button").first.click()
+            await page.wait_for_url("**/?view=connections")
+            await page.locator('[data-oauth="oauth-fixture"]').wait_for()
+            discovered = await (
+                await page.request.get("http://127.0.0.1:8766/api/connectors/oauth-fixture/tools")
+            ).json()
+            assert any(tool["name"] == "echo" for tool in discovered["tools"]), discovered
+            await update(4, "Read the connected fixture")
+            await page.locator("#navigation [data-view=chat]").click()
+            await page.get_by_text("Connected service verified.", exact=True).wait_for(timeout=15000)
+            await page.locator("#navigation [data-view=connections]").click()
+            for service, kind in [("gmail", "mail.received"), ("google-calendar", "calendar.event")]:
+                form = page.locator("#connector-form")
+                await form.locator("[name=name]").fill(service)
+                await form.locator("[name=url]").fill(origin + "/mcp")
+                await form.locator("summary").click()
+                await form.locator("[name=poll_tool]").fill("read_events")
+                await form.locator("[name=event_kind]").fill(kind)
+                await form.locator("[name=cursor_argument]").fill("cursor")
+                await form.locator("[name=poll_arguments]").fill('{"service":"' + service + '"}')
+                async with page.expect_response(
+                    lambda response: (
+                        response.url.endswith("/api/connectors") and response.request.method == "POST"
+                    )
+                ) as response:
+                    await form.locator("button").click()
+                assert (await response.value).ok
+                await page.locator('[data-oauth="' + service + '"]').wait_for()
+            await page.locator("#navigation [data-view=proactivity]").click()
+            await expect(page.locator("#attention-form [name=brief_time]")).to_have_value("07:30")
+            await update(5, "Send my morning brief at 08:15 and poll every 900 seconds")
+            await page.locator("#navigation [data-view=tasks]").click()
+            await page.get_by_role("button", name="Approve", exact=True).first.click()
+            await page.locator("#navigation [data-view=proactivity]").click()
+            await expect(page.locator("#attention-form [name=brief_time]")).to_have_value("08:15")
+            await expect(page.locator("[data-cadence=gmail] [name=seconds]")).to_have_value("900")
+            await page.locator("#attention-form [name=brief_time]").fill("08:30")
+            await page.locator("#attention-form").evaluate("form => form.dataset.acceptancePending = 'true'")
+            await page.locator("#attention-form button").first.click()
+            await expect(page.locator("[data-acceptance-pending]")).to_have_count(0)
+            await expect(page.locator("#attention-form [name=brief_time]")).to_have_value("08:30")
+            await page.locator("[data-cadence=gmail] [name=seconds]").fill("1200")
+            async with page.expect_response(
+                lambda response: (
+                    response.url.endswith("/api/proactivity") and response.request.method == "POST"
+                )
+            ) as response:
+                await page.locator("[data-cadence=gmail] button").click()
+            assert (await response.value).ok
+            preferences = (await (await page.request.get("http://127.0.0.1:8766/api/product")).json())[
+                "proactivity"
+            ]["preferences"]
+            assert preferences["brief_time"] == "08:30" and preferences["connector_cadence"]["gmail"] == 1200
+            visible_state = await (await page.request.get("http://127.0.0.1:8766/api/state")).text()
+            assert "fixture-private-client" not in visible_state
+            await page.locator("#navigation [data-view=connections]").click()
+            await page.locator('[data-disconnect="oauth-fixture"]').click()
+            await expect(page.locator('[data-oauth="oauth-fixture"]')).to_have_count(0)
+            for service in ["gmail", "google-calendar"]:
+                await page.locator('[data-disconnect="' + service + '"]').click()
+                await expect(page.locator('[data-oauth="' + service + '"]')).to_have_count(0)
         for width in [1280, 375]:
             await page.set_viewport_size({"width": width, "height": 960 if width == 1280 else 812})
             for theme in ["light", "dark"]:
@@ -109,7 +181,7 @@ async def main():
         assert not errors, errors
         await browser.close()
         print(
-            "Browser acceptance passed: bot pairing → shared task → Make file → approval; 28 responsive/dark screenshots"
+            "Browser acceptance passed: bot pairing → shared task → Make file → approval → HTTP OAuth connection → discovered tool task → disconnect; 28 responsive/dark screenshots"
         )
 
 

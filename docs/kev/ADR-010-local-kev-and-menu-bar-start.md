@@ -1,46 +1,42 @@
-# ADR-010: Local Kev decisions and menu bar start
+# ADR-010: Separate local Kev decisions
 
-Bobb starts as an accessory app with only a menu bar icon. There is no setup
-window or onboarding flag. Missing models prepare automatically in the
-background; the menu bar popover shows progress, errors and retry. macOS
-permission prompts belong to the first feature that needs them. This does
-not bypass the operating system's permission or code-signing requirements.
+Updated 23 October 2026 for OpenDuet. The old filename is retained for links;
+the native menu-bar application is retired. Its original implementation remains
+in the preserved `bobb-mac-final` Git tag.
 
-Qwen3.5 4B, MLX 4-bit, generates text with thinking disabled. Every typed
-decision in the shipping daemon uses Kev's trained pointer head over a
-merged 8-bit MLX Kev 4B backbone. This is a community conversion of the
-official checkpoint. Both checkpoints and every file hash are pinned in
-`bobbd/bobbd/model-manifest.json` and mirrored in Swift's `ModelManifest`.
-The combined download is 7,553,749,645 bytes. The official fp32 head and its
-temperature are preserved; `weights_only=True` and a pinned checksum guard
-head loading. Upstream source and Apache-2.0 license are vendored.
+The workspace and Kev run as separate processes. Kev makes bounded typed
+decisions about normalized connector events; a separately chosen local or API
+work model writes and executes tasks. No particular generation model is required.
+The Mac login service, Linux service and Compose setup share this contract.
 
-The inference process cannot use IP sockets. Python remains the daemon's
-host; Kev replaces the decision model, rather than the process language.
-Legacy letter-logit readout and the NumPy specialist remain for research
-and fake-engine tests; no shipping decision falls back to them. Adaptive
-floors and sender mutes remain deterministic policy after Kev.
+Model downloads begin only on an explicit user request in Proactivity. Missing,
+unverified or unavailable models leave the workspace in brief-only mode. No
+screen sensor or continuous screenshot capture feeds the attention loop.
+On-demand Mac application control and screenshots are separate approved tools.
 
-For the consumer memory budget, all assistants share the two models. Kev
-prefill chunks are 512 tokens, only one question branch runs at a time,
-and the MLX allocator cache is bounded to 256 MiB. State is limited to 4,096
-tokens and each branch to 8,192; overflow is rejected rather than silently
-discarding context. A 16 GB Mac runs one background assignment at a time.
-Bobb's confidence contract is the selected option's probability, including
-reversed-option averaging when requested. It does not use TypeSafe's
-relative-to-uniform confidence as though it were a probability.
+MLX uses the pinned merged 8-bit checkpoint on Apple silicon. Torch uses the
+official adapter and trained pointer head on the pinned Qwen backbone. CPU
+defaults to INT8 weights with FP32 activations, adapter and pointer head;
+BF16/FP32 are explicit alternatives. Revisions, file sizes and SHA-256 values
+are in `openduet/kev/manifest.json`. A changed head is rejected before loading,
+and Torch uses `weights_only=True`. Upstream source, license and provenance
+remain in `openduet/kev/vendor/`.
 
-An offline synthetic smoke check on the development M4 with 24 GB passed
-four EN/IT reply decisions, two Italian task routes and two Italian
-rewrites. With both models resident, MLX peaked at 7.13 GB with the short
-smoke prompts and 7.40 GB using the shipping rewrite prompts. An IPC probe
-also verified startup and a rewrite preserving the recipient, actor and
-deadline. These measure those workloads, not full app memory or general
-decision quality; a physical
-16 GB Mac and longer desktop workloads still need validation.
+Shared state prefixes are cached. Inference is serialized outside the web
+process. States exceeding 4,096 tokens and branches exceeding 8,192 are refused,
+with strict admission rather than silent truncation. The selected typed label's
+probability, including reversed-option averaging where requested, is the
+confidence contract; it is not confidence relative to a uniform distribution.
 
-Laya is a promising smaller decision-model candidate. Replacing Kev requires
-evaluation on the same Bobb workload, including Italian, negated requests,
-abstention, screens with many candidates and consequential action boundaries.
-Its public timing on a T4 and domain-tuned accuracy are not MacBook Air
-performance or evidence of better general desktop decisions.
+Current [real measurements](../benchmarks/README.md) include 14.48 GiB peak
+process RSS for CPU INT8, and 4.52 GiB peak Metal allocation for MLX on a runner
+exposing 7 GiB physical RAM. These use different machines and boundaries. Metal
+allocations overlap with process RSS on unified memory; adding them is invalid.
+Neither certifies an entire product budget on a 16 GiB personal Mac. Consumer
+GPU budgets remain unmeasured.
+
+The frozen seed corpus has 100% BF16/MLX typed-label agreement. Default
+INT8/MLX agreement is 98.44% on seed and 100% on the additional EN/IT corpus;
+one quantization flip remains visible. The original failed evaluation and each
+precision's passing report are retained. Replacing Kev requires fresh task and
+policy evaluation, including abstention and hostile content.

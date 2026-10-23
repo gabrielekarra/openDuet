@@ -48,7 +48,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.response(200, {"resource": self.origin + "/oauth/mcp", "authorization_servers": [self.origin], "scopes_supported": ["tools"]})
         if path == "/.well-known/oauth-authorization-server":
             return self.response(200, {"issuer": self.origin, "authorization_endpoint": self.origin + "/authorize", "token_endpoint": self.origin + "/token",
-                "registration_endpoint": self.origin + "/register", "code_challenge_methods_supported": ["S256"]})
+                "registration_endpoint": self.origin + "/register", "revocation_endpoint": self.origin + "/revoke", "token_endpoint_auth_methods_supported": ["none", "client_secret_post"], "code_challenge_methods_supported": ["S256"]})
         if path == "/authorize":
             query = dict(urllib.parse.parse_qsl(url.query)); authorizations["fixture-code"] = query
             callback = query["redirect_uri"] + "?" + urllib.parse.urlencode({"state": query["state"], "code": "fixture-code"})
@@ -61,8 +61,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         if size > 1_000_000: return self.response(413)
         body = self.rfile.read(size)
         if path == "/register": return self.response(201, {"client_id": "fixture-public", "token_endpoint_auth_method": "none"})
+        if path == "/revoke": return self.response(200, {})
         if path == "/token":
             form = dict(urllib.parse.parse_qsl(body.decode()))
+            if form.get("client_id") == "fixture-confidential" and form.get("client_secret") != "fixture-private-client": return self.response(401)
             if form.get("resource") != self.origin + "/oauth/mcp": return self.response(400)
             if form.get("grant_type") == "authorization_code":
                 query = authorizations.get(form.get("code"), {})
@@ -81,13 +83,27 @@ class Handler(http.server.BaseHTTPRequestHandler):
         method, args = value["method"], value.get("params", {})
         if method != "initialize" and path not in ("/legacy/messages",) and (self.headers.get("MCP-Session-Id") != "fixture-session" or self.headers.get("MCP-Protocol-Version") != "2025-11-25"):
             return self.response(400)
-        if method == "initialize": result = {"protocolVersion": "2025-11-25", "capabilities": {"tools": {"listChanged": True}}}
+        if method == "initialize": result = {"protocolVersion": "2025-11-25", "serverInfo": {"name": "Disposable service fixture", "version": "1"}, "capabilities": {"tools": {"listChanged": True}}}
         elif method == "tools/list":
-            if not args.get("cursor"): result = {"tools": [{"name": "echo", "description": "Fixture echo", "inputSchema": {"type": "object"}}], "nextCursor": "second"}
-            else: result = {"tools": [{"name": "delayed", "inputSchema": {"type": "object"}}]}
+            if not args.get("cursor"): result = {"tools": [{"name": "echo", "description": "Fixture echo", "inputSchema": {"type": "object"}, "annotations": {"readOnlyHint": True}}], "nextCursor": "second"}
+            else: result = {"tools": [{"name": "read_events", "inputSchema": {"type": "object", "properties": {"service": {"type": "string"}, "cursor": {"type": "string"}, "force_error": {"type": "boolean"}}, "required": ["service"], "additionalProperties": False}, "annotations": {"readOnlyHint": True}}, {"name": "delayed", "inputSchema": {"type": "object"}}]}
         elif method == "tools/call":
             if args["name"] == "delayed": threading.Event().wait(5)
             result = {"content": [{"type": "text", "text": "fixture-ok"}], "structuredContent": args.get("arguments", {})}
+            if args["name"] == "read_events":
+                arguments = args.get("arguments", {})
+                page = bool(arguments.get("cursor"))
+                service = arguments["service"]
+                if arguments.get("force_error"):
+                    result = {"isError": True, "content": [{"type": "text", "text": "Disposable provider error"}]}
+                else:
+                    records = {
+                        "gmail": {"messages": [{"id": "mail-1", "threadId": "thread-1", "labelIds": ["INBOX"] if page else ["INBOX", "UNREAD"], "payload": {"headers": [{"name": "Subject", "value": "Review proposal"}, {"name": "From", "value": "client@example.test"}], "mimeType": "text/plain", "body": {"data": "UGxlYXNlIHJldmlldyB0aGUgcHJvcG9zYWw"}}}], **({} if page else {"nextPageToken": "page-2"})},
+                        "google-calendar": {"items": [{"id": "meeting-1", "summary": "Planning", "start": {"dateTime": "2026-10-24T11:00:00Z" if page else "2026-10-24T10:00:00Z"}, "end": {"dateTime": "2026-10-24T12:00:00Z"}, "htmlLink": "https://calendar.google.com/event?eid=fixture"}], **({} if page else {"nextPageToken": "page-2"})},
+                        "slack": {"messages": [{"ts": "1792800000.000001" if page else "1792800000.000000", "text": "Please review", "user": "U1"}], "response_metadata": {"next_cursor": "" if page else "page-2"}},
+                        "stripe": {"data": [{"id": "in-2" if page else "in-1", "object": "invoice", "number": "TEST-2" if page else "TEST-1", "amount_due": 12345, "currency": "eur", "customer_email": "client@example.test", "hosted_invoice_url": "https://invoice.stripe.com/i/fixture"}], "has_more": not page},
+                    }
+                    result = {"content": [], "structuredContent": records[service]}
         else: return self.response(400)
         reply = {"jsonrpc": "2.0", "id": value["id"], "result": result}
         if path == "/legacy/messages":

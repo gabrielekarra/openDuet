@@ -1,5 +1,10 @@
 # System One — the category, and where Bobb sits in it
 
+> Historical design record retained for Kev provenance. Native application paths,
+> screen sensors and old performance figures below describe the predecessor.
+> Current connector-event behavior and measured limits are in [Portable Kev](README.md),
+> [event contracts](../EVENTS.md) and [current acceptance reports](../benchmarks/README.md).
+
 Source: Francesco Bonacci, *"Jev, System One models and the future of computer
 use"*, LinkedIn, September 2026. Read 2026-09-20. Supersedes part of ADR-004.
 

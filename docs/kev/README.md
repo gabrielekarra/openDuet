@@ -23,8 +23,11 @@ head**, loaded through Quanto. `OPENDUET_KEV_DTYPE=float32` or `bfloat16` explic
 select other Torch paths; CUDA defaults to float32. Backend/precision changes
 need evaluation. The Torch download is 9.48 GB, MLX 4.50 GB. CPU INT8 measured a
 **14.48 GiB peak RSS**, including loading, on the real runner: allow at least
-16 GiB available, plus memory for the work model, workspace and OS. MLX total
-Metal memory still needs target-device measurement.
+16 GiB available, plus memory for the work model, workspace and OS. A later real
+MLX run measured a **4.52 GiB Metal allocator peak** on a runner exposing **7 GiB
+physical RAM**; see the [hardware report](../benchmarks/kev-mlx-acceptance-metal-2026-10-23.md).
+Metal and process RSS overlap in unified memory. This does not certify a total
+product budget or the owner's 16 GiB Mac.
 
 The service batches questions, caches shared prefixes and serializes inference
 outside the workspace process. Health reports backend, actual precision/device,

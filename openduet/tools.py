@@ -60,6 +60,7 @@ class Tools:
         self.config, self.store, self.browser = config, store, browser
         self.catalog: dict[str, Tool] = {}
         self.errors = {}
+        self._refresh_revision = 0
         self.builtins()
 
     def product_builtins(self):
@@ -389,6 +390,7 @@ class Tools:
                 "Pptx JSON: {slides:[{title,layout,body,notes,needs_review}]}; docx: {executive_summary,sections}. "
                 "Dashboard JSON: {tiles:[{label,value,trend,source}],tables,charts,where_to_look}. "
                 "Webapp JSON: {files:{'index.html':'...'}} runs in a sandbox origin. Cite [^source_id]. "
+                "For sourced XLSX numbers set cell source_ids:[retrieved_id] for a source link and comment. "
                 "Set parent to revise a file; refresh={local_time,timezone,prompt} schedules dashboard updates.",
                 schema(
                     {
@@ -481,25 +483,37 @@ class Tools:
         )
 
     async def refresh(self):
-        self.catalog = {n: t for n, t in self.catalog.items() if not t.connector}
-        self.errors.clear()
-        for name, cfg in self.config.connectors.items():
+        self._refresh_revision += 1
+        revision = self._refresh_revision
+        catalog = {n: t for n, t in self.catalog.items() if not t.connector}
+        errors = {}
+        for name, cfg in list(self.config.connectors.items()):
             if not self.enabled(name):
                 continue
+            context = self.connection_context(name)
             try:
                 headers = await self.runtime.registry.auth_headers(cfg) if hasattr(self, "runtime") else {}
                 discovered = (
                     await connectors.discover(cfg, headers) if headers else await connectors.discover(cfg)
                 )
+                if (
+                    not self.enabled(name)
+                    or self.config.connectors.get(name) is not cfg
+                    or self.connection_context(name) != context
+                ):
+                    continue
                 for remote in discovered:
                     suffix = hashlib.sha256((name + ":" + remote.name).encode()).hexdigest()[:12]
                     tool_name = "mcp_" + re.sub(r"[^a-zA-Z0-9_]", "_", name)[:20] + "_" + suffix
 
-                    context = self.connection_context(name)
+                    snapshot = {}
 
-                    def guard(connector=name, expected=context):
+                    def guard(connector=name, expected=context, name=tool_name, snapshot=snapshot):
                         if not self.enabled(connector) or self.connection_context(connector) != expected:
                             raise StaleToolBinding("Connector access or account changed before execution")
+                        current = self.catalog.get(name)
+                        if current is None or self.fingerprint(current) != snapshot["fingerprint"]:
+                            raise StaleToolBinding("The discovered tool changed before execution")
 
                     async def invoke(arguments, task, connector=name, tool=remote.name, guard=guard):
                         guard()
@@ -521,7 +535,7 @@ class Tools:
                     risk = classify(remote.name, annotations, remote.name in cfg.safe_tools)
                     if risk == "forbidden":
                         continue
-                    self.catalog[tool_name] = Tool(
+                    catalog[tool_name] = Tool(
                         tool_name,
                         f"{name}/{remote.name}: {remote.description or ''}"[:3000],
                         remote.inputSchema,
@@ -532,12 +546,25 @@ class Tools:
                         risk,
                         context,
                     )
+                    snapshot["fingerprint"] = self.fingerprint(catalog[tool_name])
             except Exception:
                 # Nested SDK exceptions can contain auth headers. Keep diagnostics free of secrets.
-                self.errors[name] = "Discovery failed; check transport and credential bindings on the server"
+                if self.config.connectors.get(name) is cfg and self.enabled(name):
+                    errors[name] = "Discovery failed; check transport and credential bindings on the server"
 
         if hasattr(self, "runtime") and hasattr(self.runtime, "mail"):
-            self.catalog.update({tool.name: tool for tool in self.runtime.mail.tools()})
+            catalog.update({tool.name: tool for tool in self.runtime.mail.tools()})
+        if revision == self._refresh_revision:
+            self.catalog = {
+                name: tool
+                for name, tool in catalog.items()
+                if not tool.connector
+                or (
+                    self.enabled(tool.connector)
+                    and (not tool.context or tool.context == self.connection_context(tool.connector))
+                )
+            }
+            self.errors = errors
 
     def get(self, name, arguments):
         tool = self.catalog.get(name)

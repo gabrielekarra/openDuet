@@ -43,6 +43,17 @@ measurement of total MLX memory**. Actual Mac memory and sustained event backlog
 must be checked on the target device. CPU and MLX timing are not same-hardware
 speed comparisons.
 
+A [later real MLX hardware run](https://github.com/gabrielekarra/openDuet/actions/runs/39959394450)
+passed both frozen quality/regression corpora unchanged. The runner exposed
+7,516,192,768 bytes (**7 GiB**) physical RAM, arm64 and three CPUs. Its Metal
+allocator peaked at **4,858,071,604 bytes (4.52 GiB)**; active allocations after
+the additional corpus were 4,529,452,554 bytes and allocator cache zero. The
+additional-corpus median was **4.53 s**, maximum **6.75 s**. Reports preserve
+[seed measurements](kev-mlx-metal-2026-10-23.json) and
+[additional measurements](kev-mlx-acceptance-metal-2026-10-23.json), versions and
+source/artifact provenance. Do not add Metal bytes to process RSS as a unified
+memory total. A 16 GiB personal Mac and a consumer GPU remain unmeasured.
+
 ## What changed after the failed first run
 
 The [original 22 October BF16 report](kev-torch-bfloat16-2026-10-22.md) failed:

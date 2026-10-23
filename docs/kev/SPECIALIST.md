@@ -1,5 +1,10 @@
 # Minting a personal specialist
 
+> Historical design record retained for Kev provenance. Native application paths,
+> screen sensors and old performance figures below describe the predecessor.
+> Current connector-event behavior and measured limits are in [Portable Kev](README.md),
+> [event contracts](../EVENTS.md) and [current acceptance reports](../benchmarks/README.md).
+
 How Bobb learns one person's interruption preferences on their own machine.
 This is the part no one else has built, so it is the part most likely to be
 wrong. Written 2026-09-20.

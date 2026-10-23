@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import ssl
 from contextlib import asynccontextmanager
 from datetime import timedelta
 
@@ -10,6 +11,7 @@ from mcp.client.stdio import stdio_client
 from mcp.client.streamable_http import streamablehttp_client
 
 from .config import ConnectorConfig
+from .providers import trust_environment
 
 
 @asynccontextmanager
@@ -28,7 +30,14 @@ async def session(config: ConnectorConfig, private_headers=None):
         headers.update(private_headers or {})
 
         def client_factory(headers=None, timeout=None, auth=None):
-            return httpx.AsyncClient(headers=headers, timeout=timeout, auth=auth, follow_redirects=False)
+            return httpx.AsyncClient(
+                headers=headers,
+                timeout=timeout,
+                auth=auth,
+                follow_redirects=False,
+                trust_env=trust_environment(config.url),
+                verify=ssl.create_default_context(),
+            )
 
         context = streamablehttp_client(
             config.url, headers=headers, timeout=timedelta(seconds=45), httpx_client_factory=client_factory

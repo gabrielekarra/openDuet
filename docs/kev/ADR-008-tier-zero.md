@@ -1,5 +1,10 @@
 # ADR-008 — Tier 0: a small, checked personal model first
 
+> Historical design record retained for Kev provenance. Native application paths,
+> screen sensors and old performance figures below describe the predecessor.
+> Current connector-event behavior and measured limits are in [Portable Kev](README.md),
+> [event contracts](../EVENTS.md) and [current acceptance reports](../benchmarks/README.md).
+
 Status: accepted, 2026-09-28
 
 ## Context

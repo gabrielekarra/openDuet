@@ -947,11 +947,27 @@ class Attention:
             rows = self.store.rows("SELECT * FROM connector_cursors WHERE connector=?", (name,))
             if rows and rows[0]["next_poll"] > now:
                 continue
+            context = self.runtime.tools.connection_context(name)
+
+            def current(name=name, config=config, context=context):
+                return (
+                    self.runtime.config.connectors.get(name) is config
+                    and self.runtime.tools.enabled(name)
+                    and self.runtime.tools.connection_context(name) == context
+                )
+
+            def guard():
+                if not current():
+                    raise ValueError("Connection changed during polling")
+
             try:
                 headers = await self.runtime.registry.auth_headers(config)
+                guard()
                 arguments = dict(config.poll_arguments)
                 if rows and rows[0]["cursor"] and config.cursor_argument:
-                    arguments[config.cursor_argument] = json.loads(rows[0]["cursor"])
+                    saved_cursor = json.loads(rows[0]["cursor"])
+                    if saved_cursor is not None and saved_cursor != "":
+                        arguments[config.cursor_argument] = saved_cursor
                 # Discovery metadata must prove that a background poll has no external effect.
                 tool = next(
                     (
@@ -963,13 +979,23 @@ class Attention:
                 )
                 if not tool or tool.approval:
                     raise ValueError("Background poll tool must be declared read-only")
-                result = await connectors.call(config, config.poll_tool, arguments, headers)
-                if not self.runtime.tools.enabled(name):
-                    continue
+                fingerprint = self.runtime.tools.fingerprint(tool)
+
+                def before_call():
+                    guard()
+                    candidate = self.runtime.tools.get(tool.name, arguments)
+                    if self.runtime.tools.fingerprint(candidate) != fingerprint:
+                        raise ValueError("Polling tool changed")
+
+                before_call()
+                result = await connectors.call(
+                    config, config.poll_tool, arguments, headers, before_call=before_call
+                )
+                before_call()
                 records, cursor = unpack(result)
                 self.events.ingest(name, records, config.event_kind, cursor)
                 self.store.execute(
-                    "INSERT INTO connector_cursors VALUES(?,?,?,'') ON CONFLICT(connector) DO UPDATE SET next_poll=excluded.next_poll,error=''",
+                    "INSERT INTO connector_cursors VALUES(?,?,?,'') ON CONFLICT(connector) DO UPDATE SET cursor=excluded.cursor,next_poll=excluded.next_poll,error=''",
                     (
                         name,
                         json.dumps(cursor),
@@ -977,6 +1003,8 @@ class Attention:
                     ),
                 )
             except Exception:
+                if not current():
+                    continue
                 self.store.execute(
                     "INSERT INTO connector_cursors VALUES(?,NULL,?,?) ON CONFLICT(connector) DO UPDATE SET next_poll=excluded.next_poll,error=excluded.error",
                     (name, now + 60, "Polling unavailable; check read-only tool and account"),

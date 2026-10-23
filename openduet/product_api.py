@@ -208,7 +208,12 @@ def install(app, runtime, signature):
         body = await request.json()
         redirect_uri = str(request.base_url).rstrip("/") + "/api/connectors/oauth/callback"
         return await runtime.registry.begin_oauth(
-            name, redirect_uri, body.get("client_id", ""), body.get("scope", "")
+            name,
+            redirect_uri,
+            body.get("client_id", ""),
+            body.get("scope", ""),
+            body.get("client_secret", ""),
+            body.get("authorization_params", {}),
         )
 
     @app.get("/api/connectors/oauth/callback")
