@@ -19,7 +19,7 @@ services:
       prototypes: {condition: service_healthy}
       kev: {condition: service_healthy}
     healthcheck:
-      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8765/health')"]
+      test: ["CMD", "/app/.venv/bin/python", "-m", "openduet.healthcheck", "8765"]
       interval: 30s
       timeout: 15s
       retries: 3
@@ -43,7 +43,7 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     healthcheck:
-      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8769/health')"]
+      test: ["CMD", "/app/.venv/bin/python", "-m", "openduet.healthcheck", "8769"]
       interval: 15s
       timeout: 15s
       retries: 5
@@ -68,7 +68,7 @@ services:
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
     healthcheck:
-      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8767/health')"]
+      test: ["CMD", "/app/.venv/bin/python", "-m", "openduet.healthcheck", "8767"]
       interval: 15s
       timeout: 15s
       retries: 5
@@ -79,7 +79,7 @@ services:
       args: {OPENDUET_KEV: "true"}
     command: ["/app/.venv/bin/openduet-kev"]
     healthcheck:
-      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8768/health')"]
+      test: ["CMD", "/app/.venv/bin/python", "-m", "openduet.healthcheck", "8768"]
       interval: 15s
       timeout: 15s
       retries: 5

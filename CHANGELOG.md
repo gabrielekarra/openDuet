@@ -5,6 +5,8 @@
 - Allow 15 seconds for local container health probes on slow CPUs, and retry
   failed cloud service startup automatically. Actual emulated-VM measurement
   found the Python health probe taking 8.7 seconds despite a healthy HTTP 200.
+- Use a small loopback HTTP probe without outbound proxy discovery or the
+  heavier URL client import; require an HTTP 200 response from `/health`.
 
 ## 0.4.0rc4
 
