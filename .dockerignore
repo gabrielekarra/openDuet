@@ -4,8 +4,6 @@
 **/__pycache__
 **/.pytest_cache
 **/.build
-BobbApp
-bobbd
 specialist
 dist
 tools

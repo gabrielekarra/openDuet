@@ -4,7 +4,7 @@ Upstream: https://github.com/jaredpalmer/kev/tree/90512f1c517d977741f2104470a406
 License: Apache-2.0 (LICENSE in this directory).
 
 `model.py` and `mlx_model.py` are copied without changes from this revision.
-Bobb loads the merged 8-bit checkpoint described in its pinned model manifest,
+OpenDuet loads the merged 8-bit checkpoint described in its pinned model manifest,
 uses the architecture's actual hidden dimension for quantized embeddings, caps
 state inputs at 4,096 tokens (refusing overflow), prefills in 512-token chunks,
 and evaluates independent question branches one at a time. The pointer head,

@@ -9,8 +9,8 @@ Three kinds of examples come out of the same rows, per `SPECIALIST.md`:
   not have interrupted me"). This is a modeling assumption, not an
   observation, and is flagged again in the README.
 - **implicit** — `labels.label_event` run against the event and everything
-  that happened afterward in the same table (every event `bobbd` ever
-  scores gets a row here, per `bobbd/bobbd/server.py`'s `_on_event`, so
+  that happened afterward in the same table (every event the native daemon ever
+  scores gets a row here, per the archived server's `_on_event`, so
   "subsequent events" is just later rows ordered by `ts`).
 - **distillation** — the teacher's stored per-option distribution for the
   `interrupt` question, read off the row's `readouts` JSON.
@@ -18,23 +18,23 @@ Three kinds of examples come out of the same rows, per `SPECIALIST.md`:
 A row that has both an explicit response and a fired implicit rule is
 counted once, as explicit — a direct human action outranks an inferred one.
 
-`user_state` is not stored in `decisions` (`bobbd/bobbd/intents.py`
+`user_state` is not stored in `decisions` (the archived intent adapter
 folds it into context text and never asks the model to predict it), so
 `estimate_user_states` recomputes it by replaying the same rule
-`bobbd/bobbd/attention.py`'s `UserActivityTracker` uses, hand-kept in
+the archived attention engine's `UserActivityTracker` uses, hand-kept in
 sync rather than imported, per the constraint that this package carries no
-runtime dependency on `bobbd`.
+runtime dependency on the native daemon.
 
-**Distillation data gap.** `bobbd/bobbd/attention.py`'s
+**Distillation data gap.** the archived attention engine's
 `_readout_frame` only persists the chosen answer's confidence (`p`), not
 `schema.Decision.probabilities`, the full calibrated distribution `readouts`
 would need to carry for proper KL distillation. `_teacher_distribution`
-prefers a `probabilities` field if a future `bobbd` schema adds one, and
+prefers a `probabilities` field if a future native schema adds one, and
 otherwise falls back to a peaked pseudo-distribution — `p` on the chosen
 action, the remainder split uniformly over the other three. That fallback is
 a materially worse distillation target than the true teacher distribution
-and is not a fix; the real fix is a `bobbd` schema change this package is
-not permitted to make (`bobbd/` is off limits here).
+and is not a fix. New portable integration needs an explicit adapter and new
+validation; the archived native runtime is outside this research package.
 """
 
 from __future__ import annotations

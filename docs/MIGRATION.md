@@ -1,8 +1,8 @@
 # Portable runtime migration
 
-The `bobb-mac-final` tag preserves the complete last native application and its
+The [native source archive](https://github.com/gabrielekarra/openDuet/tree/15374dee3a26a80e02b494411bf43fe87c8931d3) preserves the complete last native application and its
 history before removal. The current branch uses Python, Telegram and the web
-console. SwiftUI/BobbCore, the MLX generation daemon, continuous screen sensors,
+console. The SwiftUI application, the MLX generation daemon, continuous screen sensors,
 native account readers, licensing, TTS, native packaging and VNC are retired.
 The optional on-demand Python Mac bridge is retained.
 

@@ -112,7 +112,7 @@ live-device/account checks.
 OpenDuet is independent of Anthropic. The [Claude Duet research](docs/CLAUDE-DUET-RESEARCH.md)
 links public sources and records capability differences, including proprietary
 Link/Shop Pay services that require separate provider agreements. The native
-predecessor is preserved under `bobb-mac-final`; current setup and
+predecessor is preserved in the [native source archive](https://github.com/gabrielekarra/openDuet/tree/15374dee3a26a80e02b494411bf43fe87c8931d3); current setup and
 [migration](docs/MIGRATION.md) use the portable runtime.
 
 MIT licensed. [Third-party notices](THIRD_PARTY_NOTICES.md).

@@ -33,7 +33,7 @@ returns 403 for the connected integration; source-archive installation remains p
 | Real LibreOffice | 12-month formula forecast recalculates; PPTX renders into actual PNG previews |
 | Real Kev seed | Torch INT8 **79.7%**, MLX **78.1%** typed accuracy; both quality gates passed |
 | Real Kev additional corpus | 24 EN/IT cases, 128 answers: **89.8%** both backends; precision 100%, recall 50%, no hostile interruptions |
-| Actual Torch/MLX parity | Seed **98.44%**, additional **100%** label agreement; maximum probability deltas **0.02229 / 0.03192**; passed |
+| Actual Torch/MLX parity | Qualified BF16/MLX seed reference **64/64**, delta **0.01935**; default INT8 seed **98.44%**, additional **100%**, deltas **0.02229 / 0.03192**; precision-specific results |
 | Earlier complete Compose startup | Workspace, isolated computer, egress, prototype origin and CPU Kev service healthy; internal access passed |
 | Python distribution | 0.4.0rc1 source distribution and wheel built; clean wheel installation and real foreground startup passed |
 
@@ -95,3 +95,32 @@ No full behavioral equivalence to Claude Duet or live payment acceptance is asse
 The latest real MLX hardware run exposed 7 GiB physical RAM and measured a 4.52 GiB Metal allocator peak. [Measurements and provenance](benchmarks/kev-mlx-acceptance-metal-2026-10-23.md) preserve the exact boundary; Metal bytes must not be added to process RSS.
 
 The component update followed the existing app design and was inspected in real Chromium at 1440, 768 and 390 px. The optional design skill reference/scripts were not available through its package, so no skill-inspector score is claimed. Browser assertions, screenshots and interaction/download checks are the verification evidence.
+
+## 24 October acceptance reconciliation
+
+The qualified BF16/MLX fixed-record reference was rechecked directly from the
+published backend JSON reports: matching corpus/questions, 12 cases, 64 answers,
+zero label flips and maximum probability delta 0.019351358453341794. This was a
+comparison of existing real inference outputs, not a new inference run. The
+original successful [workflow](https://github.com/gabrielekarra/openDuet/actions/runs/39933339239)
+and both source reports remain unchanged. INT8's seed flip and unmeasured target
+hardware remain explicit in [Portable Kev](kev/README.md).
+
+The naming cleanup preserves the original native corpus in an immutable source
+archive with its [SHA-256 and download command](kev/historical-benchmarks/ARCHIVE.md).
+All tracked UTF-8 source/config/document files were scanned, including SVG and
+web manifest: the old product name is retained only in CHANGELOG history.
+The upstream inference sources and all portable frozen reference JSON are unchanged.
+The research action description was renamed; research checkpoints need retraining
+before comparison because option bytes changed. No trained checkpoint is bundled.
+
+The [17-service guide](LAUNCH-CONNECTORS.md) distinguishes hosted endpoints,
+local bridges, OAuth requirements, scopes, account entitlements and unsupported
+workflows. It explicitly keeps Gusto disabled pending manual-all-calls/isolation
+support; the guide does not certify live provider access.
+
+The development terminal became unavailable before the pending connector and
+QEMU results could be collected. Those local changes and the VM retry are not
+counted as published or passing acceptance. Full repository checks for the
+published cleanup run through the push-triggered CI workflow. See the
+[remaining acceptance steps](PENDING-ACCEPTANCE.md) for specific prerequisites.

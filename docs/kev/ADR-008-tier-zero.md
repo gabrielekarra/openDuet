@@ -3,7 +3,9 @@
 > Historical design record retained for Kev provenance. Native application paths,
 > screen sensors and old performance figures below describe the predecessor.
 > Current connector-event behavior and measured limits are in [Portable Kev](README.md),
-> [event contracts](../EVENTS.md) and [current acceptance reports](../benchmarks/README.md).
+> [event contracts](../../openduet/events.py) and [current acceptance reports](../benchmarks/README.md).
+
+Original wording and module layout: [native source archive](https://github.com/gabrielekarra/openDuet/tree/15374dee3a26a80e02b494411bf43fe87c8931d3).
 
 Status: accepted, 2026-09-28
 
@@ -20,7 +22,7 @@ a person produces tens of answers a week.
 Ship tier 0 now as a weighted logistic regression over stable hashed
 features — sender and domain, automated-sender markers, subject and body
 words, thread length, time — trained with AdaGrad in NumPy
-(`bobbd/specialist.py`). It learns one question for mail and chat
+(the archived native `specialist.py`). It learns one question for mail and chat
 messages: would this person want to hear about this?
 
 - **Labels by trust.** The user's approve and dismiss; implicit ones (a

@@ -35,6 +35,35 @@ revision, download progress and latency. Missing/invalid models leave the
 workspace responsive in brief-only mode. Production never silently substitutes
 the synthetic fixture backend.
 
+## Qualified exact-label reference
+
+The real [BF16/MLX paired run](../benchmarks/kev-bfloat16-mlx-parity-2026-10-23.json)
+used **12 identical seed records / 64 typed answers**: **64/64 identical labels**,
+maximum calibrated probability delta **0.019351358453341794**. Both raw backend
+reports have identical corpus and question SHA-256 fingerprints and passed their
+quality gate. This is the exact-label reference for the server-port acceptance
+criterion; it is not a claim about every precision or input.
+
+The default CPU INT8 path still differs on **1/64** seed answers (98.44%
+agreement), while the additional frozen corpus agrees on all 128 answers.
+INT8 remains an approximate, separately evaluated profile. No model, expected
+label, question or admission threshold was changed to resolve that difference.
+Identical typed labels also do not guarantee identical policy actions at every
+confidence threshold. The owner's 16 GiB Mac and a consumer GPU remain unmeasured.
+
+To repeat the reference with the same source/cases, run the first command on a
+Torch host and copy its JSON report to the Apple-silicon host for the second.
+Install the matching backend extra and explicitly download/verify its weights.
+
+```sh
+OPENDUET_KEV_DTYPE=bfloat16 uv run --no-sync openduet-kev-eval --backend torch --download --output /tmp/kev-bf16-reference
+uv run --no-sync openduet-kev-eval --backend mlx --download --compare /tmp/kev-bf16-reference.json --output /tmp/kev-mlx-reference
+```
+
+The comparator's usual ≥95% agreement gate is unchanged. Inspect the reported
+`parity.label_agreement` when checking the stricter 100% reference observation;
+a merely passing parity gate is not an exact-label result.
+
 ## Real acceptance and regression
 
 The [published reports](../benchmarks/README.md) record passing Torch INT8 and

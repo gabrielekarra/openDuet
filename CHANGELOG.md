@@ -1,5 +1,15 @@
 # Changes
 
+## Unreleased
+
+- Finish current-tree naming cleanup while preserving the exact native source
+  and original frozen benchmark corpus in immutable archives. The historical
+  `bobb-mac-final` tag remains available; archived inputs were not relabelled.
+- Document setup, account requirements and limits for all 17 launch-directory
+  services. Live-account certification remains separate from fixture acceptance.
+- Clarify the qualified BF16/MLX fixed-record parity result and retain the
+  default INT8 difference and unmeasured hardware limits.
+
 ## 0.4.0rc3
 
 - Read uploaded files with exact page, paragraph, slide and sheet-cell locators,

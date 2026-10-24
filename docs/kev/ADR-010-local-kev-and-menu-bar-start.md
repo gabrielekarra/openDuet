@@ -2,7 +2,7 @@
 
 Updated 23 October 2026 for OpenDuet. The old filename is retained for links;
 the native menu-bar application is retired. Its original implementation remains
-in the preserved `bobb-mac-final` Git tag.
+in the immutable [native source archive](https://github.com/gabrielekarra/openDuet/tree/15374dee3a26a80e02b494411bf43fe87c8931d3).
 
 The workspace and Kev run as separate processes. Kev makes bounded typed
 decisions about normalized connector events; a separately chosen local or API

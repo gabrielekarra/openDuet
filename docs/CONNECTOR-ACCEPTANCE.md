@@ -7,6 +7,10 @@ returned record path/fields. It never runs the work LLM or retries a read after 
 transport failure. Discovery metadata and operator configuration remain the
 trust boundary for a server's claimed read-only behavior.
 
+See the [17-service setup guide](LAUNCH-CONNECTORS.md) for endpoints, OAuth/local
+bridge requirements and known account limits. Gusto remains disabled pending
+dedicated-environment/manual-all-calls enforcement.
+
 First inspect the actual discovered tools with the authenticated endpoint
 `GET /api/connectors/<id>/tools`. Provider tool names and output envelopes vary;
 use those names and that provider's documentation. `record_path` is relative to

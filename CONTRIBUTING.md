@@ -7,7 +7,7 @@ never commit accounts, keys, model weights, private documents or runtime state.
 Read the [architecture](docs/ARCHITECTURE.md), [security boundaries](docs/SECURITY.md)
 and [issue acceptance tracker](docs/IMPLEMENTATION-TRACKER.md). The portable
 runtime is in `openduet/`; the personal-specialist research package is separate.
-Native predecessor history is under `bobb-mac-final`.
+Native predecessor history is in the [native source archive](https://github.com/gabrielekarra/openDuet/tree/15374dee3a26a80e02b494411bf43fe87c8931d3).
 
 ```sh
 uv sync --locked --extra dev --extra browser
