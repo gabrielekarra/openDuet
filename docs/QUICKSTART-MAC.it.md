@@ -1,13 +1,13 @@
 # OpenDuet sul tuo Mac
 
-Questa guida installa la release candidate **0.4.0rc2**. Il Mac deve restare
+Questa guida installa la release candidate **0.4.0rc3**. Il Mac deve restare
 acceso, sveglio e con la sessione utente aperta per ricevere richieste da remoto.
 
 Installa [uv](https://docs.astral.sh/uv/getting-started/installation/). Su un Mac
 con chip Apple Silicon esegui:
 
 ```sh
-uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/archive/refs/tags/v0.4.0rc2.tar.gz'
+uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrielekarra/openDuet/archive/refs/tags/v0.4.0rc3.tar.gz'
 openduet setup --background --open
 ```
 

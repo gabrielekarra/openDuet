@@ -25,6 +25,7 @@ class Message(BaseModel):
     content: str = Field(min_length=1, max_length=32000)
     channel: str = "main"
     provider: str = ""
+    attachments: list[str] = Field(default_factory=list, max_length=4)
 
 
 class Decision(BaseModel):
@@ -321,7 +322,11 @@ def create_app(config: Config, *, start_worker=True, provider_factory=None):
     @app.post("/api/messages", status_code=202)
     async def send(body: Message):
         channel_exists(body.channel)
-        task = store.new_task(body.channel, body.content, provider_name(body.provider))
+        from .file_sources import attach
+
+        with store.db() as db:
+            task = store.new_task(body.channel, body.content, provider_name(body.provider), db)
+            attach(store, task, body.attachments, db)
         owner = runtime.telegram.settings()
         if owner.get("paired"):
             store.execute(

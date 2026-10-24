@@ -1,6 +1,6 @@
-# Validation record — 23 October 2026
+# Validation record — 24 October 2026
 
-Verification for the OpenDuet **0.4.0rc2** release candidate. Disposable
+Verification for the OpenDuet **0.4.0rc3** release candidate. Disposable
 Telegram/provider/issuer transports contain no user accounts or private data.
 Real models, Chromium, LibreOffice, TLS mail transports and macOS launchd are
 identified separately below. The [CI workflow](../.github/workflows/ci.yml)
@@ -12,13 +12,15 @@ returns 403 for the connected integration; source-archive installation remains p
 
 | Check | Observed result |
 | --- | --- |
-| Runtime/policy/transport/integration tests | **180 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
+| Runtime/policy/transport/integration tests | **190 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
 | Separate specialist research package | **87 passed**, repeated in CI |
 | Ruff E4/E7/E9/F/I/UP | Passed |
 | Restart recovery | Actual SIGKILL → same database/session → automatic safe task completion → exactly one document to the original chat/topic |
 | OAuth/account boundaries | PKCE, single-use/expired state, confidential post/basic clients, rotating refresh serialization, stale callback/discovery/revocation and replacement credentials |
 | Event ingestion | Actual HTTP MCP provider-shaped Gmail/Calendar/Slack/Stripe pages; read state, calendar edits, dedup, terminal cursors, error preservation and disconnect race |
-| Source provenance | Per-record URLs/excerpts; unknown and foreign-task export citations refused; XLSX numeric cell link/comment validated |
+| Source provenance | Exact XLSX/CSV/DOCX/PPTX/PDF locators, SHA snapshots, task boundaries, repeated revisions, unknown-ID refusal; actual Office/PDF internal links and excerpts |
+| File UI acceptance | Chromium uploads XLSX → read_attachment → cited DOCX → exact cell excerpt → actual document download; 1440/768/390 px screenshots |
+| Connector contract runner | Explicit opt-in; actual HTTP MCP read-only contract; field failure, disconnected/consequential refusal and private report checks |
 | Real local work LLM | Ollama 0.40.9 + Qwen3.5:4b, native and text tools; actual deliverable and exactly-once approved memory; [report](benchmarks/local-model-2026-10-23.json) |
 | Private installation | Fresh wheel installed outside the repository; server, private token file, one-use browser login and service readiness passed |
 | Actual macOS login service | GUI launchd install → terminate process → automatic restart → persistent session → uninstall; [report](benchmarks/mac-service-2026-10-23.json) |
@@ -91,3 +93,5 @@ acceptance. The [issue tracker](IMPLEMENTATION-TRACKER.md) records these boundar
 No full behavioral equivalence to Claude Duet or live payment acceptance is asserted.
 
 The latest real MLX hardware run exposed 7 GiB physical RAM and measured a 4.52 GiB Metal allocator peak. [Measurements and provenance](benchmarks/kev-mlx-acceptance-metal-2026-10-23.md) preserve the exact boundary; Metal bytes must not be added to process RSS.
+
+The component update followed the existing app design and was inspected in real Chromium at 1440, 768 and 390 px. The optional design skill reference/scripts were not available through its package, so no skill-inspector score is claimed. Browser assertions, screenshots and interaction/download checks are the verification evidence.

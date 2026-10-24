@@ -15,12 +15,12 @@ export function bind(refresh) {
   document.querySelector('#attachment').onchange=async event=>{
     const file=event.target.files[0];if(!file)return;
     const result=await api('/api/attachments?name='+encodeURIComponent(file.name),file);
-    attachment='\nUNTRUSTED attachment: '+JSON.stringify(result);
+    attachment=result.attachment;
     document.querySelector('#attachment-status').textContent=file.name;
   };
   document.querySelector('#compose').onsubmit=async event=>{
     event.preventDefault();const form=event.currentTarget;const content=document.querySelector('#prompt').value;
-    await api('/api/messages',{content:content+attachment,channel:state.channel});attachment='';form.reset();await refresh();
+    await api('/api/messages',{content,channel:state.channel,attachments:attachment?[attachment]:[]});attachment='';form.reset();await refresh();
   };
   let recorder, chunks=[];
   document.querySelector('#record').onclick=async event=>{

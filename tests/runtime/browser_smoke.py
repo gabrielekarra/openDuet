@@ -1,11 +1,14 @@
 """Real Chromium acceptance against disposable bot/model transports."""
 
 import asyncio
+import io
 import os
 import time
+import zipfile
 from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from openpyxl import Workbook
 from playwright.async_api import async_playwright, expect
 
 from tests.fixtures.mcp_process import loopback_server
@@ -146,6 +149,39 @@ async def main():
             for service in ["gmail", "google-calendar"]:
                 await page.locator('[data-disconnect="' + service + '"]').click()
                 await expect(page.locator('[data-oauth="' + service + '"]')).to_have_count(0)
+        buffer, book = io.BytesIO(), Workbook()
+        book.active.title = "Revenue"
+        book.active["A1"] = 100
+        book.save(buffer)
+        await page.locator("#navigation [data-view=chat]").click()
+        await page.locator("#attachment").set_input_files(
+            {
+                "name": "budget.xlsx",
+                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "buffer": buffer.getvalue(),
+            }
+        )
+        await expect(page.locator("#attachment-status")).to_have_text("budget.xlsx")
+        await page.locator("#prompt").fill("Create sourced report fixture")
+        await page.locator("#compose").get_by_role("button", name="Send", exact=True).click()
+        await page.locator("#navigation [data-view=make]").click()
+        report = page.locator(".artifact").filter(
+            has=page.get_by_role("heading", name="Sourced input report", exact=True)
+        )
+        await report.get_by_role("button", name="Open", exact=True).click(timeout=15000)
+        await page.get_by_text("budget.xlsx · 'Revenue'!A1", exact=True).click()
+        await expect(page.locator(".artifact-sources details[open] pre")).to_have_text("100")
+        response = await page.request.get(
+            "http://127.0.0.1:8766" + await page.locator("#work-preview a.button").first.get_attribute("href")
+        )
+        assert response.ok
+        with zipfile.ZipFile(io.BytesIO(await response.body())) as archive:
+            assert b'w:anchor="src_' in archive.read("word/document.xml")
+        for width in [1440, 768, 390]:
+            await page.set_viewport_size({"width": width, "height": 960})
+            assert await page.evaluate("document.documentElement.scrollWidth <= innerWidth")
+            await page.screenshot(path=str(output / f"source-preview-{width}.png"), full_page=True)
+        await page.locator("#work-preview form button").click()
         for width in [1280, 375]:
             await page.set_viewport_size({"width": width, "height": 960 if width == 1280 else 812})
             for theme in ["light", "dark"]:

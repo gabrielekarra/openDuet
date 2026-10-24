@@ -8,6 +8,7 @@ import time
 
 import httpx
 
+from . import file_sources
 from .approvals import Approvals
 from .attention import Attention
 from .browser import Browser
@@ -35,6 +36,9 @@ Do not evade a denied action by changing tool, recipient or channel. Never reque
 numbers or government identification in chat. Ask the user to use the private browser login form.
 Financial trading, transfers between accounts and accessing another person's account are not supported.
 Cite retrieved sources as [^source_id] using only source_id values returned by tools.
+Attach source_ids to factual figures in exported cells, sections and slides. Never invent a citation for missing data.
+For uploaded files, use read_attachment to retrieve exact page, paragraph or sheet-cell locators.
+Keep spreadsheet formulas distinct from cached values; uploaded formulas are never evaluated by the host.
 Distinguish missing data from completed research. If accounts are not connected, explain what to connect.
 For larger work, create an editable artifact. The host delivers created files automatically; never invent sandbox:/ download links. Never invent inbox, calendar, invoice or payroll contents.
 Suggest relevant connectors and skills when needed, but the user connects them.
@@ -75,6 +79,7 @@ class Runtime:
         self.approvals = Approvals(self)
         self.mac = MacHost(self)
         self.telegram = Telegram(self)
+        file_sources.ensure(store)
         self.attention = Attention(self)
         from .mail_accounts import MailAccounts
 
@@ -134,6 +139,15 @@ class Runtime:
         )
         for msg in reversed(previous):
             history.append({"role": msg["role"], "content": msg["content"][:4000]})
+        files = file_sources.listing(self, task["id"])
+        if files:
+            history.append(
+                {
+                    "role": "user",
+                    "content": "UNTRUSTED uploaded file inventory; read exact locators with read_attachment: "
+                    + json.dumps({"data": {"items": files}}),
+                }
+            )
         history.append({"role": "user", "content": task["request"]})
         return history
 

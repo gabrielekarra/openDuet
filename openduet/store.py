@@ -199,6 +199,22 @@ class Store:
                     + "))",
                     (channel,),
                 )
+            if "attachment_extracts" in tables:
+                db.execute(
+                    "DELETE FROM attachment_extracts WHERE id IN (SELECT id FROM attachments WHERE task IN ("
+                    + task_query
+                    + "))",
+                    (channel,),
+                )
+            if "task_attachment_access" in tables:
+                db.execute(
+                    "DELETE FROM task_attachment_access WHERE task IN ("
+                    + task_query
+                    + ") OR id IN (SELECT id FROM attachments WHERE task IN ("
+                    + task_query
+                    + "))",
+                    (channel, channel),
+                )
             for table, column in (
                 ("sources", "task"),
                 ("task_surfaces", "task"),

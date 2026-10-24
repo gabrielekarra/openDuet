@@ -14,7 +14,7 @@ from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from . import catalog
+from . import catalog, provenance
 from .approvals import preview
 from .attachments import ingest
 from .config import ProviderConfig, provider_binding
@@ -66,9 +66,10 @@ def install(app, runtime, signature):
                     "SELECT * FROM calls WHERE status IN ('pending','deferred','uncertain')"
                 )
             ],
-            "sources": store.rows(
-                "SELECT id,task,tool,url,substr(excerpt,1,1000) AS excerpt FROM sources ORDER BY rowid DESC LIMIT 100"
-            ),
+            "sources": [
+                provenance.detail(row) | {"task": row["task"]}
+                for row in store.rows("SELECT * FROM sources ORDER BY rowid DESC LIMIT 100")
+            ],
             "custom_checkins": store.rows("SELECT * FROM schedules"),
             "connector_polling": store.rows("SELECT * FROM connector_cursors"),
         }
@@ -262,6 +263,12 @@ def install(app, runtime, signature):
                 ]
             }
         )
+
+    @app.post("/api/connectors/{name}/check")
+    async def connector_check(name: str, request: Request):
+        from .connector_checks import check
+
+        return await check(runtime, name, await request.json())
 
     @app.post("/api/mail-accounts")
     async def add_mail(request: Request):

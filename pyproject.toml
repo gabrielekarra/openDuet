@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "openduet"
-version = "0.4.0rc2"
+version = "0.4.0rc3"
 description = "An open source, self-hosted proactive assistant for local and remote language models"
 requires-python = ">=3.12"
 license = "MIT"
@@ -33,6 +33,7 @@ openduet-computer = "openduet.computer:main"
 openduet-egress = "openduet.egress:main"
 openduet-prototypes = "openduet.prototypes:main"
 openduet-plugin = "openduet.plugins:main"
+openduet-check-connectors = "openduet.connector_checks:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["openduet"]

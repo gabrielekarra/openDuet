@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import csv
 import difflib
 import html
+import io
 import json
 import re
 import shutil
@@ -15,6 +17,7 @@ from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+from . import provenance
 from .store import uid
 
 
@@ -41,7 +44,7 @@ def validate_formula(value):
     return value
 
 
-def workbook(path, spec, sources=None):
+def workbook(path, spec, sources=None, source_sheet="Sources"):
     from openpyxl import Workbook
     from openpyxl.chart import LineChart, Reference
     from openpyxl.comments import Comment
@@ -72,11 +75,21 @@ def workbook(path, spec, sources=None):
                 if ids := value.get("source_ids"):
                     rows = [(sources or {})[ident] for ident in ids]
                     target.comment = Comment(
-                        "\n".join(f"[^{row['id']}] {row['url'] or row['tool']}" for row in rows),
+                        "\n".join(
+                            f"[^{row['id']}] {provenance.detail(row)['label']} {row['url']}\n{provenance.detail(row)['excerpt']}"
+                            for row in rows
+                        ),
                         "OpenDuet sources",
                     )
                     if rows[0]["url"]:
                         target.hyperlink = rows[0]["url"]
+                    else:
+                        from openpyxl.worksheet.hyperlink import Hyperlink
+
+                        target.hyperlink = Hyperlink(
+                            ref=address,
+                            location="'" + source_sheet + "'!A" + str(list(sources).index(rows[0]["id"]) + 2),
+                        )
             elif isinstance(value, str) and value.startswith(("=", "+", "@")):
                 target.value = "'" + value
             else:
@@ -95,7 +108,7 @@ def workbook(path, spec, sources=None):
     book.save(path)
 
 
-def presentation(path, spec, directory, store):
+def presentation(path, spec, directory, store, sources=None):
     from pptx import Presentation
     from pptx.chart.data import CategoryChartData
     from pptx.enum.chart import XL_CHART_TYPE
@@ -106,15 +119,15 @@ def presentation(path, spec, directory, store):
     slides = spec.get("slides", [])
     if not 1 <= len(slides) <= 100:
         raise ValueError("A deck requires 1–100 slides")
-    previews = []
+    previews, links, sources = [], [], sources or {}
     for index, item in enumerate(slides):
         slide = deck.slides.add_slide(deck.slide_layouts[6])
         title = str(item.get("title", ""))[:300]
         box = slide.shapes.add_textbox(Inches(0.7), Inches(0.5), Inches(12), Inches(0.8))
-        box.text_frame.paragraphs[0].text = title
+        provenance.ppt_text(box.text_frame, title, sources, links)
         box.text_frame.paragraphs[0].font.size = Pt(32)
         layout = item.get("layout", "bullets")
-        body = str(item.get("body", ""))
+        body = provenance.with_ids(item.get("body", ""), item)
         if layout in {"two-column", "quote", "title", "section", "bullets"}:
             columns = item.get("columns", [body]) if layout == "two-column" else [body]
             for column, text in enumerate(columns[:2]):
@@ -125,7 +138,7 @@ def presentation(path, spec, directory, store):
                     Inches(4.8),
                 )
                 shape.text_frame.word_wrap = True
-                shape.text_frame.text = str(text)
+                provenance.ppt_text(shape.text_frame, text, sources, links)
         elif layout == "table":
             rows = item.get("rows", [])[:25]
             if not rows or not rows[0]:
@@ -135,7 +148,9 @@ def presentation(path, spec, directory, store):
             ).table
             for r, row in enumerate(rows):
                 for c, value in enumerate(row[: len(rows[0])]):
-                    table.cell(r, c).text = str(value)
+                    provenance.ppt_text(
+                        table.cell(r, c).text_frame, provenance.value_text(value), sources, links
+                    )
         elif layout == "chart":
             chart = CategoryChartData()
             chart.categories = item.get("labels", [])[:50]
@@ -158,6 +173,9 @@ def presentation(path, spec, directory, store):
             )
         else:
             raise ValueError("Unsupported slide layout")
+        if layout in {"table", "chart", "image"} and item.get("source_ids"):
+            caption = slide.shapes.add_textbox(Inches(0.7), Inches(6.35), Inches(12), Inches(0.4))
+            provenance.ppt_text(caption.text_frame, provenance.with_ids("Sources:", item), sources, links)
         slide.notes_slide.notes_text_frame.text = str(item.get("notes", ""))[:5000]
         slide.shapes.add_picture(
             str(Path(__file__).parent / "web" / "brand" / "source-mark.png"),
@@ -175,32 +193,39 @@ def presentation(path, spec, directory, store):
                 "notes": str(item.get("notes", ""))[:3000],
             }
         )
+    previews.extend(provenance.ppt_appendix(deck, sources, links))
     deck.save(path)
     return {"slides": previews, "preview_kind": "structured"}
 
 
-def document(path, title, spec):
+def document(path, title, spec, sources=None):
     from docx import Document
     from docx.shared import Inches
 
-    doc = Document()
+    doc, sources = Document(), sources or {}
     doc.add_heading(title, 0)
     if spec.get("executive_summary"):
         doc.add_heading("Executive summary", 1)
-        doc.add_paragraph(str(spec["executive_summary"]))
+        provenance.doc_text(doc.add_paragraph(), spec["executive_summary"], sources)
     for section in spec.get("sections", [])[:100]:
         if section.get("heading"):
             doc.add_heading(str(section["heading"]), min(3, max(1, int(section.get("level", 1)))))
-        doc.add_paragraph(str(section.get("text", "")))
+        provenance.doc_text(
+            doc.add_paragraph(), provenance.with_ids(section.get("text", ""), section), sources
+        )
         rows = section.get("table", [])[:100]
         if rows:
             table = doc.add_table(rows=0, cols=len(rows[0]))
             for row in rows:
                 cells = table.add_row().cells
                 for index, value in enumerate(row[: len(cells)]):
-                    cells[index].text = str(value)
-    for source in spec.get("sources", []):
-        doc.add_paragraph(str(source))
+                    provenance.doc_text(cells[index].paragraphs[0], provenance.value_text(value), sources)
+    provenance.doc_appendix(doc, sources)
+    unverified = [str(value) for value in spec.get("sources", []) if not provenance.MARKER.search(str(value))]
+    if unverified:
+        doc.add_heading("Unverified references", 1)
+        for reference in unverified:
+            doc.add_paragraph(reference)
     doc.sections[0].footer.paragraphs[0].text = "OpenDuet"
     doc.sections[0].footer.paragraphs[0].add_run().add_picture(
         str(Path(__file__).parent / "web" / "brand" / "source-mark.png"), width=Inches(0.55)
@@ -208,15 +233,24 @@ def document(path, title, spec):
     doc.save(path)
 
 
-def pdf(path, title, content):
+def pdf(path, title, content, sources=None):
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.styles import getSampleStyleSheet
     from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
 
-    styles = getSampleStyleSheet()
+    styles, sources = getSampleStyleSheet(), sources or {}
     elements = [Paragraph(html.escape(title), styles["Title"])]
     for line in content.splitlines()[:3000]:
-        elements.extend([Paragraph(html.escape(line), styles["BodyText"]), Spacer(1, 5)])
+        elements.extend([Paragraph(provenance.pdf_text(line, sources), styles["BodyText"]), Spacer(1, 5)])
+    if sources:
+        elements.append(Paragraph("Sources", styles["Heading1"]))
+    for source in sources.values():
+        elements.append(
+            Paragraph(
+                '<a name="src_' + source["id"] + '"/>' + html.escape(source["label"]), styles["Heading3"]
+            )
+        )
+        elements.append(Paragraph(html.escape(source["excerpt"]), styles["BodyText"]))
 
     def footer(canvas, document):
         canvas.drawImage(
@@ -414,12 +448,20 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
     citations.require(task, content)
     sources = citations.listing(task)
     lookup = {row["id"]: row for row in sources}
-    source_lines = [f"[^{s['id']}]: {s['tool']} {s['url']}" for s in sources]
+    used = set(provenance.MARKER.findall(content))
     spec = (
         json.loads(content)
         if content.lstrip().startswith("{") and format in {"dashboard", "webapp", "xlsx", "pptx", "docx"}
         else None
     )
+    if spec is None and format == "docx":
+        spec = {"sections": [{"text": content}]}
+    elif spec is None and format == "pptx":
+        spec = {
+            "slides": [
+                {"title": title, "layout": "bullets", "body": block} for block in content.split("\n---\n")
+            ]
+        }
 
     def check_source_fields(value):
         if isinstance(value, dict):
@@ -431,6 +473,9 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
                     or any(not isinstance(ident, str) or ident not in lookup for ident in ids)
                 ):
                     raise ValueError("Artifact source_ids must refer to this task's retrieved sources")
+                used.update(ids)
+            if isinstance(value.get("source"), str) and value["source"] in lookup:
+                used.add(value["source"])
             for child in value.values():
                 check_source_fields(child)
         elif isinstance(value, list):
@@ -439,15 +484,25 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
 
     if spec is not None:
         check_source_fields(spec)
-    metadata = {}
+    if used:
+        lookup = {ident: row for ident, row in lookup.items() if ident in used}
+    details = {ident: provenance.detail(row) for ident, row in lookup.items()}
+    source_lines = [
+        f"[^{row['id']}]: {row['label']} {row['url']} — {' '.join(row['excerpt'].split())}"
+        for row in details.values()
+    ]
+    metadata, source_sheet = {}, "Sources"
     if source_lines:
         if spec is not None and format in {"dashboard", "docx"}:
-            spec["sources"] = list(dict.fromkeys([*spec.get("sources", []), *source_lines]))
+            spec["sources"] = source_lines
             content = json.dumps(spec, ensure_ascii=False)
         elif spec is not None and format == "xlsx":
+            names = {sheet.get("name", "").lower() for sheet in spec.get("sheets", [])}
+            while source_sheet.lower() in names:
+                source_sheet += "_"
             spec.setdefault("sheets", []).append(
                 {
-                    "name": "Sources",
+                    "name": source_sheet,
                     "cells": {
                         "A1": "Retrieved task sources",
                         **{f"A{i + 2}": value for i, value in enumerate(source_lines)},
@@ -456,12 +511,34 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
             )
             content = json.dumps(spec, ensure_ascii=False)
         elif spec is not None and format == "pptx":
-            spec.setdefault("slides", []).append(
-                {"title": "Sources", "layout": "bullets", "body": "\n".join(source_lines)}
-            )
             content = json.dumps(spec, ensure_ascii=False)
-        elif format in {"md", "txt", "pdf", "docx", "pptx"}:
+        elif format in {"md", "txt"}:
             content += "\n\nSources\n" + "\n".join(source_lines)
+        elif format == "csv":
+            extra = io.StringIO()
+            csv.writer(extra).writerows(
+                [
+                    ["Sources"],
+                    ["ID", "Source", "URL", "Retrieved excerpt"],
+                    *[[row["id"], row["label"], row["url"], row["excerpt"]] for row in details.values()],
+                ]
+            )
+            content = content.rstrip() + "\n" + extra.getvalue()
+        elif format == "html":
+            content += (
+                "<section><h2>Sources</h2>"
+                + "".join(
+                    '<p id="src_'
+                    + row["id"]
+                    + '">'
+                    + html.escape(row["label"])
+                    + ": "
+                    + html.escape(row["excerpt"])
+                    + "</p>"
+                    for row in details.values()
+                )
+                + "</section>"
+            )
     if format not in {"dashboard", "webapp", "pdf"} and spec is None:
         item = plain(store, directory, task, title, format, content)
         ident = item["id"]
@@ -493,15 +570,15 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
                 target.write_text(str(data))
             metadata = {"preview_kind": "sandboxed", "preview_id": ident}
         elif format == "xlsx":
-            workbook(path, spec, lookup)
+            workbook(path, spec, lookup, source_sheet)
             metadata = recalculate(path)
         elif format == "pptx":
-            metadata = presentation(path, spec, directory, store)
+            metadata = presentation(path, spec, directory, store, details)
             metadata.update(slide_images(path, store, ident))
         elif format == "docx":
-            document(path, title, spec)
+            document(path, title, spec, details)
         elif format == "pdf":
-            pdf(path, title, content)
+            pdf(path, title, content, details)
         else:
             raise ValueError("Unsupported structured artifact format")
         path.chmod(0o600)
@@ -521,6 +598,7 @@ def publish(store, directory, task, title, format, content, parent, refresh, pla
             "INSERT INTO artifacts VALUES(?,?,?,?,?,?)", (ident, task, title, format, filename, time.time())
         )
         item = {"id": ident, "title": title, "format": format, "download": f"/api/artifacts/{ident}"}
+    metadata["sources"] = list(details.values())
     root = ident
     if parent:
         original = store.rows("SELECT * FROM artifacts WHERE id=?", (parent,))
@@ -555,6 +633,42 @@ class Make:
         self.runtime, self.store = runtime, runtime.store
         ensure(self.store)
 
+    def attach_parent_sources(self, parent, task):
+        rows = self.store.rows(
+            "SELECT a.task,v.spec,v.metadata FROM artifacts a JOIN artifact_versions v ON v.id=a.id WHERE a.id=?",
+            (parent,),
+        )
+        if not rows:
+            return
+        row = rows[0]
+        metadata = json.loads(row["metadata"])
+        ids = {source["id"] for source in metadata.get("sources", [])}
+        ids.update(provenance.MARKER.findall(row["spec"]))
+        ids.update(re.findall(r'"(s[0-9a-f]{12})"', row["spec"]))
+        selected = [source for source in self.runtime.sources.listing(row["task"]) if source["id"] in ids]
+        if not selected:
+            return
+        with self.store.db() as db:
+            for source in selected:
+                db.execute(
+                    "INSERT OR IGNORE INTO sources VALUES(?,?,?,?,?)",
+                    (source["id"], task, source["tool"], source["url"], source["excerpt"]),
+                )
+            for file in db.execute(
+                "SELECT a.id FROM attachments a JOIN attachment_inputs i ON i.id=a.id WHERE a.task=? OR EXISTS(SELECT 1 FROM task_attachment_access p WHERE p.task=? AND p.id=a.id)",
+                (row["task"], row["task"]),
+            ).fetchall():
+                if any(file["id"] in source["excerpt"] for source in selected):
+                    db.execute("INSERT OR IGNORE INTO task_attachment_access VALUES(?,?)", (task, file["id"]))
+            db.execute(
+                "UPDATE tasks SET request=request||? WHERE id=?",
+                (
+                    "\nUNTRUSTED parent artifact source snapshots, now available to this task via read_source: "
+                    + json.dumps([source["id"] for source in selected]),
+                    task,
+                ),
+            )
+
     def revise(self, ident, changes):
         rows = self.store.rows("SELECT * FROM artifacts WHERE id=?", (ident,))
         if not rows:
@@ -565,6 +679,7 @@ class Make:
         prompt = f"Revise artifact {ident} and publish a new version with parent={ident}. User requested changes:\n{str(changes)[:6000]}\nUNTRUSTED previous deliverable:\n{original[:20000]}"
         original_task = self.store.task(rows[0]["task"])
         task = self.store.new_task(original_task["channel"], prompt, original_task["provider"])
+        self.attach_parent_sources(ident, task)
         route = self.store.rows("SELECT * FROM task_surfaces WHERE task=?", (rows[0]["task"],))
         if route:
             self.store.execute(

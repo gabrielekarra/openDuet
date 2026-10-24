@@ -1,5 +1,19 @@
 # Changes
 
+## 0.4.0rc3
+
+- Read uploaded files with exact page, paragraph, slide and sheet-cell locators,
+  durable SHA-256 snapshots, bounded pagination and current-task access controls.
+  Uploaded spreadsheet formulas remain inert and report saved cached values.
+- Export clickable sources in DOCX, PPTX, PDF and XLSX, with local excerpts in
+  offline appendices. Revisions retain their source snapshots and input access;
+  unknown/foreign references remain rejected.
+- Send uploaded-file IDs separately from web chat text, so long extracted files
+  do not overflow the message field. Make previews show the cited locator and
+  excerpt at desktop, tablet and phone widths.
+- Add an explicitly opt-in read-only connector contract runner. Its report saves
+  schema checks and counts, without provider records or credentials.
+
 ## 0.4.0rc2
 
 - Resume safe interrupted tasks automatically after a process restart. Bind

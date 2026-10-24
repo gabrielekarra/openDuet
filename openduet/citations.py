@@ -36,6 +36,9 @@ def source_url(data, depth=0):
                     and not parsed.password
                 ):
                     return value
+        for link in (data.get("links") or [])[:20]:
+            if isinstance(link, str) and (url := source_url({"url": link}, depth + 1)):
+                return url
         for key in ("structuredContent", "items", "results", "events", "messages", "data"):
             if key in data and (url := source_url(data[key], depth + 1)):
                 return url
@@ -99,6 +102,7 @@ class Sources:
         )
         references = []
         for locator, record in records:
+            locator = str(record.get("locator", locator))[:500]
             excerpt = json.dumps({"locator": locator, "record": record}, ensure_ascii=False, default=str)
             source = "s" + hashlib.sha256((task + tool + excerpt).encode()).hexdigest()[:12]
             url = source_url(record)

@@ -21,6 +21,47 @@ class PreviewProvider:
 
     async def complete(self, messages, tools):
         if messages[-1]["role"] == "tool":
+            if messages[-1].get("name") == "read_attachment":
+                result = json.loads(messages[-1]["content"])
+                source = result["sources"][0]["source_id"]
+                value = result["data"]["items"][0]["value"]
+                return Reply(
+                    {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {
+                                "id": "preview-sourced-export",
+                                "type": "function",
+                                "function": {
+                                    "name": "create_artifact",
+                                    "arguments": json.dumps(
+                                        {
+                                            "title": "Sourced input report",
+                                            "format": "docx",
+                                            "content": json.dumps(
+                                                {
+                                                    "sections": [
+                                                        {
+                                                            "heading": "Revenue",
+                                                            "text": str(value),
+                                                            "source_ids": [source],
+                                                            "table": [
+                                                                [{"value": value, "source_ids": [source]}]
+                                                            ],
+                                                        }
+                                                    ]
+                                                }
+                                            ),
+                                        }
+                                    ),
+                                },
+                            }
+                        ],
+                    },
+                    30,
+                    20,
+                )
             if messages[-1].get("name", "").startswith("mcp_oauth_fixture_"):
                 return Reply({"role": "assistant", "content": "Connected service verified."}, 20, 10)
             return Reply(
@@ -34,7 +75,19 @@ class PreviewProvider:
                     "Model request waiting; the process-restart check will terminate this child"
                 )
                 await asyncio.Event().wait()
-        if "read the connected fixture" in request.lower():
+        if "create sourced report fixture" in request.lower():
+            inventory = next(
+                message["content"]
+                for message in reversed(messages[:-1])
+                if isinstance(message.get("content"), str)
+                and message["content"].startswith("UNTRUSTED uploaded file inventory")
+            )
+            inputs = json.loads(inventory.split(": ", 1)[1])
+            name, args = (
+                "read_attachment",
+                {"attachment": inputs["data"]["items"][0]["attachment"], "locator": "'Revenue'!A1"},
+            )
+        elif "read the connected fixture" in request.lower():
             name = next(
                 tool["function"]["name"]
                 for tool in tools

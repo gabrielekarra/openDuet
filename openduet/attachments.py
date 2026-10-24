@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import asyncio
 import io
-import zipfile
 from pathlib import Path
 
+from . import file_sources
 from .store import uid
 
 TYPES = {
@@ -36,43 +36,10 @@ async def ingest(runtime, data, name, task=None, *, inbound=True):
     ident = uid()
     path = directory / (ident + suffix)
     text, transcript = "", ""
-    if suffix in {".txt", ".md", ".csv"}:
-        text = data[:100000].decode("utf-8", errors="replace")
-    elif suffix in {".docx", ".xlsx", ".pptx"}:
-        with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            if sum(item.file_size for item in archive.infolist()) > 40_000_000:
-                raise ValueError("Expanded attachment too large")
-        if suffix == ".docx":
-            from docx import Document
-
-            text = "\n".join(p.text for p in Document(io.BytesIO(data)).paragraphs)
-        elif suffix == ".pptx":
-            from pptx import Presentation
-
-            deck = Presentation(io.BytesIO(data))
-            text = "\n".join(
-                shape.text
-                for slide in list(deck.slides)[:50]
-                for shape in slide.shapes
-                if shape.has_text_frame
-            )[:32000]
-        else:
-            from openpyxl import load_workbook
-
-            workbook = load_workbook(io.BytesIO(data), read_only=True, data_only=False, keep_links=False)
-            rows = []
-            for sheet in workbook:
-                for index, row in enumerate(sheet.iter_rows(values_only=True)):
-                    if index >= 1000:
-                        break
-                    rows.append(sheet.title + ": " + str(row[:30]))
-            text = "\n".join(rows)
-            workbook.close()
-    elif suffix == ".pdf":
-        from pypdf import PdfReader
-
-        reader = PdfReader(io.BytesIO(data))
-        text = "\n".join(page.extract_text()[:20000] for page in list(reader.pages)[:40])
+    records, truncated = [], False
+    if suffix in {".txt", ".md", ".csv", ".docx", ".xlsx", ".pptx", ".pdf"}:
+        records, truncated = await asyncio.to_thread(file_sources.extract, data, name)
+        text = "\n".join(record["locator"] + ": " + str(record["value"]) for record in records)
     elif suffix in {".png", ".jpg", ".jpeg"}:
         from PIL import Image
 
@@ -100,10 +67,12 @@ async def ingest(runtime, data, name, task=None, *, inbound=True):
 
             transcript = await asyncio.to_thread(transcribe)
             text = transcript
+            records = [{"locator": "audio transcript", "value": transcript}]
     runtime.store.execute(
         "INSERT INTO attachments VALUES(?,?,?,?,?,?)",
         (ident, task, Path(name).name[:200], TYPES[suffix], path.name, len(data)),
     )
+    file_sources.save(runtime.store, ident, data, records, truncated)
     if inbound:
         runtime.store.execute("INSERT INTO attachment_inputs VALUES(?)", (ident,))
     return {
@@ -111,4 +80,6 @@ async def ingest(runtime, data, name, task=None, *, inbound=True):
         "name": Path(name).name[:200],
         "text": text[:32000],
         "transcript": transcript,
+        "extracted_records": len(records),
+        "truncated": truncated,
     }
