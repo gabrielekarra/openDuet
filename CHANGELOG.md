@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Queue console updates received during an existing refresh, so late results
+  are fetched after the earlier snapshot. Preserve deliberate navigation and
+  background form protection; verify the race with a held HTTP response.
+
 - Finish current-tree naming cleanup while preserving the exact native source
   and original frozen benchmark corpus in immutable archives. The historical
   `bobb-mac-final` tag remains available; archived inputs were not relabelled.

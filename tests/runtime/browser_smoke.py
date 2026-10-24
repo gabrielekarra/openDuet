@@ -14,6 +14,42 @@ from playwright.async_api import async_playwright, expect
 from tests.fixtures.mcp_process import loopback_server
 
 
+async def check_in_flight_refresh(page):
+    await page.locator("#navigation [data-view=make]").click()
+    await expect(page.locator("#content h1")).to_have_text("Make")
+    await page.evaluate("window.fixtureStreams.forEach(stream=>stream.close())")
+    blocked, release = asyncio.Event(), asyncio.Event()
+    first_response = True
+
+    async def hold_snapshot(route):
+        nonlocal first_response
+        response = await route.fetch()
+        if first_response:
+            first_response = False
+            blocked.set()
+            await release.wait()
+            await route.fulfill(response=response)
+        else:
+            snapshot = await response.json()
+            snapshot["artifacts"][0]["title"] = "Latest refresh evidence"
+            await route.fulfill(response=response, json=snapshot)
+
+    await page.route("**/api/state", hold_snapshot)
+    first = asyncio.create_task(page.evaluate("import('/app.js').then(app=>app.refresh(false))"))
+    try:
+        await asyncio.wait_for(blocked.wait(), timeout=5)
+        await page.evaluate("import('/app.js').then(app=>app.refresh(false))")
+        release.set()
+        await first
+        await expect(page.get_by_role("heading", name="Latest refresh evidence", exact=True)).to_be_visible(
+            timeout=5000
+        )
+    finally:
+        release.set()
+        await first
+        await page.unroute("**/api/state", hold_snapshot)
+
+
 async def main():
     output = Path(".runtime/screenshots/console")
     output.mkdir(parents=True, exist_ok=True)
@@ -22,6 +58,10 @@ async def main():
             executable_path=os.environ.get("CHROMIUM_PATH"), args=["--no-sandbox"]
         )
         page = await browser.new_page(viewport={"width": 1280, "height": 960})
+        await page.add_init_script(
+            "const BaseEventSource=window.EventSource;window.fixtureStreams=[];"
+            "window.EventSource=class extends BaseEventSource{constructor(...args){super(...args);window.fixtureStreams.push(this);}};"
+        )
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
         await page.goto("http://127.0.0.1:8766")
@@ -177,7 +217,24 @@ async def main():
         report = page.locator(".artifact").filter(
             has=page.get_by_role("heading", name="Sourced input report", exact=True)
         )
-        await report.get_by_role("button", name="Open", exact=True).click(timeout=15000)
+        try:
+            await report.get_by_role("button", name="Open", exact=True).click(timeout=15000)
+        except Exception:
+            snapshot = await (await page.request.get("http://127.0.0.1:8766/api/state")).json()
+            print(
+                "Source export diagnostics:",
+                {
+                    "tasks": [
+                        {key: task[key] for key in ("id", "status", "error")} for task in snapshot["tasks"]
+                    ],
+                    "artifacts": [
+                        {key: artifact[key] for key in ("id", "title")} for artifact in snapshot["artifacts"]
+                    ],
+                    "view": await page.locator("#content h1").text_content(),
+                    "page_errors": errors,
+                },
+            )
+            raise
         await page.get_by_text("budget.xlsx · 'Revenue'!A1", exact=True).click()
         await expect(page.locator(".artifact-sources details[open] pre")).to_have_text("100")
         response = await page.request.get(
@@ -223,6 +280,8 @@ async def main():
                     await page.screenshot(path=str(output / f"{view}-{theme}-{width}.png"), full_page=True)
         deliveries = await (await page.request.get("http://127.0.0.1:8766/api/fixture/deliveries")).json()
         assert any(item["method"] == "sendDocument" for item in deliveries), deliveries
+        await page.set_viewport_size({"width": 1280, "height": 960})
+        await check_in_flight_refresh(page)
         assert not errors, errors
         await browser.close()
         print(
@@ -230,4 +289,5 @@ async def main():
         )
 
 
-asyncio.run(main())
+if __name__ == "__main__":
+    asyncio.run(main())

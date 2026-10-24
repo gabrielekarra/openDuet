@@ -140,3 +140,13 @@ start. Its disposable SSH user also lacks passwordless sudo for recovery probes.
 The [failed acceptance record](benchmarks/cloud-vm-2026-10-24.json) preserves the
 image/recipe fingerprints and exact boundary. No workspace-startup, restart or
 provider-deployment pass is inferred from it. See [remaining steps](PENDING-ACCEPTANCE.md).
+
+A controlled Chromium check holds an older state response in flight, requests
+another update and verifies that the later snapshot is rendered after release.
+It fails on the earlier console, which dropped updates while loading, and passes
+with the queued-refresh fix. The existing full browser flow also passes locally.
+The [first connector CI run](https://github.com/gabrielekarra/openDuet/actions/runs/40120934253)
+timed out waiting for a sourced export in Make; that failure is preserved.
+The browser check now reports task/artifact state on a source-export failure
+and directly covers the lost-update race; no timeout or acceptance assertion
+was relaxed. The following push reruns the complete five-job workflow.

@@ -9,7 +9,7 @@ import * as connections from './views/connections.js';
 import * as settings from './views/settings.js';
 import * as chat from './views/chat.js';
 const views={telegram,tasks,make,proactivity,connections,settings,chat};
-let source,loading=false,editingCall='';
+let source,loading=false,refreshPending=false,forcePending=false,editingCall='';
 const requestedView=new URLSearchParams(location.search).get('view');
 if(views[requestedView])state.view=requestedView;
 const labels=()=>({telegram:'Telegram',tasks:t('Tasks','Attività'),make:'Make',proactivity:t('Proactivity','Proattività'),connections:t('Connections','Connessioni'),settings:t('Settings','Impostazioni'),chat:'Chat'});
@@ -26,7 +26,7 @@ function navigation(){
 }
 
 export async function refresh(force=true){
-  if(loading)return;loading=true;
+  if(loading){refreshPending=true;forcePending=forcePending||force;return;}loading=true;
   try {
     const [data,product,messages]=await Promise.all([api('/api/state'),api('/api/product'),api('/api/messages?channel='+encodeURIComponent(state.channel))]);
     state.data=data;state.product=product;state.messages=messages;
@@ -43,7 +43,10 @@ export async function refresh(force=true){
   } catch(error){
     if(error.status===401){source?.close();source=null;document.querySelector('#workspace').hidden=true;document.querySelector('#login').hidden=false;}
     else toast(error.message);
-  } finally {loading=false;}
+  } finally {
+    loading=false;
+    if(refreshPending){const forceNext=forcePending;refreshPending=false;forcePending=false;queueMicrotask(()=>refresh(forceNext));}
+  }
 }
 document.querySelector('#login-form').onsubmit=async event=>{event.preventDefault();const form=event.currentTarget;await api('/api/login',{token:document.querySelector('#token').value});form.reset();state.view='telegram';await refresh();};
 document.addEventListener('click',async event=>{
