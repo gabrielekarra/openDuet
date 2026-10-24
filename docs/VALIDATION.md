@@ -13,7 +13,7 @@ returns 403 for the connected integration; source-archive installation remains p
 
 | Check | Observed result |
 | --- | --- |
-| Runtime/policy/transport/integration tests | **217 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
+| Runtime/policy/transport/integration tests | Earlier local suite **217 passed**, including Torch/Quanto; seven new socket-probe regressions passed locally; latest full CI **222 passed, 2 skipped** |
 | Separate specialist research package | **87 passed**, repeated in CI |
 | Ruff E4/E7/E9/F/I/UP | Passed |
 | Restart recovery | Actual SIGKILL → same database/session → automatic safe task completion → exactly one document to the original chat/topic |
@@ -35,8 +35,9 @@ returns 403 for the connected integration; source-archive installation remains p
 | Real Kev seed | Torch INT8 **79.7%**, MLX **78.1%** typed accuracy; both quality gates passed |
 | Real Kev additional corpus | 24 EN/IT cases, 128 answers: **89.8%** both backends; precision 100%, recall 50%, no hostile interruptions |
 | Actual Torch/MLX parity | Qualified BF16/MLX seed reference **64/64**, delta **0.01935**; default INT8 seed **98.44%**, additional **100%**, deltas **0.02229 / 0.03192**; precision-specific results |
+| Actual Ubuntu VM | Cloud-init-created workspace and separate computer; owner auth and public read; actual Docker restart and changed-boot-ID guest reboot; persistent data marker and owner auth after reboot; [actual Ubuntu VM record](benchmarks/cloud-vm-acceptance-2026-10-24.json) |
 | Earlier complete Compose startup | Workspace, isolated computer, egress, prototype origin and CPU Kev service healthy; internal access passed |
-| Python distribution | 0.4.0rc1 source distribution and wheel built; clean wheel installation and real foreground startup passed |
+| Python distribution | 0.4.0rc4 source distribution and wheel built from the public version tag; isolated wheel installation and real server passed in the distribution workflow |
 
 [Real benchmark details](benchmarks/README.md) include source runs, model digests,
 corpus fingerprints, original failed results, memory, latency and statistical
@@ -134,8 +135,8 @@ checks that operator bridges show setup links instead of blank Connect actions.
 The current directory has 12 prefilled hosted endpoints and 5 operator bridges.
 Published code is verified again by the full push-triggered CI workflow.
 
-The existing Ubuntu/QEMU guest was resumed after the environment outage and
-reached SSH. Cloud-init then failed: the nested VM could not reach the configured
+The first Ubuntu/QEMU attempt after the environment outage reached SSH.
+Cloud-init then failed: the nested VM could not reach the configured
 outbound proxy for Ubuntu packages or GitHub clone, so Docker/workspace did not
 start. Its disposable SSH user also lacks passwordless sudo for recovery probes.
 The [failed acceptance record](benchmarks/cloud-vm-2026-10-24.json) preserves the
@@ -165,12 +166,12 @@ Issuing sandbox. No actual card or charge was created.
 
 ## Managed VM retry and distribution preparation
 
-The current attempt retained the Docker-provided proxy defaults instead of
+The second failed attempt retained the Docker-provided proxy defaults instead of
 overriding them with the outer executor proxy. HTTPS reachability passed, and
 the existing Ubuntu guest obtained administrative SSH, installed Docker/Buildx,
 cloned the public repository and started actual Compose image builds. Docker
 then recorded an OOM event for the helper container on the managed host with an
-8 GiB limit; the VM process exited. The [latest failed acceptance record](benchmarks/cloud-vm-memory-2026-10-24.json)
+8 GiB limit; the VM process exited. The [second failed acceptance record](benchmarks/cloud-vm-memory-2026-10-24.json)
 preserves this boundary separately from the earlier network failure. No startup,
 Docker restart or guest reboot pass is claimed. No provider VM was provisioned.
 
@@ -178,7 +179,7 @@ The rc4 wheel was installed in a separate environment outside the repository.
 Its actual server, private token file, one-use local sign-in and running-service
 diagnostics passed. Wheel/source contents retain notices, UI and the bundled
 skill, and exclude runtime data/private .env files. The distribution workflow
-will repeat this check against the final commit after all five CI jobs pass.
+repeated this check against the final rc4 source after all five CI jobs passed.
 
 Live-mode checks also run before issuing, authorizing or privately filling a
 card when credentials were already stored by an older build. Cancelling an
@@ -199,3 +200,63 @@ and clear on logout/session expiry. The browser regression holds the real file
 upload response, forces a refresh, changes channels and verifies the exact
 attachment ID/channel sent to the actual sourced-DOCX task. Removal is exercised
 too. Existing read/export assertions and timeouts remain intact.
+
+
+## Verified rc4 distribution
+
+The immutable public tag `v0.4.0rc4` points to
+`c3a016bf2f96b8df265572471ee1cfb1cd0470f2`. All five
+[source CI jobs](https://github.com/gabrielekarra/openDuet/actions/runs/40139404907)
+passed, followed by the [distribution workflow](https://github.com/gabrielekarra/openDuet/actions/runs/40139788470).
+It built the wheel/source archive, installed the wheel outside the checkout,
+exercised an actual server and uploaded checksummed artifacts. The
+[metadata record](benchmarks/distribution-rc4-2026-10-24.json) distinguishes the
+GitHub artifact digest from a local download check: artifact storage returned
+HTTP 403 to this workspace, so no independent downloaded-checksum pass is claimed.
+The workflow used `publish=false`; no GitHub Release was created. Public
+source installation uses the version-tag URL in the Mac quickstarts.
+
+
+## Post-rc4 deploy hardening
+
+On the actual emulated Ubuntu guest, importing the old URL-based health probe
+took 6.657 seconds; HTTP 200 arrived at 8.734 seconds, beyond the five-second
+Docker timeout. Concurrent startup could also exceed fifteen seconds. Compose
+now uses the small loopback [HTTP probe](../openduet/healthcheck.py), which
+requires a real HTTP 200 without importing the outbound URL client or consulting
+proxy configuration. The cloud systemd unit retries failed startup. These
+changes follow the immutable rc4 tag on `main`.
+
+Seven targeted tests passed against real sockets, including 200/error/redirect
+responses, a stalled/closed service and hostile outbound-proxy settings. All
+five [source CI jobs](https://github.com/gabrielekarra/openDuet/actions/runs/40140934452)
+passed on `d6ba06d642f00c58c92e2091a2cde360760a45ea`, including the full
+Chromium console and actual isolated Docker computer. The VM recovery result
+is recorded separately below; the interrupted concurrent probe is not acceptance.
+
+
+## Actual Ubuntu VM recovery acceptance
+
+The [actual Ubuntu VM record](benchmarks/cloud-vm-acceptance-2026-10-24.json) passed all measured checks: healthy workspace, owner-only API
+access, actual public browsing in the separate computer, Docker-daemon restart,
+a changed guest boot ID after reboot, the same persistent data marker after
+both restarts and owner authentication after reboot. The marker was removed
+afterward. The initial network and OOM failures remain preserved. An earlier
+browser probe overlapped a service stop and is retained as inconclusive.
+
+This reused the existing Ubuntu 24.04 NoCloud disk and actual Compose images
+built from `e8d1e6692b07d0e521f1bada09f84f8bcc442864`. The exact deploy/health
+changes from `d6ba06d642f00c58c92e2091a2cde360760a45ea` were applied before
+owner/browser/recovery checks; the public health module was mounted read-only
+at `/app/openduet/healthcheck.py` to backport it without rebuilding all images
+on the memory-limited host. The initial site-packages mount was corrected
+because Docker selects the copied source package first. Proxy defaults, CA
+trust and disposable administrative SSH were test overlays. TLS verification
+remained enabled. The record fingerprints the Compose file, recipe and module.
+
+The guest used two emulated CPUs and 4 GiB RAM; no Kev inference or work-model
+loading was attempted. This is neither a whole-product memory measurement nor
+a fresh final-source/provider provisioning run. No paid VM or public HTTPS
+deployment was created. The [self-hosting recipe](SELF-HOSTING.md) and automatic
+restart behavior now have actual VM evidence, separately from the Docker/CI
+fixtures.

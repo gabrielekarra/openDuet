@@ -59,8 +59,11 @@ your provider. Retrieve the generated workspace token over SSH from
 after first login. The template binds the console to loopback.
 
 The cloud-init recipe is supplied for deployment; no paid VM or DNS changes are
-created by this repository. Local Compose acceptance is tracked separately from
-an actual provider provisioning run.
+created by this repository. The [actual Ubuntu VM acceptance](benchmarks/cloud-vm-acceptance-2026-10-24.json)
+verified startup, owner access, public browsing and recovery with persistent
+data after Docker and guest restarts. It reused an existing cloud-init disk
+and images with the exact deploy/health patches and managed proxy/CA overlays;
+it did not provision a paid provider or a fresh final-source VM.
 
 ## Voice, backup and upgrades
 

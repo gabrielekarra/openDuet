@@ -1,0 +1,22 @@
+{
+  "version": "0.4.0rc4",
+  "tag": "v0.4.0rc4",
+  "source_commit": "c3a016bf2f96b8df265572471ee1cfb1cd0470f2",
+  "ci_url": "https://github.com/gabrielekarra/openDuet/actions/runs/40139404907",
+  "ci_checks_passed": 5,
+  "distribution_url": "https://github.com/gabrielekarra/openDuet/actions/runs/40139788470",
+  "distribution_conclusion": "success",
+  "isolated_wheel_installation_and_server_check": true,
+  "distribution_artifact": {
+    "id": 12577394220,
+    "name": "release-distributions",
+    "size_in_bytes": 1793972,
+    "github_archive_sha256": "3d3286739c820a5b500c4b04d909b5546d435009383e418222f8bdd041800b6d",
+    "download_verified_in_managed_workspace": false,
+    "download_error": "HTTP 403 from artifact storage"
+  },
+  "source_tag_public": true,
+  "github_release_published": false,
+  "publication_boundary": "Connected integration returned HTTP 403 for release publication in an earlier attempt. This run used publish=false and did not retry publication. Public source installation uses the immutable version tag.",
+  "collected_at": "2026-10-24"
+}

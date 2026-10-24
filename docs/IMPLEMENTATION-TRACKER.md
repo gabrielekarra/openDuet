@@ -1,8 +1,8 @@
 # Issue implementation and acceptance
 
 Scope: the 39 originally open issues #4–#44, excluding the previously closed #17 and #22.
-Review on 24 October 2026: **31 completed; 8 remain open after connector acceptance**.
-This tracker describes the 0.4.0rc4 release candidate. **Delivered** means code and
+Review on 24 October 2026: **32 completed; 7 remain open after VM startup/recovery acceptance**.
+This tracker describes the 0.4.0rc4 release candidate and subsequent deployment fixes on `main`. **Delivered** means code and
 repeatable checks exist; it does not certify untested third-party accounts or
 hardware. The product is installable as a private Mac login service or self-hosted server. Exact commands and results
 are in [VALIDATION.md](VALIDATION.md).
@@ -24,7 +24,7 @@ the native source before deletion.
 | #9 | Closed | Task/file/record sources, exact locators, validated numeric references, Office/PDF links, offline excerpts and source-preserving revisions | Actual file/browser/brief fixture criteria pass; citation identity does not certify a claim or calculation |
 | #10 | Closed | Versioned scheduled dashboards, PNG delivery and separate opaque prototype sandbox | Real Chromium parent/API/network isolation passed |
 | #11 | Closed | Live XLSX formulas, DOCX/PDF/PPTX, notes, native previews and retained versions | Real LibreOffice recalculation/rendering passed |
-| #12 | Open | Separate computer API/container, enforcing public egress, artifact bridge, Compose and VPS cloud-init | Local Docker accepted; Proxy/admin setup corrected; Docker installed and Compose builds started; managed 8 GiB host OOM interrupted the actual VM before startup/recovery acceptance; no provider instance provisioned |
+| #12 | Closed | Separate computer, enforcing public egress, artifact bridge, Compose/cloud-init; [actual Ubuntu VM record](benchmarks/cloud-vm-acceptance-2026-10-24.json) passes owner access, public read, Docker restart and guest reboot with persistent data | Reused e8d1e66 images with exact d6ba06d deploy/health backport and managed proxy/CA/SSH overlays; no fresh final-source or paid provider provisioning, no model inference in the 4 GiB guest |
 | #13 | Closed | Encrypted vault, rotation/recovery, scoped 1Password/Bitwarden injection, redaction | Fixture credentials only; real vault accounts not available |
 | #14 | Closed | Read/destructive classification, forbidden actions, sensitive-data checks and hostile-page fixtures | Declared tool actions and tested data patterns; not a semantic guarantee for every GUI |
 | #15 | Closed | 17-service directory/setup and schema-derived HTTP/stdio contracts; five business recipes, exact one-use approvals, source/event ingestion and dedicated Gusto profiles | Fixtures use synthetic schema-derived records and illustrative tools; no live account certification or LinkedIn Jobs entitlement |
@@ -60,4 +60,4 @@ No issue requiring a real issuer, provider account, Mac device, model parity or
 cloud provisioning should be marked accepted solely because its fixture passes.
 
 [Specific remaining prerequisites and validation steps](PENDING-ACCEPTANCE.md) cover
-each open issue. Recovered connector tests pass; VM acceptance remains separate and is not inferred from them.
+each open issue. Recovered connector tests pass; VM startup/recovery has separate actual Ubuntu evidence and is not inferred from connector fixtures.

@@ -7,6 +7,8 @@
   found the Python health probe taking 8.7 seconds despite a healthy HTTP 200.
 - Use a small loopback HTTP probe without outbound proxy discovery or the
   heavier URL client import; require an HTTP 200 response from `/health`.
+- Record actual Ubuntu VM owner/public-browser acceptance and recovery after
+  Docker restart and guest reboot, with persistent data and explicit lab limits.
 
 ## 0.4.0rc4
 

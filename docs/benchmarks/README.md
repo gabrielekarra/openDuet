@@ -90,6 +90,12 @@ is counted as a passing run. The passing CPU path uses streamed Quanto loading.
   automatic process restart, persistent authenticated session and one-use login.
   This does not grant permissions or control the owner's personal Mac.
 
+- [Actual Ubuntu VM](cloud-vm-acceptance-2026-10-24.json): owner access and
+  separate public browser; Docker restart and changed-boot-ID reboot recovery,
+  persistent data marker and owner auth after reboot. Reused images with exact
+  deploy/health backport, managed trust/SSH overlays; no paid provider or model
+  inference in the 4 GiB guest. Prior failures and inconclusive probe retained.
+
 Passing `*-baseline.json` files are frozen regression references for their exact
 backend, dtype, corpus and question fingerprints. The weekly/manual workflow
 uses both seed and additional references; a mismatch or regression fails.
