@@ -2,6 +2,9 @@
 
 ## 0.4.0rc4
 
+- Correct Intel Mac installation to use the Mac bridge without unsupported
+  PyTorch extras; document the separate Linux Kev option.
+
 - Pin Stripe API/webhook response version, decline new authorizations while the
   wallet is disabled and require operator opt-in for restricted live keys too,
   including keys already stored before an upgrade. Keep cancellation available.

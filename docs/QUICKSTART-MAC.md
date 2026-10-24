@@ -13,7 +13,11 @@ uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrieleka
 openduet setup --background --open
 ```
 
-On an Intel Mac, use `openduet[mac,kev]` instead. The work model is your choice. The generated profile uses native Ollama with
+On an Intel Mac, use `openduet[mac]` instead. Current PyTorch wheels do not
+support macOS x86_64, so the `kev` extra cannot be installed there. Use a
+separate Linux Kev service for proactive decisions, or brief-only mode locally.
+See [PyTorch platform support](https://dev-discuss.pytorch.org/t/pytorch-macos-x86-builds-deprecation-starting-january-2024/1690).
+The work model is your choice. The generated profile uses native Ollama with
 `qwen3.5:4b`, a 16,384-token context, 2,048-token responses and temperature 0.2.
 Install [Ollama](https://ollama.com/download) and run `ollama pull qwen3.5:4b`,
 or choose a different local model, LM Studio or hosted API in Settings.

@@ -11,7 +11,10 @@ uv tool install --python 3.12 'openduet[mac,mlx] @ https://github.com/gabrieleka
 openduet setup --background --open
 ```
 
-Su un Mac Intel sostituisci `openduet[mac,mlx]` con `openduet[mac,kev]`.
+Su un Mac Intel sostituisci `openduet[mac,mlx]` con `openduet[mac]`: i wheel
+PyTorch attuali non supportano macOS x86_64 e l’extra `kev` non è installabile.
+Per Kev usa un servizio Linux separato; senza Kev resta disponibile la modalità
+riepiloghi. Vedi il [supporto PyTorch](https://dev-discuss.pytorch.org/t/pytorch-macos-x86-builds-deprecation-starting-january-2024/1690).
 Il servizio parte anche ai successivi accessi a macOS. La configurazione, i dati
 e le credenziali restano in `~/Library/Application Support/OpenDuet`.
 Il browser si apre con un accesso locale monouso, valido due minuti.

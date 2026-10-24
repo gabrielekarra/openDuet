@@ -184,3 +184,9 @@ Live-mode checks also run before issuing, authorizing or privately filling a
 card when credentials were already stored by an older build. Cancelling an
 existing card remains possible. Synthetic HTTP regressions cover both secret
 and restricted live-key prefixes without contacting a real issuer.
+
+The Intel Mac dependency resolution was checked explicitly for Python 3.12 and
+macOS x86_64: `[mac,kev]` fails because no supported PyTorch wheel exists, while
+`[mac]` resolves successfully. The quickstarts now use `[mac]` on Intel and
+explain the separate Linux Kev option. This is a resolver check, not a native
+Intel Mac or owner-TCC acceptance result.
