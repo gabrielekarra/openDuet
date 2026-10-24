@@ -22,6 +22,10 @@ def source_url(data, depth=0):
             "permalink",
             "source_url",
             "hosted_invoice_url",
+            "uri",
+            "edit_url",
+            "view_url",
+            "scheduling_url",
         ):
             value = data.get(key)
             if isinstance(value, str):
@@ -39,7 +43,7 @@ def source_url(data, depth=0):
         for link in (data.get("links") or [])[:20]:
             if isinstance(link, str) and (url := source_url({"url": link}, depth + 1)):
                 return url
-        for key in ("structuredContent", "items", "results", "events", "messages", "data"):
+        for key in ("structuredContent", "items", "results", "events", "messages", "data", "urls", "node"):
             if key in data and (url := source_url(data[key], depth + 1)):
                 return url
         for block in data.get("content") or []:
@@ -61,10 +65,37 @@ def source_records(data, path="result", depth=0):
     if depth > 5:
         return []
     if isinstance(data, list):
-        return [(f"{path}[{index}]", item) for index, item in enumerate(data[:20]) if isinstance(item, dict)]
+        return [
+            (
+                f"{path}[{index}].node" if isinstance(item.get("node"), dict) else f"{path}[{index}]",
+                item["node"] if isinstance(item.get("node"), dict) else item,
+            )
+            for index, item in enumerate(data[:20])
+            if isinstance(item, dict)
+        ]
     if not isinstance(data, dict):
         return []
-    for key in ("structuredContent", "items", "results", "events", "messages", "data", "invoices", "value"):
+    for key in (
+        "structuredContent",
+        "items",
+        "results",
+        "events",
+        "messages",
+        "data",
+        "invoices",
+        "value",
+        "QueryResponse",
+        "Invoice",
+        "files",
+        "envelopes",
+        "collection",
+        "products",
+        "elements",
+        "payrolls",
+        "employees",
+        "edges",
+        "catalog",
+    ):
         if key in data:
             found = source_records(data[key], path + "." + key, depth + 1)
             if found:
@@ -115,7 +146,16 @@ class Sources:
                     "source_id": source,
                     "url": url[:2000],
                     "locator": locator,
-                    "record_id": str(record.get("id", record.get("ts", "")))[:200],
+                    "record_id": str(
+                        next(
+                            (
+                                record[key]
+                                for key in ("id", "Id", "uuid", "uid", "uri", "envelopeId", "sub", "ts")
+                                if record.get(key) is not None
+                            ),
+                            "",
+                        )
+                    )[:200],
                 }
             )
         return {"source_id": ident, "sources": references, "data": data}

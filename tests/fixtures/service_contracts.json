@@ -1,0 +1,440 @@
+{
+  "version": 1,
+  "notes": "Representative provider result contracts replayed over actual MCP. Tool names belong to the fixture, not a claim of a vendor tool catalogue. No live-account records.",
+  "services": {
+    "gmail": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/get",
+      "checked": "2026-10-24",
+      "kind": "mail.received",
+      "payload": {
+        "messages": [
+          {
+            "id": "mail-1",
+            "threadId": "thread-1",
+            "labelIds": [
+              "INBOX",
+              "UNREAD"
+            ],
+            "payload": {
+              "headers": [
+                {
+                  "name": "Subject",
+                  "value": "Review proposal"
+                },
+                {
+                  "name": "From",
+                  "value": "customer@example.test"
+                }
+              ],
+              "mimeType": "text/plain",
+              "body": {
+                "data": "UGxlYXNlIHJldmlldy4"
+              }
+            }
+          }
+        ]
+      },
+      "expected_subject": "Review proposal",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "google-calendar": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developers.google.com/workspace/calendar/api/v3/reference/events/list",
+      "checked": "2026-10-24",
+      "kind": "calendar.event_created",
+      "payload": {
+        "items": [
+          {
+            "id": "event-1",
+            "summary": "Planning",
+            "start": {
+              "dateTime": "2026-10-26T10:00:00Z"
+            },
+            "end": {
+              "dateTime": "2026-10-26T11:00:00Z"
+            },
+            "htmlLink": "https://calendar.google.com/event?eid=fixture"
+          }
+        ]
+      },
+      "expected_subject": "Planning",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "google-drive": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developers.google.com/workspace/drive/api/reference/rest/v3/files/list",
+      "checked": "2026-10-24",
+      "kind": "file.changed",
+      "payload": {
+        "files": [
+          {
+            "id": "file-1",
+            "name": "Budget",
+            "mimeType": "application/vnd.google-apps.spreadsheet",
+            "modifiedTime": "2026-10-24T10:00:00Z",
+            "webViewLink": "https://drive.google.com/file/d/fixture/view"
+          }
+        ]
+      },
+      "expected_subject": "Budget",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "slack": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://docs.slack.dev/reference/methods/conversations.history",
+      "checked": "2026-10-24",
+      "kind": "chat.message",
+      "payload": {
+        "messages": [
+          {
+            "ts": "1792836000.000001",
+            "user": "U1",
+            "text": "Please review the launch",
+            "permalink": "https://fixture.slack.com/archives/C1/p1"
+          }
+        ],
+        "response_metadata": {
+          "next_cursor": ""
+        }
+      },
+      "expected_subject": "",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "stripe": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://docs.stripe.com/api/invoices/list",
+      "checked": "2026-10-24",
+      "kind": "invoice.overdue",
+      "payload": {
+        "data": [
+          {
+            "id": "in_1",
+            "object": "invoice",
+            "number": "TEST-1",
+            "amount_due": 12345,
+            "currency": "eur",
+            "customer_email": "customer@example.test",
+            "hosted_invoice_url": "https://invoice.stripe.com/i/fixture"
+          }
+        ],
+        "has_more": false
+      },
+      "expected_subject": "Invoice TEST-1",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "quickbooks": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developer.intuit.com/app/developer/qbo/docs/api/accounting/all-entities/invoice",
+      "checked": "2026-10-24",
+      "kind": "invoice.overdue",
+      "payload": {
+        "QueryResponse": {
+          "Invoice": [
+            {
+              "Id": "23",
+              "DocNumber": "1001",
+              "Balance": 123.45,
+              "TotalAmt": 123.45,
+              "CurrencyRef": {
+                "value": "EUR"
+              },
+              "DueDate": "2026-10-23",
+              "CustomerRef": {
+                "value": "1",
+                "name": "Fixture client"
+              }
+            }
+          ]
+        }
+      },
+      "expected_subject": "Invoice 1001",
+      "transport": "stdio",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "gusto": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://docs.gusto.com/app-integrations/reference/get-v1-companies-company_id-payrolls",
+      "checked": "2026-10-24",
+      "kind": "payroll.updated",
+      "payload": [
+        {
+          "uuid": "payroll-1",
+          "name": "October payroll",
+          "processed": false,
+          "pay_period": {
+            "start_date": "2026-10-01",
+            "end_date": "2026-10-15"
+          },
+          "totals": {
+            "gross_pay": "1500.00",
+            "net_pay": "1100.00"
+          }
+        }
+      ],
+      "expected_subject": "October payroll",
+      "transport": "http",
+      "require_approval": true,
+      "exclusive": true
+    },
+    "hubspot": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developers.hubspot.com/docs/api-reference/crm-deals-v3/guide",
+      "checked": "2026-10-24",
+      "kind": "deal.changed",
+      "payload": {
+        "results": [
+          {
+            "id": "deal-1",
+            "properties": {
+              "dealname": "Autumn renewal",
+              "amount": "1500.00",
+              "hs_lastmodifieddate": "2026-10-24T10:00:00Z"
+            },
+            "url": "https://app.hubspot.com/contacts/fixture/deal/1"
+          }
+        ]
+      },
+      "expected_subject": "Autumn renewal",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "docusign": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developers.docusign.com/docs/esign-rest-api/reference/envelopes/envelopes/liststatuschanges/",
+      "checked": "2026-10-24",
+      "kind": "document.awaiting_signature",
+      "payload": {
+        "envelopes": [
+          {
+            "envelopeId": "envelope-1",
+            "emailSubject": "Review agreement",
+            "status": "sent",
+            "lastModifiedDateTime": "2026-10-24T10:00:00Z"
+          }
+        ]
+      },
+      "expected_subject": "Review agreement",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "calendly": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developer.calendly.com/api-docs/2d6ce83c1fd97-list-events",
+      "checked": "2026-10-24",
+      "kind": "calendar.event_created",
+      "payload": {
+        "collection": [
+          {
+            "uri": "https://api.calendly.com/scheduled_events/fixture",
+            "name": "Intro meeting",
+            "start_time": "2026-10-26T10:00:00Z",
+            "end_time": "2026-10-26T10:30:00Z",
+            "status": "active"
+          }
+        ],
+        "pagination": {
+          "next_page": null
+        }
+      },
+      "expected_subject": "Intro meeting",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "linkedin": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://learn.microsoft.com/en-us/linkedin/consumer/integrations/self-serve/sign-in-with-linkedin-v2",
+      "checked": "2026-10-24",
+      "kind": "profile.updated",
+      "payload": {
+        "elements": [
+          {
+            "sub": "person-1",
+            "name": "Fixture Owner",
+            "given_name": "Fixture",
+            "family_name": "Owner"
+          }
+        ]
+      },
+      "expected_subject": "Fixture Owner",
+      "transport": "stdio",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "canva": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://www.canva.dev/docs/connect/api-reference/designs/list-designs/",
+      "checked": "2026-10-24",
+      "kind": "design.changed",
+      "payload": {
+        "items": [
+          {
+            "id": "design-1",
+            "title": "Campaign draft",
+            "urls": {
+              "edit_url": "https://www.canva.com/design/fixture/edit",
+              "view_url": "https://www.canva.com/design/fixture/view"
+            }
+          }
+        ]
+      },
+      "expected_subject": "Campaign draft",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "shopify": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://shopify.dev/docs/api/admin-graphql/latest/queries/products",
+      "checked": "2026-10-24",
+      "kind": "product.changed",
+      "payload": {
+        "data": {
+          "products": {
+            "edges": [
+              {
+                "node": {
+                  "id": "gid://shopify/Product/1",
+                  "title": "Sample product",
+                  "handle": "sample",
+                  "priceRangeV2": {
+                    "minVariantPrice": {
+                      "amount": "19.99",
+                      "currencyCode": "EUR"
+                    }
+                  }
+                }
+              }
+            ],
+            "pageInfo": {
+              "hasNextPage": false
+            }
+          }
+        }
+      },
+      "expected_subject": "Sample product",
+      "transport": "stdio",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "notion": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://developers.notion.com/reference/post-search",
+      "checked": "2026-10-24",
+      "kind": "file.changed",
+      "payload": {
+        "results": [
+          {
+            "id": "page-1",
+            "object": "page",
+            "url": "https://www.notion.so/fixture",
+            "properties": {
+              "Name": {
+                "type": "title",
+                "title": [
+                  {
+                    "plain_text": "Launch notes"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "expected_subject": "Launch notes",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "ramp": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://docs.ramp.com/developer-api/v1/reference/transactions",
+      "checked": "2026-10-24",
+      "kind": "transaction.created",
+      "payload": {
+        "data": [
+          {
+            "id": "transaction-1",
+            "merchant_name": "Fixture merchant",
+            "amount": {
+              "amount": "123.45",
+              "currency_code": "USD"
+            },
+            "description": "Supplies"
+          }
+        ],
+        "page": {
+          "next": null
+        }
+      },
+      "expected_subject": "",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "microsoft-365": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://learn.microsoft.com/en-us/graph/api/user-list-messages",
+      "checked": "2026-10-24",
+      "kind": "mail.received",
+      "payload": {
+        "value": [
+          {
+            "id": "outlook-1",
+            "subject": "Review Microsoft proposal",
+            "from": {
+              "emailAddress": {
+                "address": "customer@example.test"
+              }
+            },
+            "body": {
+              "contentType": "text",
+              "content": "Please review."
+            },
+            "receivedDateTime": "2026-10-24T10:00:00Z",
+            "webLink": "https://outlook.office.com/mail/fixture"
+          }
+        ]
+      },
+      "expected_subject": "Review Microsoft proposal",
+      "transport": "stdio",
+      "require_approval": false,
+      "exclusive": false
+    },
+    "caldav": {
+      "origin": "synthetic-records-from-documented-provider-schema",
+      "provider_schema": "https://github.com/gelse/caldav-mcp",
+      "checked": "2026-10-24",
+      "kind": "calendar.event_created",
+      "payload": {
+        "events": [
+          {
+            "uid": "caldav-1",
+            "summary": "Private meeting",
+            "start": "2026-10-26T10:00:00Z",
+            "end": "2026-10-26T11:00:00Z",
+            "url": "https://calendar.example.test/event.ics"
+          }
+        ]
+      },
+      "expected_subject": "Private meeting",
+      "transport": "http",
+      "require_approval": false,
+      "exclusive": false
+    }
+  }
+}

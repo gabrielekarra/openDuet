@@ -8,8 +8,9 @@ transport failure. Discovery metadata and operator configuration remain the
 trust boundary for a server's claimed read-only behavior.
 
 See the [17-service setup guide](LAUNCH-CONNECTORS.md) for endpoints, OAuth/local
-bridge requirements and known account limits. Gusto remains disabled pending
-dedicated-environment/manual-all-calls enforcement.
+bridge requirements and known account limits. On current main, Gusto requires
+a fresh dedicated profile and manual confirmation for every call; the rc3 tag
+predates this enforcement and must leave Gusto disabled.
 
 First inspect the actual discovered tools with the authenticated endpoint
 `GET /api/connectors/<id>/tools`. Provider tool names and output envelopes vary;
@@ -53,5 +54,8 @@ bodies, error bodies, credentials and argument values are not written to it.
 Automated tests exercise this runner against a real loopback HTTP MCP server and
 synthetic Gmail records, including missing fields, non-read tools, disconnect
 and explicit opt-in. They do **not** certify a live Google, Stripe or Docusign
-account. Per-service production setup/recorded contract coverage remains tracked
-in issue #15; directory metadata alone is not integration acceptance.
+account. The 17-service schema-derived fixtures in `tests/fixtures/service_contracts.json`
+and `test_launch_contracts.py` exercise actual HTTP/stdio discovery/read/write,
+source capture, event ingestion/deduplication and exact one-use review. Tool
+names are illustrative fixture names; records are synthetic, not captured
+private-account sessions. See [service setup](LAUNCH-CONNECTORS.md).

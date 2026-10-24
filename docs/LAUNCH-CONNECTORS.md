@@ -139,14 +139,19 @@ client environment/session and **manual confirmation for every tool call**.
 The hosted server uses OAuth/DCR. An embedded-payroll documentation MCP endpoint
 is documentation search, not an account/payroll connection.
 
-**0.4.0rc3 limitation:** the released workspace does not enforce Gusto's complete
-dedicated-environment/manual-all-calls requirements. Keep this connection
-disabled until that enforcement is published and validated. A separate profile
-alone is insufficient if read calls still execute without manual confirmation.
-Do not enable background payroll polling. Payroll preparation must show the
-actual employees/pay period/totals; running or changing payroll needs explicit
-review and the provider's authorized account. Directory presence is not payroll
-production readiness.
+The current main branch enforces a fresh, dedicated profile for this endpoint:
+every read/write requires approval, other account tools and background polling
+are unavailable, and prior conversation/shared memory is excluded. The profile
+remains reserved after disconnect, so it cannot be rebound to another provider.
+Use `openduet setup --directory /absolute/path/to/private-gusto-profile`; choose
+unused listener/prototype ports in its generated `openduet.toml` before starting
+it with `openduet --config /absolute/path/to/private-gusto-profile/openduet.toml`.
+Connect Gusto before creating tasks or importing any history/accounts. The
+immutable rc3 tag predates this enforcement: leave Gusto disabled on rc3.
+
+Payroll preparation must show the actual employees/pay period/totals; running or
+changing payroll needs explicit review and the provider's authorized account.
+Passing the fixture policy checks does not certify a live payroll account.
 
 ## HubSpot
 
@@ -274,6 +279,8 @@ surfaces; enable Mail.Send only for an intended approved send. Use JSON output
 for OpenDuet polling/contract checking, rather than TOON output. Shared mailboxes,
 personal vs organizational tenants and admin policies affect actual access.
 
+<a id="caldav"></a>
+
 ## CalDAV / Apple Calendar
 
 **Community self-hosted HTTP bridge:**
@@ -294,5 +301,8 @@ does not authorize creating/updating/deleting events or invitations.
 The five business recipes are tested with disposable fixture transports.
 The release's provider-shaped ingestion coverage and opt-in runner are recorded
 in [validation](VALIDATION.md) and [account acceptance](CONNECTOR-ACCEPTANCE.md).
-Per-service schema/transport fixture coverage remains #15 until its pending test
-changes pass and are published. No live account is certified by this guide.
+All 17 schema-derived service fixtures cross actual HTTP/stdio MCP transport,
+source capture, event normalization/deduplication and exact one-use approval.
+These synthetic fixtures and illustrative tool names are not captured private
+provider sessions or vendor tool catalogues. No live account is certified by
+this guide.

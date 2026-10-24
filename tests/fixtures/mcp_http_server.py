@@ -10,6 +10,8 @@ import threading
 import urllib.parse
 from pathlib import Path
 
+from contract_protocol import dispatch
+
 streams = {}
 authorizations = {}
 
@@ -81,6 +83,10 @@ class Handler(http.server.BaseHTTPRequestHandler):
         value = json.loads(body)
         if "id" not in value: return self.response(202)
         method, args = value["method"], value.get("params", {})
+        if path.startswith('/profiles/') and method in {'tools/list', 'tools/call'}:
+            service = path.rsplit('/', 1)[-1]
+            result = dispatch(service, method, args, sys.argv[2] if len(sys.argv) > 2 else '')
+            return self.response(200, {"jsonrpc": "2.0", "id": value["id"], "result": result}, {"MCP-Session-Id": "fixture-session"})
         if method != "initialize" and path not in ("/legacy/messages",) and (self.headers.get("MCP-Session-Id") != "fixture-session" or self.headers.get("MCP-Protocol-Version") != "2025-11-25"):
             return self.response(400)
         if method == "initialize": result = {"protocolVersion": "2025-11-25", "serverInfo": {"name": "Disposable service fixture", "version": "1"}, "capabilities": {"tools": {"listChanged": True}}}
@@ -120,6 +126,18 @@ class FixtureServer(http.server.ThreadingHTTPServer):
         socketserver.TCPServer.server_bind(self)
         self.server_name = "localhost"
         self.server_port = self.server_address[1]
+
+if sys.argv[1] == "--stdio-profile":
+    for line in sys.stdin:
+        value = json.loads(line)
+        if "id" not in value:
+            continue
+        if value['method'] == 'initialize':
+            result = {"protocolVersion": "2025-11-25", "serverInfo": {"name": "provider contract fixture", "version": "1"}, "capabilities": {"tools": {}}}
+        else:
+            result = dispatch(sys.argv[2], value['method'], value.get('params', {}), sys.argv[3] if len(sys.argv) > 3 else '')
+        print(json.dumps({"jsonrpc": "2.0", "id": value["id"], "result": result}), flush=True)
+    sys.exit(0)
 
 if sys.argv[1] == "--stdio":
     for line in sys.stdin:

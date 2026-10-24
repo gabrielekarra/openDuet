@@ -119,7 +119,11 @@ class Runtime:
         return text
 
     def initial_history(self, task):
-        memories = self.store.rows("SELECT id,content FROM memories ORDER BY created DESC LIMIT 30")
+        memories = (
+            []
+            if self.tools.isolated()
+            else self.store.rows("SELECT id,content FROM memories ORDER BY created DESC LIMIT 30")
+        )
         skills = self.plugins.descriptions()
         system = (
             SYSTEM
@@ -133,9 +137,13 @@ class Runtime:
             history.append(
                 {"role": "user", "content": "UNTRUSTED shared memory: " + json.dumps(memories)[:24000]}
             )
-        previous = self.store.rows(
-            "SELECT role,content FROM messages WHERE channel=? AND task!=? ORDER BY created DESC LIMIT 24",
-            (task["channel"], task["id"]),
+        previous = (
+            []
+            if self.tools.isolated()
+            else self.store.rows(
+                "SELECT role,content FROM messages WHERE channel=? AND task!=? ORDER BY created DESC LIMIT 24",
+                (task["channel"], task["id"]),
+            )
         )
         for msg in reversed(previous):
             history.append({"role": msg["role"], "content": msg["content"][:4000]})
@@ -217,11 +225,7 @@ class Runtime:
                 self.store.event("notification_failed", "Notification relay unavailable", ident)
 
     def provider_tools(self):
-        specs = [
-            tool.spec()
-            for tool in self.tools.catalog.values()
-            if not tool.connector or self.tools.enabled(tool.connector)
-        ]
+        specs = [tool.spec() for tool in self.tools.catalog.values() if self.tools.available(tool)]
         return self.redact_data(specs)
 
     async def process_calls(self, task, history):

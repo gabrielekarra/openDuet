@@ -65,12 +65,18 @@ class ConnectorConfig:
     event_kind: str = "mail.received"
     poll_seconds: int = 600
     cursor_argument: str = ""
+    require_approval: bool = False
+    exclusive: bool = False
 
     def __post_init__(self):
+        if not isinstance(self.require_approval, bool) or not isinstance(self.exclusive, bool):
+            raise ValueError("Connector approval and isolation settings must be booleans")
         if bool(self.url) == bool(self.command):
             raise ValueError("Connector requires exactly one of url or command")
         if self.url:
             url = urlsplit(self.url)
+            if url.hostname == "mcp.api.gusto.com":
+                self.require_approval = self.exclusive = True
             if (
                 (
                     url.scheme != "https"
@@ -80,6 +86,10 @@ class ConnectorConfig:
                 or url.password
             ):
                 raise ValueError("MCP requires HTTPS or explicitly configured loopback HTTP")
+        if self.exclusive:
+            self.require_approval = True
+        if self.exclusive and self.poll_tool:
+            raise ValueError("Isolated providers require manual task reads, not background polling")
 
 
 @dataclass

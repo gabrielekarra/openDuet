@@ -81,6 +81,15 @@ async def main():
         )
         with loopback_server() as origin:
             await page.locator("#navigation [data-view=connections]").click()
+            quickbooks = page.locator(".directory-item").filter(
+                has=page.get_by_role("heading", name="QuickBooks", exact=True)
+            )
+            await expect(quickbooks.get_by_role("link", name="Setup guide", exact=True)).to_be_visible()
+            assert await quickbooks.get_by_role("button", name="Connect", exact=True).count() == 0
+            gusto = page.locator(".directory-item").filter(
+                has=page.get_by_role("heading", name="Gusto", exact=True)
+            )
+            await expect(gusto).to_contain_text("fresh dedicated OpenDuet profile")
             form = page.locator("#connector-form")
             await form.locator("[name=name]").fill("oauth-fixture")
             await form.locator("[name=url]").fill(origin + "/oauth/mcp")

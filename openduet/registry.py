@@ -116,6 +116,23 @@ class Registry:
             """)
         for row in self.store.rows("SELECT * FROM connector_registry"):
             runtime.config.connectors.setdefault(row["id"], ConnectorConfig(**json.loads(row["config"])))
+        isolated = [name for name, config in runtime.config.connectors.items() if config.exclusive]
+        if isolated and len(runtime.config.connectors) != 1:
+            raise ValueError("Use a fresh, dedicated OpenDuet profile for this isolated provider")
+        for name, config in runtime.config.connectors.items():
+            if config.exclusive and not self.store.preference("exclusive_provider", ""):
+                self.require_fresh_profile()
+                self.store.set_preference("exclusive_provider", name)
+                self.store.set_preference("exclusive_origin", config.url)
+
+    def require_fresh_profile(self):
+        if (
+            self.store.rows("SELECT id FROM messages LIMIT 1")
+            or self.store.rows("SELECT id FROM memories LIMIT 1")
+            or self.store.rows("SELECT id FROM tasks LIMIT 1")
+            or self.store.preference("mail_accounts", {})
+        ):
+            raise ValueError("Use a fresh, dedicated OpenDuet profile for this isolated provider")
 
     async def add(self, name, values):
         if (
@@ -140,9 +157,26 @@ class Registry:
                 "event_kind",
                 "poll_seconds",
                 "cursor_argument",
+                "require_approval",
+                "exclusive",
             }
         }
         config = ConnectorConfig(**allowed)
+        reserved = self.store.preference("exclusive_provider", "")
+        if reserved and reserved != name:
+            raise ValueError(
+                "This profile is reserved for an isolated provider; create a separate OpenDuet installation directory"
+            )
+        if reserved and (
+            not config.exclusive or config.url != self.store.preference("exclusive_origin", config.url)
+        ):
+            raise ValueError(
+                "An isolated profile cannot be rebound to another provider; create a fresh profile"
+            )
+        if config.exclusive and not reserved:
+            if self.runtime.config.connectors:
+                raise ValueError("Use a fresh, dedicated OpenDuet profile for this isolated provider")
+            self.require_fresh_profile()
         config.credential_ref = "connector:" + name
         bearer = values.get("bearer_token", "")
         if bearer:
@@ -156,6 +190,9 @@ class Registry:
             "INSERT OR REPLACE INTO connector_registry VALUES(?,?)", (name, json.dumps(asdict(config)))
         )
         self.runtime.config.connectors[name] = config
+        if config.exclusive:
+            self.store.set_preference("exclusive_provider", name)
+            self.store.set_preference("exclusive_origin", config.url)
         self.new_revision(name)
         disabled = self.store.preference("disabled_connectors", [])
         self.store.set_preference("disabled_connectors", [item for item in disabled if item != name])

@@ -127,14 +127,54 @@ def unpack(result):
         return data, None
     if not isinstance(data, dict):
         raise ValueError("Event tool must return an object or array")
-    for key in ("events", "messages", "items", "data", "results", "invoices", "value"):
+    if isinstance(data.get("QueryResponse"), dict):
+        data = data["QueryResponse"]
+    for wrapper in ("catalog", "data"):
+        if isinstance(data.get(wrapper), dict):
+            nested = data[wrapper]
+            if any(
+                isinstance(nested.get(key), list) for key in ("products", "items", "results", "edges")
+            ) or (
+                isinstance(nested.get("products"), dict) and isinstance(nested["products"].get("edges"), list)
+            ):
+                data = nested
+    if isinstance(data.get("products"), dict) and isinstance(data["products"].get("edges"), list):
+        data = data["products"]
+    for key in (
+        "events",
+        "messages",
+        "items",
+        "data",
+        "results",
+        "invoices",
+        "value",
+        "files",
+        "Invoice",
+        "envelopes",
+        "collection",
+        "products",
+        "elements",
+        "payrolls",
+        "employees",
+        "edges",
+    ):
         if isinstance(data.get(key), list):
             records = data[key]
-            cursor = data.get("next_cursor", data.get("nextPageToken", data.get("@odata.nextLink")))
+            if key == "edges":
+                records = [edge.get("node", edge) for edge in records if isinstance(edge, dict)]
+            cursor = data.get(
+                "next_cursor",
+                data.get(
+                    "nextCursor",
+                    data.get("nextPageToken", data.get("@odata.nextLink", data.get("continuation"))),
+                ),
+            )
             if cursor is None and isinstance(data.get("response_metadata"), dict):
                 cursor = data["response_metadata"].get("next_cursor")
             if cursor is None and data.get("has_more") and records:
                 cursor = records[-1].get("id")
+            if cursor is None and isinstance(data.get("pagination"), dict):
+                cursor = data["pagination"].get("next_page")
             # A returned current cursor is not necessarily the next page.
             if cursor is None and "cursor" in data and "has_more" not in data:
                 cursor = data["cursor"]

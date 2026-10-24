@@ -12,7 +12,7 @@ returns 403 for the connected integration; source-archive installation remains p
 
 | Check | Observed result |
 | --- | --- |
-| Runtime/policy/transport/integration tests | **190 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
+| Runtime/policy/transport/integration tests | **211 passed** locally (current Unreleased connector work), including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
 | Separate specialist research package | **87 passed**, repeated in CI |
 | Ruff E4/E7/E9/F/I/UP | Passed |
 | Restart recovery | Actual SIGKILL → same database/session → automatic safe task completion → exactly one document to the original chat/topic |
@@ -116,11 +116,27 @@ before comparison because option bytes changed. No trained checkpoint is bundled
 
 The [17-service guide](LAUNCH-CONNECTORS.md) distinguishes hosted endpoints,
 local bridges, OAuth requirements, scopes, account entitlements and unsupported
-workflows. It explicitly keeps Gusto disabled pending manual-all-calls/isolation
-support; the guide does not certify live provider access.
+workflows. It documents Gusto's dedicated-profile/manual-all-calls requirements; the guide
+does not certify live provider access.
 
-The development terminal became unavailable before the pending connector and
-QEMU results could be collected. Those local changes and the VM retry are not
-counted as published or passing acceptance. Full repository checks for the
-published cleanup run through the push-triggered CI workflow. See the
-[remaining acceptance steps](PENDING-ACCEPTANCE.md) for specific prerequisites.
+The recovered connector work now passes **211 runtime tests** and Ruff. All 17
+schema-derived service fixtures cross actual MCP discovery and HTTP/stdio
+read/write transport, source capture, event ingestion/deduplication and exact
+one-use review. The fixture names/records are illustrative and synthetic, not
+captured private sessions or a vendor tool catalogue. Gusto's official endpoint
+automatically enforces a fresh dedicated profile, all-call confirmation,
+no background polling, no other-account tools and no shared/prior-task context;
+reservation survives disconnect. TOML cannot mix it with another account/history.
+
+Real Chromium console acceptance passed with 28 responsive/dark screenshots and
+checks that operator bridges show setup links instead of blank Connect actions.
+The current directory has 12 prefilled hosted endpoints and 5 operator bridges.
+Published code is verified again by the full push-triggered CI workflow.
+
+The existing Ubuntu/QEMU guest was resumed after the environment outage and
+reached SSH. Cloud-init then failed: the nested VM could not reach the configured
+outbound proxy for Ubuntu packages or GitHub clone, so Docker/workspace did not
+start. Its disposable SSH user also lacks passwordless sudo for recovery probes.
+The [failed acceptance record](benchmarks/cloud-vm-2026-10-24.json) preserves the
+image/recipe fingerprints and exact boundary. No workspace-startup, restart or
+provider-deployment pass is inferred from it. See [remaining steps](PENDING-ACCEPTANCE.md).

@@ -1,0 +1,26 @@
+{
+  "passed": false,
+  "actual_booted_virtual_machine": true,
+  "cloud_provider_provisioned": false,
+  "image_url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
+  "image_sha256": "04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94",
+  "recipe_sha256": "ffe887ef360037ab4ec19433519fe9398175f4532eb95316b6aeb3a9be79d562",
+  "ssh_ready": true,
+  "cloud_init_status": "error",
+  "cloud_init_stage": null,
+  "privileged_probe_available": false,
+  "blocker": "The nested VM could not reach the configured outbound proxy. Ubuntu package installation and GitHub clone failed, so Docker and the workspace never started. The disposable SSH user also requires a sudo password for privileged recovery probes.",
+  "workspace_startup_verified": false,
+  "docker_restart_recovery_verified": false,
+  "guest_reboot_recovery_verified": false,
+  "accelerator": "qemu-tcg",
+  "memory_mib": 4096,
+  "vcpu": 2,
+  "collected_at": "2026-10-24",
+  "failed_package_install": [
+    "docker.io",
+    "docker-buildx",
+    "docker-compose-v2"
+  ],
+  "github_clone_verified": false
+}

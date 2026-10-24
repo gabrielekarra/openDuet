@@ -6,7 +6,14 @@
   and original frozen benchmark corpus in immutable archives. The historical
   `bobb-mac-final` tag remains available; archived inputs were not relabelled.
 - Document setup, account requirements and limits for all 17 launch-directory
-  services. Live-account certification remains separate from fixture acceptance.
+  services, with schema-derived fixtures over actual HTTP/stdio transport.
+  Preserve provider IDs, list envelopes, source URLs and currency units.
+- Enforce dedicated profiles and manual confirmation of every Gusto tool call,
+  including reads; reject background polling and cross-account profile reuse.
+  Show service limits and setup guides in the directory; local bridges no longer
+  offer blank Connect buttons. Live-account certification remains separate.
+- Include third-party notices in Docker builds; enable Buildx, sequential builds
+  and Docker-daemon restart propagation in the cloud-init recipe.
 - Clarify the qualified BF16/MLX fixed-record parity result and retain the
   default INT8 difference and unmeasured hardware limits.
 

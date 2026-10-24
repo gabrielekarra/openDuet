@@ -30,6 +30,46 @@ def normalize(raw, kind, connector):
         envelope, raw = raw, raw["data"]["object"]
     item = dict(raw)
     payload = dict(raw.get("payload", raw))
+    if not item.get("id"):
+        for key in ("Id", "uuid", "uid", "uri", "envelopeId", "sub"):
+            if raw.get(key):
+                item["id"] = str(raw[key])
+                break
+    subject = (
+        raw.get("subject")
+        or raw.get("title")
+        or raw.get("name")
+        or raw.get("emailSubject")
+        or raw.get("summary")
+    )
+    if subject:
+        item.setdefault("subject", subject)
+    if isinstance(raw.get("properties"), dict):
+        properties = raw["properties"]
+        if not item.get("subject"):
+            item["subject"] = (
+                properties.get("dealname")
+                or " ".join(str(properties.get(key) or "") for key in ("firstname", "lastname")).strip()
+            )
+        item.setdefault("sender", properties.get("email", ""))
+        if not item.get("subject"):
+            for value in properties.values():
+                if isinstance(value, dict) and isinstance(value.get("title"), list):
+                    item["subject"] = "".join(
+                        str(part.get("plain_text", part.get("text", {}).get("content", "")))
+                        for part in value["title"]
+                    )[:1000]
+                    break
+    if "Id" in raw and ("DocNumber" in raw or "TotalAmt" in raw):
+        item["subject"] = "Invoice " + str(raw.get("DocNumber", raw["Id"]))
+        payload["amount_unit"] = "major currency units (provider value; no conversion applied)"
+        payload["currency"] = raw.get("CurrencyRef", {}).get("value", "")
+    if "envelopeId" in raw:
+        payload["document_status"] = raw.get("status", "")
+    if isinstance(raw.get("urls"), dict):
+        item.setdefault(
+            "links", [raw["urls"][key] for key in ("edit_url", "view_url") if raw["urls"].get(key)]
+        )
     if isinstance(raw.get("payload"), dict) and isinstance(raw["payload"].get("headers"), list):
         headers = {entry["name"].lower(): entry.get("value", "") for entry in raw["payload"]["headers"]}
         item.setdefault("subject", headers.get("subject", ""))
@@ -71,7 +111,10 @@ def normalize(raw, kind, connector):
         for field in ("start", "end"):
             if field in raw:
                 payload[field] = timestamp(raw[field])
-        item.setdefault("subject", raw.get("summary", raw.get("subject", "")))
+            elif field + "_time" in raw:
+                payload[field] = timestamp(raw[field + "_time"])
+        if not item.get("subject"):
+            item["subject"] = raw.get("summary", raw.get("subject", ""))
         item.setdefault("links", [raw["htmlLink"]] if raw.get("htmlLink") else [])
     if "body" in item and isinstance(item["body"], dict):
         body = item["body"]
@@ -86,7 +129,15 @@ def normalize(raw, kind, connector):
         item["sender"] = item["sender"].get("emailAddress", {}).get("address", "")
     if isinstance(raw.get("from"), dict):
         item.setdefault("sender", raw["from"].get("emailAddress", {}).get("address", ""))
-    for key in ("internalDate", "receivedDateTime", "sentDateTime", "updated_at", "created"):
+    for key in (
+        "internalDate",
+        "receivedDateTime",
+        "sentDateTime",
+        "updated_at",
+        "created",
+        "modifiedTime",
+        "lastModifiedDateTime",
+    ):
         if key in raw and timestamp(raw[key]) is not None:
             item.setdefault("occurred_at", timestamp(raw[key]))
             break

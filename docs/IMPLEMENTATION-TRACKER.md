@@ -1,8 +1,8 @@
 # Issue implementation and acceptance
 
 Scope: the 39 originally open issues #4–#44, excluding the previously closed #17 and #22.
-Review on 24 October 2026: **30 completed; 9 remain open after acceptance reconciliation**.
-This tracker describes the 0.4.0rc3 release candidate and the current Unreleased cleanup. **Delivered** means code and
+Review on 24 October 2026: **31 completed; 8 remain open after connector acceptance**.
+This tracker describes the 0.4.0rc3 release candidate and the current Unreleased connector work. **Delivered** means code and
 repeatable checks exist; it does not certify untested third-party accounts or
 hardware. The product is installable as a private Mac login service or self-hosted server. Exact commands and results
 are in [VALIDATION.md](VALIDATION.md).
@@ -24,10 +24,10 @@ the native source before deletion.
 | #9 | Closed | Task/file/record sources, exact locators, validated numeric references, Office/PDF links, offline excerpts and source-preserving revisions | Actual file/browser/brief fixture criteria pass; citation identity does not certify a claim or calculation |
 | #10 | Closed | Versioned scheduled dashboards, PNG delivery and separate opaque prototype sandbox | Real Chromium parent/API/network isolation passed |
 | #11 | Closed | Live XLSX formulas, DOCX/PDF/PPTX, notes, native previews and retained versions | Real LibreOffice recalculation/rendering passed |
-| #12 | Open | Separate computer API/container, enforcing public egress, artifact bridge, Compose and VPS cloud-init | Local Docker accepted; VM retry results unavailable after terminal outage; no provider instance provisioned |
+| #12 | Open | Separate computer API/container, enforcing public egress, artifact bridge, Compose and VPS cloud-init | Local Docker accepted; Ubuntu VM reached SSH but configured-proxy access failed, blocking package install/clone; recovery probes also need guest admin access; no provider instance provisioned |
 | #13 | Closed | Encrypted vault, rotation/recovery, scoped 1Password/Bitwarden injection, redaction | Fixture credentials only; real vault accounts not available |
 | #14 | Closed | Read/destructive classification, forbidden actions, sensitive-data checks and hostile-page fixtures | Declared tool actions and tested data patterns; not a semantic guarantee for every GUI |
-| #15 | Open | 17-service directory, [per-service setup guide](LAUNCH-CONNECTORS.md), five end-to-end business recipes and opt-in read-only checker | Pending per-service fixture changes are not published/accepted; Gusto stays disabled pending required isolation/manual confirmation |
+| #15 | Closed | 17-service directory/setup and schema-derived HTTP/stdio contracts; five business recipes, exact one-use approvals, source/event ingestion and dedicated Gusto profiles | Fixtures use synthetic schema-derived records and illustrative tools; no live account certification or LinkedIn Jobs entitlement |
 | #16 | Closed | Agent Skills descriptions/on-demand bodies, reviewed local/Git/static Claude-layout plugins, suggestions | Executable hooks/scripts/binaries are intentionally unsupported |
 | #18 | Open | Off-by-default Stripe Issuing adapter, exact spend approval, merchant/amount/expiry/caps, private checkout and cancellation | Mock issuer fixture passed. A real eligible issuer sandbox/account and webhook must still be accepted; private Link/Shop Pay APIs unavailable |
 | #19 | Closed | Telegram-first console, seven views, mobile/dark layouts, original glasses brand | 28 screenshots; Lighthouse Tasks/Telegram 100. GitHub social-preview file supplied, repository image not set |
@@ -60,4 +60,4 @@ No issue requiring a real issuer, provider account, Mac device, model parity or
 cloud provisioning should be marked accepted solely because its fixture passes.
 
 [Specific remaining prerequisites and validation steps](PENDING-ACCEPTANCE.md) cover
-each open issue. Unavailable local test/VM results are not counted as passing.
+each open issue. Recovered connector tests pass; VM acceptance remains separate and is not inferred from them.

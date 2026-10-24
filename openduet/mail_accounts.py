@@ -191,9 +191,7 @@ class MailAccounts:
                 sender.close()
                 raise
         else:
-            sender = smtplib.SMTP_SSL(
-                config["smtp_host"], config["smtp_port"], context=context, timeout=20
-            )
+            sender = smtplib.SMTP_SSL(config["smtp_host"], config["smtp_port"], context=context, timeout=20)
         try:
             sender.login(credentials["username"], credentials["password"])
         except BaseException:
@@ -216,6 +214,8 @@ class MailAccounts:
                 sender.noop()
 
     async def add(self, values):
+        if self.runtime.tools.isolated():
+            raise ValueError("Use a separate OpenDuet profile for mail; this provider profile is isolated")
         fields = {
             "label",
             "imap_host",
@@ -329,6 +329,8 @@ class MailAccounts:
             client.logout()
 
     async def poll(self):
+        if self.runtime.tools.isolated():
+            return
         now = time.time()
         for name, config in list(self.listing().items()):
             if not self.runtime.tools.enabled(name):

@@ -470,7 +470,35 @@ class Tools:
         self.catalog.update({t.name: t for t in tools})
 
     def enabled(self, name):
-        return name not in self.store.preference("disabled_connectors", [])
+        disabled = self.store.preference("disabled_connectors", [])
+        reserved = self.store.preference("exclusive_provider", "")
+        exclusive = reserved or next(
+            (key for key, cfg in self.config.connectors.items() if cfg.exclusive and key not in disabled), ""
+        )
+        origin = self.store.preference("exclusive_origin", "")
+        if (
+            reserved
+            and origin
+            and (reserved not in self.config.connectors or self.config.connectors[reserved].url != origin)
+        ):
+            return False
+        return name not in disabled and (not exclusive or name == exclusive)
+
+    def isolated(self):
+        return bool(
+            self.store.preference("exclusive_provider", "")
+            or any(cfg.exclusive for cfg in self.config.connectors.values())
+        )
+
+    def available(self, tool):
+        if tool.connector:
+            return self.enabled(tool.connector)
+        return not self.isolated() or tool.name in {
+            "create_artifact",
+            "read_attachment",
+            "read_source",
+            "load_skill",
+        }
 
     def connection_context(self, name):
         config = self.config.connectors.get(name)
@@ -575,7 +603,7 @@ class Tools:
                         f"{name}/{remote.name}: {remote.description or ''}"[:3000],
                         remote.inputSchema,
                         invoke,
-                        risk == "consequential",
+                        risk == "consequential" or cfg.require_approval,
                         name,
                         remote.name,
                         risk,
@@ -603,7 +631,7 @@ class Tools:
 
     def get(self, name, arguments):
         tool = self.catalog.get(name)
-        if tool is None or (tool.connector and not self.enabled(tool.connector)):
+        if tool is None or not self.available(tool):
             raise ValueError("Tool is unavailable or connector access was revoked")
         Draft202012Validator(tool.parameters).validate(arguments)
         check_payload(arguments)
@@ -615,7 +643,7 @@ class Tools:
 
     async def invoke(self, name, arguments, task):
         tool = self.get(name, arguments)
-        if tool.connector and tool.needs_approval(arguments):
+        if tool.connector and tool.needs_approval(arguments) and tool.risk != "read":
             from .policy import check_outgoing
 
             check_outgoing(json.dumps(arguments), self.store.task(task)["request"].split("UNTRUSTED", 1)[0])

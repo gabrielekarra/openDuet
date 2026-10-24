@@ -31,9 +31,10 @@ remain the operator's responsibility. These endpoints were checked against
 and [HubSpot's setup guide](https://developers.hubspot.com/docs/apps/developer-platform/build-apps/integrate-with-the-remote-hubspot-mcp-server),
 23 October 2026. This is not a claim that private provider accounts were tested.
 
-The directory also includes Stripe, Notion, Slack and Canva official URLs.
-Other entries link permissions and API documentation; supply a reviewed MCP
-implementation. An API documentation link alone does not create an integration.
+The directory includes 12 prefilled hosted endpoints and 5 local/operator bridges.
+The [17-service setup guide](LAUNCH-CONNECTORS.md) specifies actual authentication
+and account/plan limits. Local bridges show a setup link rather than a blank
+Connect action. An API documentation link alone does not create an integration.
 Tools are discovered from the actual connected server. Only the operator may
 configure stdio connectors that execute local programs.
 
@@ -51,3 +52,15 @@ poll. MCP errors preserve the previous cursor and expose a retryable health erro
 Fixture acceptance uses a real HTTP MCP process and SDK, synthetic provider-shaped
 records and a browser-driven PKCE/token flow. It verifies pagination, edits,
 read-state, deduplication and disconnect races without external accounts.
+
+## Dedicated provider profiles
+
+Gusto's official endpoint automatically requires an isolated installation and
+manual confirmation of every tool call, including reads. Use a fresh profile
+with separate ports and connect it before importing tasks, history or accounts.
+The registry rejects mixed configurations or reuse of an existing account/profile.
+Other connector/mail tools, background polling and shared/prior-task context are
+unavailable; the reservation remains after disconnect. A separate chat thread
+inside a mixed profile does not meet this requirement. Operator-configured
+connectors can request the same behavior with `exclusive = true`;
+`require_approval = true` alone requests manual review for all calls.

@@ -6,7 +6,7 @@ ARG OPENDUET_KEV=false
 ARG OPENDUET_OFFICE=false
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 PLAYWRIGHT_BROWSERS_PATH=/opt/browsers
 WORKDIR /app
-COPY pyproject.toml README.md LICENSE uv.lock ./
+COPY pyproject.toml README.md LICENSE THIRD_PARTY_NOTICES.md uv.lock ./
 COPY openduet ./openduet
 RUN --mount=type=secret,id=build_ca,target=/tmp/build-ca.pem \
     if [ -s /tmp/build-ca.pem ]; then \

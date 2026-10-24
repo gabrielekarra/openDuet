@@ -9,11 +9,16 @@ from tempfile import TemporaryDirectory
 
 
 @contextmanager
-def loopback_server():
+def loopback_server(effect_file=""):
     with TemporaryDirectory(prefix="openduet-mcp-") as directory:
         port = Path(directory) / "port"
         server = subprocess.Popen(
-            [sys.executable, str(Path(__file__).with_name("mcp_http_server.py")), str(port)],
+            [
+                sys.executable,
+                str(Path(__file__).with_name("mcp_http_server.py")),
+                str(port),
+                str(effect_file),
+            ],
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )

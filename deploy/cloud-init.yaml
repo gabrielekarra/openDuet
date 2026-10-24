@@ -2,7 +2,7 @@
 # Ubuntu 24.04+, public SSH key configured through your VPS provider.
 # The console binds loopback; access it through SSH or your own HTTPS reverse proxy.
 package_update: true
-packages: [docker.io, docker-compose-v2, git, openssl]
+packages: [docker.io, docker-buildx, docker-compose-v2, git, openssl]
 write_files:
   - path: /etc/systemd/system/openduet.service
     permissions: '0644'
@@ -10,11 +10,13 @@ write_files:
       [Unit]
       Description=OpenDuet always-on workspace
       Requires=docker.service
+      PartOf=docker.service
       After=docker.service network-online.target
       [Service]
       Type=oneshot
       RemainAfterExit=yes
       WorkingDirectory=/opt/openduet
+      Environment=COMPOSE_PARALLEL_LIMIT=1
       ExecStart=/usr/bin/docker compose up -d --build
       ExecStop=/usr/bin/docker compose stop
       TimeoutStartSec=1800
