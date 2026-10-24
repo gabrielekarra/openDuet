@@ -139,14 +139,16 @@ client environment/session and **manual confirmation for every tool call**.
 The hosted server uses OAuth/DCR. An embedded-payroll documentation MCP endpoint
 is documentation search, not an account/payroll connection.
 
-The current main branch enforces a fresh, dedicated profile for this endpoint:
+Version 0.4.0rc4 and current main enforce a fresh, dedicated profile for this endpoint:
 every read/write requires approval, other account tools and background polling
 are unavailable, and prior conversation/shared memory is excluded. The profile
 remains reserved after disconnect, so it cannot be rebound to another provider.
 Use `openduet setup --directory /absolute/path/to/private-gusto-profile`; choose
 unused listener/prototype ports in its generated `openduet.toml` before starting
 it with `openduet --config /absolute/path/to/private-gusto-profile/openduet.toml`.
-Connect Gusto before creating tasks or importing any history/accounts. The
+Use a different Telegram bot if another OpenDuet profile is running at the same
+time; two running instances cannot long-poll the same bot. Connect Gusto before creating
+tasks or importing any history/accounts. The
 immutable rc3 tag predates this enforcement: leave Gusto disabled on rc3.
 
 Payroll preparation must show the actual employees/pay period/totals; running or

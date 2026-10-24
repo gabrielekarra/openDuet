@@ -11,6 +11,8 @@ import httpx
 
 from .store import uid
 
+STRIPE_API_VERSION = "2025-03-31.basil"
+
 
 class StripeIssuing:
     def __init__(self, vault, client=None):
@@ -22,7 +24,10 @@ class StripeIssuing:
     async def request(self, method, path, data=None):
         key = self.vault.get("wallet.stripe.key", purpose="purchase-card")
         response = await self.client.request(
-            method, path, data=data, headers={"Authorization": "Bearer " + key}
+            method,
+            path,
+            data=data,
+            headers={"Authorization": "Bearer " + key, "Stripe-Version": STRIPE_API_VERSION},
         )
         if response.is_error:
             raise ValueError("The card issuer rejected this operation")
@@ -73,10 +78,18 @@ class Wallet:
             "categories": [],
         } | self.store.preference("wallet", {})
 
+    def allowed_mode(self):
+        if self.runtime.config.wallet_allow_live or not isinstance(self.provider, StripeIssuing):
+            return True
+        key = self.runtime.vault.get("wallet.stripe.key", purpose="purchase-mode")
+        return key.startswith(("sk_test_", "rk_test_"))
+
     async def purchase(self, arguments, task):
         settings = self.settings()
         if not settings["enabled"]:
             raise ValueError("Purchase cards are disabled; connect an eligible issuer in Settings")
+        if not self.allowed_mode():
+            raise ValueError("Use a test-mode issuer key or explicitly enable live issuing as the operator")
         merchant, amount, currency = arguments["merchant"], arguments["amount"], arguments["currency"].upper()
         if (
             merchant not in settings["merchants"]
@@ -133,13 +146,21 @@ class Wallet:
         }
 
     def authorize(self, event):
+        settings = self.settings()
+        if not settings["enabled"]:
+            return False
+        try:
+            if not self.allowed_mode():
+                return False
+        except ValueError:
+            return False
         data = event["data"]["object"]
         card = data.get("card")
         card = card.get("id") if isinstance(card, dict) else card
         merchant = str(data.get("merchant_data", {}).get("network_id", ""))
         if (
-            self.settings()["categories"]
-            and data.get("merchant_data", {}).get("category") not in self.settings()["categories"]
+            settings["categories"]
+            and data.get("merchant_data", {}).get("category") not in settings["categories"]
         ):
             return False
         with self.store.db() as db:
@@ -200,6 +221,8 @@ class Wallet:
     async def checkout(self, purchase, expected_url, selectors, task):
         from urllib.parse import urlsplit
 
+        if not self.allowed_mode():
+            raise ValueError("Use a test-mode issuer key or explicitly enable live issuing as the operator")
         row = self.store.rows("SELECT * FROM purchases WHERE id=? AND task=?", (purchase, task))
         if not row or row[0]["status"] != "active" or row[0]["expires"] <= time.time():
             raise ValueError("An active approved purchase card is required")

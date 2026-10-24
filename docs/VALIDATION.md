@@ -1,18 +1,19 @@
 # Validation record — 24 October 2026
 
-Verification for the OpenDuet **0.4.0rc3** release candidate. Disposable
+Verification for the OpenDuet **0.4.0rc4** release candidate. Disposable
 Telegram/provider/issuer transports contain no user accounts or private data.
 Real models, Chromium, LibreOffice, TLS mail transports and macOS launchd are
 identified separately below. The [CI workflow](../.github/workflows/ci.yml)
 repeats the runtime, Mac, Office, research, console and isolated-computer checks.
-[All five jobs passed after the mail changes](https://github.com/gabrielekarra/openDuet/actions/runs/39945162320).
+The [CI history](https://github.com/gabrielekarra/openDuet/actions/workflows/ci.yml)
+identifies the exact source commit for each five-job run.
 The distribution workflow records its source commit, isolated-installation check
 and checksummed downloadable artifacts. GitHub Release publication currently
 returns 403 for the connected integration; source-archive installation remains public.
 
 | Check | Observed result |
 | --- | --- |
-| Runtime/policy/transport/integration tests | **211 passed** locally (current Unreleased connector work), including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
+| Runtime/policy/transport/integration tests | **217 passed** locally, including the optional Torch/Quanto contract; the basic CI install skips that numerical test |
 | Separate specialist research package | **87 passed**, repeated in CI |
 | Ruff E4/E7/E9/F/I/UP | Passed |
 | Restart recovery | Actual SIGKILL → same database/session → automatic safe task completion → exactly one document to the original chat/topic |
@@ -119,7 +120,7 @@ local bridges, OAuth requirements, scopes, account entitlements and unsupported
 workflows. It documents Gusto's dedicated-profile/manual-all-calls requirements; the guide
 does not certify live provider access.
 
-The recovered connector work now passes **211 runtime tests** and Ruff. All 17
+The recovered connector work now passes **217 runtime tests** and Ruff. All 17
 schema-derived service fixtures cross actual MCP discovery and HTTP/stdio
 read/write transport, source capture, event ingestion/deduplication and exact
 one-use review. The fixture names/records are illustrative and synthetic, not
@@ -150,3 +151,36 @@ timed out waiting for a sourced export in Make; that failure is preserved.
 The browser check now reports task/artifact state on a source-export failure
 and directly covers the lost-update race; no timeout or acceptance assertion
 was relaxed. The following push reruns the complete five-job workflow.
+
+## Issuer HTTP contract
+
+Signed HTTP fixtures exercise owner configuration, approval before card creation,
+exact amount/currency/merchant declines, versioned authorization responses and
+cancellation after one authorization. Both API requests and webhook responses
+pin `2025-03-31.basil`, as required by the documented Stripe response contract.
+A disabled wallet declines new authorizations, and restricted live keys require
+the same operator opt-in as live secret keys. These are transport/contract
+checks using synthetic records, not acceptance against an eligible Stripe
+Issuing sandbox. No actual card or charge was created.
+
+## Managed VM retry and distribution preparation
+
+The current attempt retained the Docker-provided proxy defaults instead of
+overriding them with the outer executor proxy. HTTPS reachability passed, and
+the existing Ubuntu guest obtained administrative SSH, installed Docker/Buildx,
+cloned the public repository and started actual Compose image builds. Docker
+then recorded an OOM event for the helper container on the managed host with an
+8 GiB limit; the VM process exited. The [latest failed acceptance record](benchmarks/cloud-vm-memory-2026-10-24.json)
+preserves this boundary separately from the earlier network failure. No startup,
+Docker restart or guest reboot pass is claimed. No provider VM was provisioned.
+
+The rc4 wheel was installed in a separate environment outside the repository.
+Its actual server, private token file, one-use local sign-in and running-service
+diagnostics passed. Wheel/source contents retain notices, UI and the bundled
+skill, and exclude runtime data/private .env files. The distribution workflow
+will repeat this check against the final commit after all five CI jobs pass.
+
+Live-mode checks also run before issuing, authorizing or privately filling a
+card when credentials were already stored by an older build. Cancelling an
+existing card remains possible. Synthetic HTTP regressions cover both secret
+and restricted live-key prefixes without contacting a real issuer.

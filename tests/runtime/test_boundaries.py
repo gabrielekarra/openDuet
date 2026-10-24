@@ -309,6 +309,12 @@ async def test_monthly_cap_includes_first_day_even_in_31_day_month(runtime, monk
     from datetime import datetime
     from zoneinfo import ZoneInfo
 
+    class BudgetOnlyIssuer:
+        async def create_purchase_card(self, scope):
+            raise AssertionError("An exhausted monthly cap must not contact the issuer")
+
+    await runtime.wallet.provider.client.aclose()
+    runtime.wallet.provider = BudgetOnlyIssuer()
     runtime.attention.configure({"timezone": "UTC"})
     start = datetime(2026, 1, 1, tzinfo=ZoneInfo("UTC")).timestamp()
     now = datetime(2026, 1, 31, 18, tzinfo=ZoneInfo("UTC")).timestamp()

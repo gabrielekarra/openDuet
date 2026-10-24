@@ -1,6 +1,12 @@
 # Changes
 
-## Unreleased
+## 0.4.0rc4
+
+- Pin Stripe API/webhook response version, decline new authorizations while the
+  wallet is disabled and require operator opt-in for restricted live keys too,
+  including keys already stored before an upgrade. Keep cancellation available.
+  Verify exact approved card scopes and cancellation over the signed HTTP
+  contract; actual issuer-sandbox acceptance remains separate.
 
 - Queue console updates received during an existing refresh, so late results
   are fetched after the earlier snapshot. Preserve deliberate navigation and

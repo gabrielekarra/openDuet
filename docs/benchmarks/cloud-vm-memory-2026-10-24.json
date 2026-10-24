@@ -1,0 +1,31 @@
+{
+  "passed": false,
+  "actual_booted_virtual_machine": true,
+  "cloud_provider_provisioned": false,
+  "image_url": "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img",
+  "image_sha256": "04e8f2461a16a44e78a370284471f29616cdd9baf1893df25807b71f985b6c94",
+  "recipe_sha256": "ffe887ef360037ab4ec19433519fe9398175f4532eb95316b6aeb3a9be79d562",
+  "ssh_ready": true,
+  "guest_administration_ready": true,
+  "docker_packages_installed": true,
+  "github_clone_completed": true,
+  "compose_image_build_started": true,
+  "workspace_startup_verified": false,
+  "docker_restart_recovery_verified": false,
+  "guest_reboot_recovery_verified": false,
+  "vm_process_exited": true,
+  "docker_helper_oom_event": true,
+  "oom_event_utc": "2026-10-24T22:09:26+00:00",
+  "test_host_memory_limit_bytes": 8589934592,
+  "guest_memory_mib": 4096,
+  "vcpu": 2,
+  "accelerator": "qemu-tcg",
+  "network_fix": "Preserved Docker-provided proxy defaults instead of overriding them with the outer executor proxy. TLS verification remained enabled.",
+  "managed_test_overlays": [
+    "Disposable SSH public key and administrative test user",
+    "Docker-provided proxy settings",
+    "Provided CA trust"
+  ],
+  "blocker": "Docker reported an out-of-memory event for the helper container and the VM process exited during Compose image builds. Startup and recovery acceptance are incomplete.",
+  "collected_at": "2026-10-24"
+}

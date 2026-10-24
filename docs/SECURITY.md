@@ -58,3 +58,14 @@ it cannot unlock a locked/logged-out session. Actual permissions, third-party
 accounts and issuer settings require target-environment acceptance.
 
 Issuer availability is determined by the business account and region on [Stripe’s current Issuing availability page](https://docs.stripe.com/issuing/availability). No Privacy.com, Link or Shop Pay partner access is claimed.
+
+The issuer adapter pins API calls and synchronous authorization responses to
+`2025-03-31.basil`, including Stripe's required response header. Configure the
+Issuing webhook endpoint to emit that API version too. Disabling the
+wallet declines new authorizations. Both `sk_live_` and `rk_live_` inputs need
+explicit operator live-mode permission. The mode gate also covers keys already
+stored by older builds before issuing, authorizing or filling card fields;
+existing cards can still be cancelled. These protocol checks use synthetic
+records; actual issuer account acceptance remains open. See Stripe's
+[response contract](https://docs.stripe.com/issuing/controls/real-time-authorizations)
+and [key modes](https://docs.stripe.com/keys).

@@ -7,9 +7,9 @@ on:
         required: true
         default: main
       tag:
-        description: Version tag matching pyproject.toml (for example v0.4.0rc3)
+        description: Version tag matching pyproject.toml (for example v0.4.0rc4)
         required: true
-        default: v0.4.0rc3
+        default: v0.4.0rc4
       publish:
         description: Also publish a GitHub Release (requires release-write permission)
         type: boolean

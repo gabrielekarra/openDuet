@@ -3,9 +3,10 @@
 import json
 
 from fastapi import HTTPException, Request
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 
 from .registry import endpoint
+from .wallet import STRIPE_API_VERSION
 
 
 def install(app, runtime):
@@ -28,7 +29,11 @@ def install(app, runtime):
         for field in ("key", "cardholder", "webhook"):
             value = body.pop(field, "")
             if value:
-                if field == "key" and value.startswith("sk_live_") and not runtime.config.wallet_allow_live:
+                if (
+                    field == "key"
+                    and value.startswith(("sk_live_", "rk_live_"))
+                    and not runtime.config.wallet_allow_live
+                ):
                     raise ValueError(
                         "Live issuing must be explicitly enabled by the operator; use a test-mode issuer first"
                     )
@@ -61,7 +66,10 @@ def install(app, runtime):
             raise HTTPException(413)
         event = runtime.wallet.verify_webhook(data, request.headers.get("stripe-signature", ""))
         if event.get("type") == "issuing_authorization.request":
-            return {"approved": runtime.wallet.authorize(event)}
+            return JSONResponse(
+                {"approved": runtime.wallet.authorize(event)},
+                headers={"Stripe-Version": STRIPE_API_VERSION},
+            )
         return {"received": True}
 
     @app.post("/api/purchases/{ident}/cancel")
