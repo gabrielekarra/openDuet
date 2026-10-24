@@ -1,5 +1,11 @@
 # Changes
 
+## Unreleased
+
+- Allow 15 seconds for local container health probes on slow CPUs, and retry
+  failed cloud service startup automatically. Actual emulated-VM measurement
+  found the Python health probe taking 8.7 seconds despite a healthy HTTP 200.
+
 ## 0.4.0rc4
 
 - Preserve each channel’s unsent text and attachment across refreshes, including
