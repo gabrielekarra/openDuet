@@ -41,7 +41,7 @@ export async function refresh(force=true){
     document.title=labels()[state.view]+' · OpenDuet';
     if(!source){source=new EventSource('/api/stream');source.addEventListener('change',()=>refresh(false));}
   } catch(error){
-    if(error.status===401){source?.close();source=null;document.querySelector('#workspace').hidden=true;document.querySelector('#login').hidden=false;}
+    if(error.status===401){chat.clearDrafts();source?.close();source=null;document.querySelector('#workspace').hidden=true;document.querySelector('#login').hidden=false;}
     else toast(error.message);
   } finally {
     loading=false;
@@ -61,7 +61,7 @@ document.addEventListener('click',async event=>{
     if(target.dataset.editCall){const card=state.product.approvals.find(card=>card.id===target.dataset.editCall);editingCall=card.id;document.querySelector('#review-payload').value=JSON.stringify(card.payload,null,2);document.querySelector('#review-editor').showModal();}
     if(target.dataset.resolve){const receipt=prompt(t('What did you verify at the service?','Cosa hai verificato nel servizio?'));if(receipt){await api('/api/calls/'+target.dataset.resolve+'/resolve',{happened:target.dataset.happened==='yes',receipt});await refresh();}}
     if(target.dataset.close)document.getElementById(target.dataset.close).close();
-    if(target.id==='logout'){await api('/api/logout',{});source?.close();source=null;await refresh();}
+    if(target.id==='logout'){await api('/api/logout',{});chat.clearDrafts();source?.close();source=null;await refresh();}
     if(target.dataset.preview || target.dataset.revise || target.dataset.diff)await make.action(target,()=>refresh());
   } catch(error){toast(error.message);}
 });

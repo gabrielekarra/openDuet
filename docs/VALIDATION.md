@@ -190,3 +190,12 @@ macOS x86_64: `[mac,kev]` fails because no supported PyTorch wheel exists, while
 `[mac]` resolves successfully. The quickstarts now use `[mac]` on Intel and
 explain the separate Linux Kev option. This is a resolver check, not a native
 Intel Mac or owner-TCC acceptance result.
+
+The [documentation-only rc4 CI run](https://github.com/gabrielekarra/openDuet/actions/runs/40138178599)
+exposed an upload-state race before the file could be submitted. Composer drafts
+now retain channel-bound text and attachment references across renders; uploads
+and submissions disable incomplete/repeated sends. Drafts live only in memory
+and clear on logout/session expiry. The browser regression holds the real file
+upload response, forces a refresh, changes channels and verifies the exact
+attachment ID/channel sent to the actual sourced-DOCX task. Removal is exercised
+too. Existing read/export assertions and timeouts remain intact.

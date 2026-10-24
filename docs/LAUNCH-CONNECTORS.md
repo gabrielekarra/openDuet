@@ -146,7 +146,9 @@ remains reserved after disconnect, so it cannot be rebound to another provider.
 Use `openduet setup --directory /absolute/path/to/private-gusto-profile`; choose
 unused listener/prototype ports in its generated `openduet.toml` before starting
 it with `openduet --config /absolute/path/to/private-gusto-profile/openduet.toml`.
-Use a different Telegram bot if another OpenDuet profile is running at the same
+Use a separate browser profile when opening simultaneous local installations,
+so their sign-in cookies stay separate. Use a different Telegram bot if another
+OpenDuet profile is running at the same
 time; two running instances cannot long-poll the same bot. Connect Gusto before creating
 tasks or importing any history/accounts. The
 immutable rc3 tag predates this enforcement: leave Gusto disabled on rc3.

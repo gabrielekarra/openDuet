@@ -2,6 +2,10 @@
 
 ## 0.4.0rc4
 
+- Preserve each channel’s unsent text and attachment across refreshes, including
+  refreshes during upload. Prevent incomplete submissions, allow attachment
+  removal and clear drafts on logout/session expiry.
+
 - Correct Intel Mac installation to use the Mac bridge without unsupported
   PyTorch extras; document the separate Linux Kev option.
 

@@ -204,15 +204,59 @@ async def main():
         book.save(buffer)
         await page.locator("#navigation [data-view=chat]").click()
         await page.locator("#attachment").set_input_files(
-            {
-                "name": "budget.xlsx",
-                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "buffer": buffer.getvalue(),
-            }
+            {"name": "remove-me.txt", "mimeType": "text/plain", "buffer": b"Removed fixture data"}
         )
+        await expect(page.locator("#attachment-status")).to_have_text("remove-me.txt")
+        await page.get_by_role("button", name="Remove attachment", exact=True).click()
+        await expect(page.locator("#attachment-status")).to_have_text("")
+        uploading, release_upload = asyncio.Event(), asyncio.Event()
+        uploaded_id = None
+
+        async def hold_upload(route):
+            nonlocal uploaded_id
+            response = await route.fetch()
+            uploaded_id = (await response.json())["attachment"]
+            uploading.set()
+            await release_upload.wait()
+            await route.fulfill(response=response)
+
+        await page.route("**/api/attachments?name=budget.xlsx", hold_upload)
+        try:
+            await page.locator("#attachment").set_input_files(
+                {
+                    "name": "budget.xlsx",
+                    "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "buffer": buffer.getvalue(),
+                }
+            )
+            await asyncio.wait_for(uploading.wait(), timeout=5)
+            await page.locator("#prompt").fill("Create sourced report fixture")
+            await page.evaluate("import('/app.js').then(app=>app.refresh(true))")
+            await expect(page.locator("#prompt")).to_have_value("Create sourced report fixture")
+            await expect(page.locator("#compose button[type=submit]")).to_be_disabled()
+            release_upload.set()
+            await expect(page.locator("#attachment-status")).to_have_text("budget.xlsx")
+        finally:
+            release_upload.set()
+            await page.unroute("**/api/attachments?name=budget.xlsx", hold_upload)
+        other = await (
+            await page.request.post(
+                "http://127.0.0.1:8766/api/channels", data={"name": "Draft isolation fixture"}
+            )
+        ).json()
+        await page.evaluate("import('/app.js').then(app=>app.refresh(true))")
+        await page.locator("#channel").select_option(other["id"])
+        await expect(page.locator("#prompt")).to_have_value("")
+        await expect(page.locator("#attachment-status")).to_have_text("")
+        await page.locator("#channel").select_option("main")
+        await expect(page.locator("#prompt")).to_have_value("Create sourced report fixture")
         await expect(page.locator("#attachment-status")).to_have_text("budget.xlsx")
-        await page.locator("#prompt").fill("Create sourced report fixture")
-        await page.locator("#compose").get_by_role("button", name="Send", exact=True).click()
+        async with page.expect_request(
+            lambda request: request.url.endswith("/api/messages") and request.method == "POST"
+        ) as sent:
+            await page.locator("#compose").get_by_role("button", name="Send", exact=True).click()
+        assert (await sent.value).post_data_json["attachments"] == [uploaded_id]
+        assert (await sent.value).post_data_json["channel"] == "main"
         await page.locator("#navigation [data-view=make]").click()
         report = page.locator(".artifact").filter(
             has=page.get_by_role("heading", name="Sourced input report", exact=True)
