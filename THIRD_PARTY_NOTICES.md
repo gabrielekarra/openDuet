@@ -45,3 +45,11 @@ The glasses assets originate in this repository's native predecessor and were
 preserved before its removal.
 
 CPU INT8 inference optionally uses [Optimum Quanto](https://github.com/huggingface/optimum-quanto), Apache-2.0. It is installed as a dependency; its source is not vendored. Model weights remain subject to the pinned model manifest licenses.
+
+## Launch site typography
+
+The launch site bundles Instrument Sans, copyright 2022 The Instrument Sans
+Project Authors (https://github.com/Instrument/instrument-sans), under the
+SIL Open Font License 1.1. Its complete notice is retained in
+`website/assets/fonts/OFL.txt`. This typeface is used by the separate marketing
+site, not the workspace's system-font interface.

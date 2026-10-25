@@ -1,6 +1,8 @@
-<p align="center"><img src="openduet/web/brand/social-preview.png" alt="OpenDuet glasses" width="640"></p>
+<p align="center"><a href="https://openduet.gabrielekarra.chatgpt.site"><img src="website/assets/social-preview.png" alt="OpenDuet — Your bot. Your models. An open source assistant in your Telegram." width="1200"></a></p>
 
 # OpenDuet
+
+[Website & demo](https://openduet.gabrielekarra.chatgpt.site) · [Install on Mac](docs/QUICKSTART-MAC.md) · [Self-host](docs/SELF-HOSTING.md) · [Italiano](https://openduet.gabrielekarra.chatgpt.site/it/)
 
 Your own proactive assistant, on Telegram. Open source, self-hosted, and usable
 with local models as well as hosted APIs.
@@ -14,6 +16,12 @@ On a Mac, enable on-demand application access: ask the agent to open an installe
 app, inspect its controls, interact with it after approval, or send a screenshot
 on Telegram. The Mac must be awake and OpenDuet running. No screen-sharing server
 is needed. A separate isolated browser handles websites without a connector.
+
+## See it work
+
+[Watch the 23-second product tour](https://openduet.gabrielekarra.chatgpt.site/#demo): a sample task, a finished file and an approval-gated memory update in the real interface. The recording uses sample accounts and a fixture model.
+
+[Launch kit](docs/LAUNCH-KIT.md) · [Screenshots, clip and capture notes](docs/launch/media/media-notes.md) · [Validation](docs/VALIDATION.md)
 
 ## Install on your Mac
 

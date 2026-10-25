@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Publish the bilingual launch site with real fixture-backed product media,
+  workflow-sharing links, install commands, social metadata and an EN/IT launch kit.
+
 - Allow 15 seconds for local container health probes on slow CPUs, and retry
   failed cloud service startup automatically. Actual emulated-VM measurement
   found the Python health probe taking 8.7 seconds despite a healthy HTTP 200.

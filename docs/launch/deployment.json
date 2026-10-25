@@ -1,0 +1,18 @@
+{
+  "site_url": "https://openduet.gabrielekarra.chatgpt.site",
+  "project_id": "appgprj_6adddfc92c1881918341e4eda35cbd9f",
+  "version_id": "appgprj_6adddfc92c1881918341e4eda35cbd9f~appgver_e1ab08874e4881918dc54cc2232f5988",
+  "version_number": 1,
+  "deployment_id": "appgdep_6adde52f9ee88191ba2165c09d9832e8",
+  "status": "succeeded",
+  "access_mode": "public",
+  "sites_source_commit": "de75c244a153362888d0ec343b0448c30c5080d1",
+  "archive_bytes": 667081,
+  "github_about_update": {
+    "status": "blocked",
+    "http_status": 403,
+    "reason": "Resource not accessible by integration",
+    "fallback": "README links and manual About values in LAUNCH-KIT.md"
+  },
+  "posts_published": 0
+}

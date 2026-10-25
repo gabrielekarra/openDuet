@@ -1,0 +1,42 @@
+{
+  "checked_at": "2026-10-25T11:29:12.587887+00:00",
+  "origin": "https://openduet.gabrielekarra.chatgpt.site",
+  "plain_python_user_agent": {
+    "http_status": 403,
+    "body": "error code: 1010",
+    "boundary": "Default Python user agent returned 403/1010; browser user-agent requests passed without Site authentication."
+  },
+  "checks": [
+    {
+      "path": "/",
+      "http_status": 200,
+      "bytes": 15443,
+      "checked_without_site_auth": true
+    },
+    {
+      "path": "/it/",
+      "http_status": 200,
+      "bytes": 15859,
+      "checked_without_site_auth": true
+    },
+    {
+      "path": "/robots.txt",
+      "http_status": 200,
+      "bytes": 88,
+      "checked_without_site_auth": true
+    },
+    {
+      "path": "/assets/social-preview.png",
+      "http_status": 200,
+      "bytes": 57620,
+      "checked_without_site_auth": true
+    },
+    {
+      "path": "/sitemap.xml",
+      "http_status": 200,
+      "bytes": 242,
+      "checked_without_site_auth": true
+    }
+  ],
+  "verified": true
+}

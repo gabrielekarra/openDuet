@@ -1,0 +1,361 @@
+{
+  "pages": [
+    {
+      "lang": "en",
+      "width": 1440,
+      "overflow": 0,
+      "font": true,
+      "heads": [
+        {
+          "text": "Your bot.Your models.",
+          "lines": 2
+        },
+        {
+          "text": "From message to done.",
+          "lines": 1
+        },
+        {
+          "text": "Ask once. Get a file.",
+          "lines": 1
+        },
+        {
+          "text": "Read it. Then approve.",
+          "lines": 2
+        },
+        {
+          "text": "Keep your model.",
+          "lines": 1
+        },
+        {
+          "text": "Your Mac, on request.",
+          "lines": 1
+        },
+        {
+          "text": "Make it yours.",
+          "lines": 1
+        },
+        {
+          "text": "Before you start.",
+          "lines": 1
+        }
+      ],
+      "images": [
+        {
+          "src": "/assets/chat-result.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/make-file.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/review-approval.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/connections.png",
+          "loaded": true
+        }
+      ],
+      "description": "An open source assistant in your Telegram. Bring a local model or a hosted API. Get finished files and review consequential actions."
+    },
+    {
+      "lang": "en",
+      "width": 768,
+      "overflow": 0,
+      "font": true,
+      "heads": [
+        {
+          "text": "Your bot.Your models.",
+          "lines": 2
+        },
+        {
+          "text": "From message to done.",
+          "lines": 1
+        },
+        {
+          "text": "Ask once. Get a file.",
+          "lines": 1
+        },
+        {
+          "text": "Read it. Then approve.",
+          "lines": 1
+        },
+        {
+          "text": "Keep your model.",
+          "lines": 1
+        },
+        {
+          "text": "Your Mac, on request.",
+          "lines": 1
+        },
+        {
+          "text": "Make it yours.",
+          "lines": 1
+        },
+        {
+          "text": "Before you start.",
+          "lines": 1
+        }
+      ],
+      "images": [
+        {
+          "src": "/assets/chat-result.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/make-file.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/review-approval.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/connections.png",
+          "loaded": true
+        }
+      ],
+      "description": "An open source assistant in your Telegram. Bring a local model or a hosted API. Get finished files and review consequential actions."
+    },
+    {
+      "lang": "en",
+      "width": 390,
+      "overflow": 0,
+      "font": true,
+      "heads": [
+        {
+          "text": "Your bot.Your models.",
+          "lines": 2
+        },
+        {
+          "text": "From message to done.",
+          "lines": 2
+        },
+        {
+          "text": "Ask once. Get a file.",
+          "lines": 1
+        },
+        {
+          "text": "Read it. Then approve.",
+          "lines": 1
+        },
+        {
+          "text": "Keep your model.",
+          "lines": 1
+        },
+        {
+          "text": "Your Mac, on request.",
+          "lines": 1
+        },
+        {
+          "text": "Make it yours.",
+          "lines": 1
+        },
+        {
+          "text": "Before you start.",
+          "lines": 1
+        }
+      ],
+      "images": [
+        {
+          "src": "/assets/chat-result.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/make-file.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/review-approval.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/connections.png",
+          "loaded": true
+        }
+      ],
+      "description": "An open source assistant in your Telegram. Bring a local model or a hosted API. Get finished files and review consequential actions."
+    },
+    {
+      "lang": "it",
+      "width": 1440,
+      "overflow": 0,
+      "font": true,
+      "heads": [
+        {
+          "text": "Il tuo bot.Il tuo modello.",
+          "lines": 2
+        },
+        {
+          "text": "Dal messaggio al risultato.",
+          "lines": 1
+        },
+        {
+          "text": "Chiedi. Ricevi un file.",
+          "lines": 2
+        },
+        {
+          "text": "Leggi. Poi approva.",
+          "lines": 1
+        },
+        {
+          "text": "Scegli tu il modello.",
+          "lines": 1
+        },
+        {
+          "text": "Il tuo Mac, su richiesta.",
+          "lines": 1
+        },
+        {
+          "text": "Fallo tuo.",
+          "lines": 1
+        },
+        {
+          "text": "Prima di iniziare.",
+          "lines": 1
+        }
+      ],
+      "images": [
+        {
+          "src": "/assets/chat-result.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/make-file.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/review-approval.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/connections.png",
+          "loaded": true
+        }
+      ],
+      "description": "Un assistente open source nel tuo Telegram. Scegli un modello locale o una API. Ricevi file e approva le azioni importanti."
+    },
+    {
+      "lang": "it",
+      "width": 768,
+      "overflow": 0,
+      "font": true,
+      "heads": [
+        {
+          "text": "Il tuo bot.Il tuo modello.",
+          "lines": 2
+        },
+        {
+          "text": "Dal messaggio al risultato.",
+          "lines": 1
+        },
+        {
+          "text": "Chiedi. Ricevi un file.",
+          "lines": 1
+        },
+        {
+          "text": "Leggi. Poi approva.",
+          "lines": 1
+        },
+        {
+          "text": "Scegli tu il modello.",
+          "lines": 1
+        },
+        {
+          "text": "Il tuo Mac, su richiesta.",
+          "lines": 1
+        },
+        {
+          "text": "Fallo tuo.",
+          "lines": 1
+        },
+        {
+          "text": "Prima di iniziare.",
+          "lines": 1
+        }
+      ],
+      "images": [
+        {
+          "src": "/assets/chat-result.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/make-file.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/review-approval.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/connections.png",
+          "loaded": true
+        }
+      ],
+      "description": "Un assistente open source nel tuo Telegram. Scegli un modello locale o una API. Ricevi file e approva le azioni importanti."
+    },
+    {
+      "lang": "it",
+      "width": 390,
+      "overflow": 0,
+      "font": true,
+      "heads": [
+        {
+          "text": "Il tuo bot.Il tuo modello.",
+          "lines": 2
+        },
+        {
+          "text": "Dal messaggio al risultato.",
+          "lines": 2
+        },
+        {
+          "text": "Chiedi. Ricevi un file.",
+          "lines": 1
+        },
+        {
+          "text": "Leggi. Poi approva.",
+          "lines": 1
+        },
+        {
+          "text": "Scegli tu il modello.",
+          "lines": 1
+        },
+        {
+          "text": "Il tuo Mac, su richiesta.",
+          "lines": 1
+        },
+        {
+          "text": "Fallo tuo.",
+          "lines": 1
+        },
+        {
+          "text": "Prima di iniziare.",
+          "lines": 1
+        }
+      ],
+      "images": [
+        {
+          "src": "/assets/chat-result.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/make-file.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/review-approval.png",
+          "loaded": true
+        },
+        {
+          "src": "/assets/connections.png",
+          "loaded": true
+        }
+      ],
+      "description": "Un assistente open source nel tuo Telegram. Scegli un modello locale o una API. Ricevi file e approva le azioni importanti."
+    }
+  ],
+  "console_errors": [],
+  "interactions_passed": true,
+  "note": "Real local Chromium verification. No taste-inspector score or audience-growth result is claimed."
+}
