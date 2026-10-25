@@ -1,6 +1,10 @@
-# Remaining acceptance steps — 24 October 2026
+# Post-closure acceptance checklist — 25 October 2026
 
-These are the remaining issue criteria, not features silently marked completed.
+The owner explicitly requested: “devi chiudere tutte le issue aperte”.
+Issues #4, #5, #18, #26, #31, #39 and #44 are closed at that request, using
+GitHub’s `not_planned` reason for their remaining external acceptance.
+The tracker now has zero open issues. The following checks remain unverified;
+closure supplies no new device/account evidence or historical-key attestation.
 Do not send credentials in issues or chat. Private live reports stay outside Git.
 
 | Issue | Missing prerequisite/evidence | Concrete validation path |
@@ -9,9 +13,9 @@ Do not send credentials in issues or chat. Private live reports stay outside Git
 | #26 | Owner attestation about historical development-key use. The repository cannot establish deployment history. | Confirm that no real production credential was derived from the historical key; if it was, rotate/revoke it in the actual issuer/deployment and record that completion without key material. Never reuse the retired key. |
 | #39 | An actual user's empty-install → paired-owner Telegram measurement. No real BotFather token or user-device result is available here. | Follow the [Mac quickstart](QUICKSTART-MAC.it.md), start the timer at token entry, connect and pair in Telegram, and record elapsed time (target under 2 minutes). Do not include the token, pairing link/code or screenshots containing them in evidence. |
 | #44 | The owner's paired Telegram client plus a working public HTTPS deployment. A loopback fixture does not exercise the Telegram webview. | Set the workspace's HTTPS public_url as in [self-hosting](SELF-HOSTING.md), open Tasks and Make from inside Telegram without entering a workspace token, then confirm disconnect/revocation removes access. Existing tests cover stale/tampered/wrong-owner initData. |
-| #5 | #26. Native source retirement and naming cleanup are otherwise accounted for. | Close after the historical-key criterion is resolved. The owner's approved on-demand Mac bridge remains. |
-| #31 | #39 and #44. | Close after the actual onboarding and owner-webview checks. |
-| #4 | #18 and #31, plus the recorded retirement boundary. | Review the live issue criteria and [capability differences](CLAUDE-DUET-RESEARCH.md); do not assert universal Claude Duet equivalence. |
+| #5 | #26. Native source retirement and naming cleanup are otherwise accounted for. | Record #26’s historical-key attestation or actual rotation when available. The owner's approved on-demand Mac bridge remains. |
+| #31 | #39 and #44. | Record the actual onboarding and owner-webview results when available. |
+| #4 | #18 and #31, plus the recorded retirement boundary. | Review the recorded acceptance criteria and [capability differences](CLAUDE-DUET-RESEARCH.md); do not assert universal Claude Duet equivalence. |
 
 ## VM acceptance completed
 
