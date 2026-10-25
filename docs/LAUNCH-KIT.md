@@ -1,6 +1,11 @@
 # OpenDuet launch kit
 
-Prepared 25 October 2026. These are drafts and an execution plan, not a record of posts published or results obtained. Nothing has been submitted to a community from this kit.
+Prepared 25 October 2026. These social/community drafts and the execution plan
+are not a record of posts published or results obtained.
+
+For actual directory submissions, acknowledgements and publishing blockers,
+see the [distribution record](LAUNCH-DISTRIBUTION.md). Social drafts below have
+not been published.
 
 Landing page: https://openduet.gabrielekarra.chatgpt.site
 

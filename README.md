@@ -21,7 +21,7 @@ is needed. A separate isolated browser handles websites without a connector.
 
 [Watch the 23-second product tour](https://openduet.gabrielekarra.chatgpt.site/#demo): a sample task, a finished file and an approval-gated memory update in the real interface. The recording uses sample accounts and a fixture model.
 
-[Launch kit](docs/LAUNCH-KIT.md) · [Screenshots, clip and capture notes](docs/launch/media/media-notes.md) · [Validation](docs/VALIDATION.md)
+[Launch kit](docs/LAUNCH-KIT.md) · [Distribution record](docs/LAUNCH-DISTRIBUTION.md) · [Screenshots, clip and capture notes](docs/launch/media/media-notes.md) · [Validation](docs/VALIDATION.md)
 
 ## Install on your Mac
 

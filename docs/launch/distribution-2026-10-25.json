@@ -1,0 +1,119 @@
+{
+  "recorded_at": "2026-10-25T21:07:49.820743+00:00",
+  "repository": "https://github.com/gabrielekarra/openDuet",
+  "website": "https://openduet.gabrielekarra.chatgpt.site",
+  "acknowledged_submissions": [
+    {
+      "directory": "e2b",
+      "submitted_at": "2026-10-25T21:06:17.708661+00:00",
+      "endpoint": "https://docs.google.com/forms/d/e/1FAIpQLScndOs3bQ8aBtqqqhvlC_qgJmg16jmwOfEoLter6I921vfmvQ/formResponse",
+      "http_status": 200,
+      "response_url": "https://docs.google.com/forms/d/e/1FAIpQLScndOs3bQ8aBtqqqhvlC_qgJmg16jmwOfEoLter6I921vfmvQ/formResponse",
+      "acknowledged": true,
+      "published": false,
+      "meaning": "Google Form displayed its configured thank-you confirmation; catalogue inclusion pending.",
+      "response_excerpt": "\ud83d\ude4f Thanks for taking the time to contribute with new products. \ud83d\ude4f Thanks for taking the time to contribute with new products. Thank you for contributing to the agents community! Happy hacking. Tereza Tizkova https://e2b.dev/   Submit another response This form was created inside of FoundryLabs, Inc..  Does this form look suspicious?  Report \u00a0 Forms",
+      "request_sha256": "fa15646a14cc24e0e30609f2815969bf1bb9f098c3360582747351f8ee48c421",
+      "public_payload": {
+        "entry.745524191_sentinel": "",
+        "entry.1771011136_sentinel": "",
+        "entry.2037797751_sentinel": "",
+        "fvv": "1",
+        "pageHistory": "0",
+        "submissionTimestamp": "-1",
+        "entry.1182414063": "OpenDuet",
+        "entry.1551503933": "Telegram tasks, files and your choice of model",
+        "entry.745524191": "Open-source",
+        "entry.1771011136": [
+          "Productivity",
+          "General purpose",
+          "Supports open-source models"
+        ],
+        "entry.2050494743": "MIT-licensed, self-hosted Telegram personal assistant. Pair your own bot, choose a compatible local model (for example through Ollama or an OpenAI-compatible server) or a supported API, then send tasks, review external actions and receive generated files. Includes a separate browser and an optional permission-gated Mac bridge for screenshots and installed apps. This is a release candidate, not a hosted shared bot. The product tour uses labelled sample data and scripted provider/account transports; remaining real-account/device checks are documented. Development and this owner-authorized submission were AI-assisted. Model/API/hosting costs can apply; Telegram traffic passes through Telegram.",
+        "entry.333152299": "https://openduet.gabrielekarra.chatgpt.site",
+        "entry.611023409": "https://github.com/gabrielekarra/openDuet",
+        "entry.1699526915": "https://github.com/gabrielekarra/openDuet/blob/main/docs/QUICKSTART-MAC.md",
+        "entry.253226999": "https://github.com/gabrielekarra/openDuet/blob/main/docs/PENDING-ACCEPTANCE.md",
+        "entry.1357895277": "New project / v0.4.0rc4 release candidate. No independent adoption or audience claim. Submitted by an AI assistant on behalf of the repository owner, who requested project promotion. Contact uses the owner email already present in the public source commit metadata; no blog outreach or unrelated mail opt-in is selected.",
+        "entry.1953030335": "[existing public owner commit contact; not republished]"
+      }
+    },
+    {
+      "directory": "agentatlas",
+      "submitted_at": "2026-10-25T21:06:07.239096+00:00",
+      "endpoint": "https://www.getagentatlas.com/api/submit",
+      "http_status": 200,
+      "response_url": "https://www.getagentatlas.com/api/submit",
+      "acknowledged": true,
+      "published": false,
+      "meaning": "Server acknowledged logging for manual review; no public listing created.",
+      "response_excerpt": "{\"ok\":true}",
+      "request_sha256": "2ecff8bb107c5c11d0d5106566e895ae21b055c9719fd2abbdd9855c44b4ae8b",
+      "public_payload": {
+        "name": "OpenDuet",
+        "url": "https://openduet.gabrielekarra.chatgpt.site",
+        "category": "ops",
+        "summary": "OpenDuet is an MIT-licensed, self-hosted Telegram assistant for tasks, generated files and actions users approve, using compatible local or API models. Release candidate with optional Mac screenshots/app interaction; sample demo data and remaining live-account/device checks are disclosed.",
+        "pricing": "open source",
+        "openSource": true,
+        "tags": [
+          "telegram",
+          "self-hosted",
+          "local-models",
+          "personal-assistant"
+        ],
+        "email": "",
+        "company": ""
+      }
+    }
+  ],
+  "blocked_submission": {
+    "directory": "slavakurilyak/awesome-ai-agents",
+    "operation": "Create the requested project-submission issue",
+    "http_status": 403,
+    "message": "Resource not accessible by integration",
+    "issue_created": false,
+    "retried_with_another_identity": false
+  },
+  "social_publication": {
+    "posts_published": 0,
+    "connection": "Metricool suggested; not connected or verified",
+    "reason": "No authenticated social publishing account is available"
+  },
+  "skipped": [
+    {
+      "directory": "aloth/awesome-ai-agents",
+      "reason": "Requires >100 stars or major organization; this project has neither verified"
+    },
+    {
+      "directory": "AFunLS/awesome-ai-agent-tools",
+      "reason": "Excludes personal projects without community adoption; independent adoption is unverified"
+    },
+    {
+      "directory": "Future Tools",
+      "reason": "Submission form requires a CAPTCHA; no submission attempted"
+    },
+    {
+      "channel": "Hacker News",
+      "reason": "Guidelines prohibit AI-generated/edited submissions and automated posting"
+    },
+    {
+      "channel": "r/LocalLLaMA",
+      "reason": "Generated-project and account-history eligibility not established"
+    }
+  ],
+  "counter_snapshot": {
+    "captured_at": "2026-10-25T21:07:04.585583+00:00",
+    "repository": "gabrielekarra/openDuet",
+    "source": "https://api.github.com/repos/gabrielekarra/openDuet",
+    "stars": 0,
+    "forks": 0,
+    "open_issues": 0,
+    "subscribers": 0,
+    "installs": null,
+    "activated_users": null,
+    "qualified_visits": null,
+    "note": "Repository counters only. Usage and campaign attribution require separate evidence."
+  },
+  "interpretation": "Directory acknowledgement is not inclusion, reach, installation, active usage or virality. No paid placement, vote request or mass outreach was used."
+}
